@@ -29,6 +29,23 @@ class Drisee:
     def get_drisee(self):
         return obj_from_url(API_URL+'drisee/'+self.ID)
 
+    def dump(self, filename=None, type='count'):
+        if not filename:
+            filename = 'drisee_'+profile+'_'+random_str()+'.txt'
+        profile = None
+        if (type == 'count') and self.count:
+            profile = self.count
+        elif (type == 'percent') and self.percent:
+            profile = self.percent
+        else:
+            return None
+        fhdl = open(filename, 'w')
+        fhdl.write("#\t"+"\t".join(profile['columns'])+"\n")
+        for i in range(len(profile['rows'])):
+            fhdl.write(profile['rows'][i]+"\t"+"\t".join(profile['data'][i])+"\n")
+        fhdl.close()
+        return filename
+
     def count_to_percent(self):
         if not self.count:
             return None
