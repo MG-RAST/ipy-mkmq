@@ -38,8 +38,8 @@ class Drisee:
             if r < 51:
                 continue
             oldRow = self.count['data'][i]
-            total  = sum(cRow)
-            percs  = map(lambda x: 100 * ((x * 1.0) / total), cRow)
+            total  = sum(oldRow)
+            percs  = map(lambda x: 100 * ((x * 1.0) / total), oldRow)
             newRow = percs[6:]
             newRow.append( sum(percs[6:]) )
             rows.append(r)
