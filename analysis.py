@@ -61,18 +61,20 @@ class Analysis:
             return None
         return ro.r.mpco(matrix, **keyArgs)
 
-    def plot_pco(self, filename=None, pco=None, labels=None):
+    def plot_pco(self, filename=None, pco=None, labels=None, title=None):
         if pco is None:
             pco = self.get_pco()
         if labels is None:
             labels = self.ids()
         if filename is None:
             filename = 'images/pco_'+random_str()+'.png'
-        keyArgs = {'fname': filename, 'labels': ro.r.c(labels)}
+        if title is None:
+            title = 'PCoA'
+        keyArgs = {'fname': filename, 'labels': ro.r.c(labels), 'main': title}
         ro.r.render(pco, **keyArgs)
         return filename
 
-    def plot_heatmap(self, filename=None, normalize=1, cLabels=None, rLabels=None):
+    def plot_heatmap(self, filename=None, normalize=1, cLabels=None, rLabels=None, title=None):
         matrix = self.NRmatrix if normalize else self.Rmatrix
         if not matrix:
             return None
@@ -82,7 +84,9 @@ class Analysis:
             rLabels = self.annotations()
         if filename is None:
             filename = 'images/heatmap_'+random_str()+'.jpeg'
-        keyArgs = {'image_out': filename, 'labRow': ro.r.c(rLabels), 'labCol': ro.r.c(cLabels)}
+        if title is None:
+            title = 'HeatMap'
+        keyArgs = {'image_out': filename, 'labRow': ro.r.c(rLabels), 'labCol': ro.r.c(cLabels), 'image_title': title}
         ro.r.mheatmap(matrix, **keyArgs)
         return filename
 
