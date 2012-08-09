@@ -37,11 +37,13 @@ class Drisee:
         for i, r in enumerate(self.count['rows']):
             if r < 51:
                 continue
-            cRow  = self.count['data'][i]
-            total = sum(cRow)
-            percs = map(lambda x: 100 * ((x * 1.0) / total), cRow)
+            oldRow = self.count['data'][i]
+            total  = sum(cRow)
+            percs  = map(lambda x: 100 * ((x * 1.0) / total), cRow)
+            newRow = percs[6:]
+            newRow.append( sum(percs[6:]) )
             rows.append(r)
-            data.append([ percs[6:11], sum(percs[6:11]) ])
+            data.append(newRow)
         return {'rows': rows, 'columns': ['A','T','C','G','N','InDel','Total'], 'data': data}
 
     def plot(self):
