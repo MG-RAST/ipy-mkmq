@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import urllib, urllib2, json
+import string, random
 import rpy2.robjects as ro
 
 API_URL = 'http://api.metagenomics.anl.gov/'
@@ -10,14 +11,14 @@ def obj_from_url(url):
         req = urllib2.Request(url, headers={'Accept': 'application/json'})
         res = urllib2.urlopen(req)
     except urllib2.HTTPError, error:
-        print "ERROR: ", error.read()
+        print "ERROR (%s): %s"%(url, error.read())
         return None
     if not res:
-        print "ERROR: no results returned"
+        print "ERROR (%s): no results returned"%url
         return None
     obj = json.loads(res.read())
     if not obj:
-        print "ERROR: return structure not valid json format"
+        print "ERROR (%s): return structure not valid json format"%url
         return None
     return obj
 
@@ -43,3 +44,7 @@ def pyMatrix_to_rMatrix(matrix, rmax, cmax):
         cList = map(lambda x: x[i], matrix)
         mList.extend(cList)
     return ro.r.matrix(ro.IntVector(mList), nrow=rmax)
+
+def random_str(size=6):
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(chars) for x in range(size))

@@ -16,9 +16,12 @@ class Analysis:
         self.matrix     = self.biom['data'] if self.biom else []
         self.numIDs     = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
+        dMatrix = self.dense_matrix()
+        self.Rmatrix  = pyMatrix_to_rMatrix(dMatrix, self.numAnnotations, self.numIDs) if len(dMatrix) > 0 else None
+        self.NRmatrix = self.normalize_matrix()
 
     def _build_url(self):
-        module = 'matrix/'+self.annType if self.idType == 'metagenome' else 'genome_matrix'
+        module = 'matrix/'+self.annotation if self.idType == 'metagenome' else 'genome_matrix'
         params = [ ('format', 'biom'), ('id', self.inputIDs) ]
         if self.resultType and (self.idType == 'metagenome'):
             params.append(('result_type', self.resultType))
@@ -45,21 +48,42 @@ class Analysis:
         index = items.index(id)
         return slice_column(self.matrix, index)
 
-    def get_pco(self, method='bray-curtis'):
-        if not self.biom:
+    def normalize_matrix(self):
+        if self.Rmatrix:
+            return ro.r.normalize(self.Rmatrix)
+        else:
             return None
-        dMatrix = self.dense_matrix()
-        rMatrix = pyMatrix_to_rMatrix(dMatrix, self.numAnnotations, self.numIDs)
-        keyArgs = {'method': method}
-        return ro.r.mpco(rMatrix, **keyArgs)
 
-    def plot_pco(self, filename='tmpPCO.png', pco=None, labels=None):
+    def get_pco(self, method='bray-curtis', normalize=1):
+        keyArgs = {'method': method}
+        matrix  = self.NRmatrix if normalize else self.Rmatrix
+        if not matrix:
+            return None
+        return ro.r.mpco(matrix, **keyArgs)
+
+    def plot_pco(self, filename=None, pco=None, labels=None):
         if pco is None:
             pco = self.get_pco()
         if labels is None:
             labels = self.ids()
+        if filename is None:
+            filename = 'images/pco_'+random_str()+'.png'
         keyArgs = {'fname': filename, 'labels': ro.r.c(labels)}
         ro.r.render(pco, **keyArgs)
+        return filename
+
+    def plot_heatmap(self, filename=None, normalize=1, cLabels=None, rLabels=None):
+        matrix = self.NRmatrix if normalize else self.Rmatrix
+        if not matrix:
+            return None
+        if cLabels is None:
+            cLabels = self.ids()
+        if rLabels is None:
+            rLabels = self.annotations()
+        if filename is None:
+            filename = 'images/heatmap_'+random_str()+'.jpeg'
+        keyArgs = {'image_out': filename, 'labRow': ro.r.c(rLabels), 'labCol': ro.r.c(cLabels)}
+        ro.r.mheatmap(matrix, **keyArgs)
         return filename
 
     def dense_matrix(self):

@@ -149,7 +149,7 @@ def merge_drisee_profile(qc_set, profile='count'):
                     break
                 rowNums[r] += 1
                 for c in range(colMax):
-                    mMatrix[r][c] += qc.drisee.count['data'][r][c]
+                    mMatrix[r][c] += qc.drisee.percent['data'][r][c]
         for r in range(rowMax):
             for c in range(colMax):
                 mMatrix[r][c] = mMatrix[r][c] / rowNums[r]
