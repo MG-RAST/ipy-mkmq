@@ -9,7 +9,7 @@ PLOT = flotplot.Plot()
 class QC:
     def __init__(self, aID):
         self.ID       = aID
-        self.drisee   = Drisee(aID=self.ID)
+        self.drisee   = Drisee(self.ID)
         self.kmer     = Kmer(self.ID)
         self.bp_histo = NucleoProfile(self.ID)
 
@@ -44,7 +44,7 @@ class Drisee:
             data.append([ percs[6:11], sum(percs[6:11]) ])
         return {'rows': rows, 'columns': ['A','T','C','G','N','InDel','Total'], 'data': data}
 
-    def plot_drisee(self):
+    def plot(self):
         if not self.percent:
             return None
         x = self.percent['rows']
@@ -68,7 +68,7 @@ class NucleoProfile:
     def get_bp_profile(self):
         return obj_from_url(API_URL+'bp_histogram/'+self.ID)
 
-    def plot_bps(self):
+    def plot(self):
         if not (self.data and ('percents' in self.data)):
             return None
         x = self.data['percents']['rows']
@@ -89,7 +89,7 @@ class Kmer:
     def get_kmer(self):
         return obj_from_url(API_URL+'kmer/'+self.ID)
 
-    def plot_kmer_abundance(self):
+    def plot_abundance(self):
         if not (self.data and ('profile' in self.data)):
             return None
         x = map(lambda z: math.log(z[3], 10), self.data['profile'])
@@ -97,7 +97,7 @@ class Kmer:
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='kmer rank abundance')
 
-    def plot_kmer_ranked(self):
+    def plot_ranked(self):
         if not (self.data and ('profile' in self.data)):
             return None
         x = map(lambda z: math.log(z[3], 10), self.data['profile'])
@@ -105,7 +105,7 @@ class Kmer:
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='ranked kmer consumed')
 
-    def plot_kmer_spectrum(self):
+    def plot_spectrum(self):
         if not (self.data and ('profile' in self.data)):
             return None
         x = map(lambda z: math.log(z[0], 10), self.data['profile'])
@@ -117,7 +117,7 @@ def merge_drisee_profile(qc_set, profile='count'):
     if profile == 'count':
         columns = qc_set[0].drisee.count['columns']
         colMax  = len(columns)
-        rowMax  = max(map(lambda x: len(x.drisee.count['rows']), qc_set))
+        rowMax  = max([ len(x.drisee.count['rows']) for x in qc_set if x.drisee.count ])
         rows    = map(lambda x: x+1, range(rowMax))
         mMatrix = [[0 for i in range(colMax)] for j in range(rowMax)]
         for qc in qc_set:
@@ -134,7 +134,7 @@ def merge_drisee_profile(qc_set, profile='count'):
     elif profile == 'percent':
         columns = qc_set[0].drisee.percent['columns']
         colMax  = len(columns)
-        rowMax  = max(map(lambda x: len(x.drisee.percent['rows']), qc_set))
+        rowMax  = max([ len(x.drisee.percent['rows']) for x in qc_set if x.drisee.percent ])
         rows    = map(lambda x: x+51, range(rowMax))
         rowNums = [0 for i in range(rowMax)]
         mMatrix = [[0 for i in range(colMax)] for j in range(rowMax)]

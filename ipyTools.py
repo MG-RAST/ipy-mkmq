@@ -3,8 +3,7 @@
 import urllib, urllib2, json
 import rpy2.robjects as ro
 
-#API_URL = 'http://api.metagenomics.anl.gov/'
-API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api.cgi/'
+API_URL = 'http://api.metagenomics.anl.gov/'
 
 def obj_from_url(url):
     try:
