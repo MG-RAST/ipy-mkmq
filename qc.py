@@ -21,8 +21,8 @@ class Drisee:
         if data:
             self.data = data
         self.error   = self.data['errors'] if self.data and ('errors' in self.data) else None
-        self.count   = self.data['count_profile'] if self.data and ('count_profile' in self.data) else None
-        self.percent = self.data['percent_profile'] if self.data and ('percent_profile' in self.data) else None
+        self.count   = self.data['count_profile'] if has_profile('count_profile', self.data) else None
+        self.percent = self.data['percent_profile'] if has_profile('percent_profile', self.data) else None
         if self.count and (not self.percent):
             self.percent = self.count_to_percent()
         
@@ -82,21 +82,22 @@ class NucleoProfile:
     def __init__(self, aID):
         self.ID      = aID
         self.data    = self.get_bp_profile()
-        self.profile = self.data['counts'] if self.data and ('counts' in self.data) else None
+        self.count   = self.data['counts'] if has_profile('counts', self.data) else None
+        self.percent = self.data['percents'] if has_profile('percents', self.data) else None
 
     def get_bp_profile(self):
         return obj_from_url(API_URL+'bp_histogram/'+self.ID)
 
     def plot(self):
-        if not (self.data and ('percents' in self.data)):
+        if not self.percent:
             return None
-        x = self.data['percents']['rows']
-        l = self.data['percents']['columns']
-        yA = map(lambda y: y[0], self.data['percents']['data'])
-        yT = map(lambda y: y[1], self.data['percents']['data'])
-        yC = map(lambda y: y[2], self.data['percents']['data'])
-        yG = map(lambda y: y[3], self.data['percents']['data'])
-        yN = map(lambda y: y[4], self.data['percents']['data'])
+        x = self.percent['rows']
+        l = self.percent['columns']
+        yA = map(lambda y: y[0], self.percent['data'])
+        yT = map(lambda y: y[1], self.percent['data'])
+        yC = map(lambda y: y[2], self.percent['data'])
+        yG = map(lambda y: y[3], self.percent['data'])
+        yN = map(lambda y: y[4], self.percent['data'])
         PLOT.legendloc = 'se'
         PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
@@ -131,6 +132,12 @@ class Kmer:
         y = map(lambda z: math.log(z[1], 10), self.data['profile'])
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='kmer spectrum')
+
+def has_profile(profile, data):
+    if data and (profile in data) and ('data' in data[profile]) and (len(data[profile]['data']) > 0):
+        return True
+    else:
+        return False
 
 def merge_drisee_profile(qc_set, profile='count'):
     if profile == 'count':
