@@ -31,7 +31,7 @@ class Drisee:
 
     def dump(self, filename=None, type='count'):
         if not filename:
-            filename = 'drisee_'+profile+'_'+random_str()+'.txt'
+            filename = 'drisee_'+type+'_'+random_str()+'.txt'
         profile = None
         if (type == 'count') and self.count:
             profile = self.count
@@ -42,7 +42,7 @@ class Drisee:
         fhdl = open(filename, 'w')
         fhdl.write("#\t"+"\t".join(profile['columns'])+"\n")
         for i in range(len(profile['rows'])):
-            fhdl.write(profile['rows'][i]+"\t"+"\t".join(profile['data'][i])+"\n")
+            fhdl.write(str(profile['rows'][i])+"\t"+"\t".join(map(str, profile['data'][i]))+"\n")
         fhdl.close()
         return filename
 
