@@ -70,25 +70,23 @@ class Analysis:
             filename = 'images/pco_'+random_str()+'.png'
         if title is None:
             title = 'PCoA'
-        keyArgs = {'fname': filename, 'labels': ro.r.c(labels), 'main': title}
+        keyArgs = {'fname': filename, 'labels':ro.StrVector(labels), 'main': title}
         ro.r.render(pco, **keyArgs)
         return filename
 
-    def plot_heatmap(self, filename=None, normalize=1, cLabels=None, rLabels=None, title=None):
-        matrix = self.NRmatrix if normalize else self.Rmatrix
+    def plot_heatmap(self, filename=None, normalize=1, labels=None, title=None):
+	matrix = self.NRmatrix if normalize else self.Rmatrix
         if not matrix:
             return None
-        if cLabels is None:
-            cLabels = self.ids()
-        if rLabels is None:
-            rLabels = self.annotations()
+        if labels is None:
+            labels = self.ids()
         if filename is None:
             filename = 'images/heatmap_'+random_str()+'.jpeg'
         if title is None:
             title = 'HeatMap'
-        keyArgs = {'image_out': filename, 'labRow': ro.r.c(rLabels), 'labCol': ro.r.c(cLabels), 'image_title': title}
+        keyArgs = {'image_out': filename, 'labCol': ro.StrVector(labels), 'image_title': title, 'col_lab_mult': 1.2, 'margins': ro.r.c(9,1)}
         ro.r.mheatmap(matrix, **keyArgs)
-        return filename
+	return filename
 
     def dense_matrix(self):
         if not self.biom:
