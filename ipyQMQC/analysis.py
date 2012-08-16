@@ -5,6 +5,8 @@ from ipyTools import *
 
 class Analysis:
     def __init__(self, ids, idType='metagenome', annotation='organism', level=None, resultType=None, source=None):
+        ## load matR
+        ro.r('library(matR)')
         self.inputIDs   = ids
         self.idType     = idType
         self.annotation = annotation
