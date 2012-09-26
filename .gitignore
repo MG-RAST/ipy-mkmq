@@ -2,3 +2,4 @@ dist
 ipyQMQC.egg-info
 build
 *.pyc
+._*
