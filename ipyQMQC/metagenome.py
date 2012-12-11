@@ -5,7 +5,7 @@ from ipyTools import *
 class Metagenome:
     def __init__(self, mgid):
         metagenome = self.get_metagenome()
-        if metagenome not None:
+        if metagenome is not None:
             for key, val in metagenome.iteritems():
                 self.__setitem__(key, val)
         else:
