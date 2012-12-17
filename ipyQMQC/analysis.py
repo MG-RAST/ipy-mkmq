@@ -7,36 +7,33 @@ from ipyTools import *
 from collections import defaultdict
 
 class Analysis:
-    def __init__(self, ids, idType='metagenome', annotation='organism', level=None, resultType=None, source=None):
+    def __init__(self, ids, annotation='organism', level=None, resultType=None, source=None):
         ## load matR
         ro.r('library(matR)')
         self.inputIDs   = ids
-        self.idType     = idType
         self.annotation = annotation
+        self.level      = level
         self.resultType = resultType
         self.source     = source
-        self.level      = level
-        self.matrixUrl  = self._build_url()
-        self.biom       = obj_from_url(self.matrixUrl)
+        self.biom       = self._get_matrix()
         self.matrix     = self.biom['data'] if self.biom else []
         self.numIDs     = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
-        self.Dmatrix  = self.dense_matrix()
-        self.Rmatrix  = pyMatrix_to_rMatrix(dMatrix, self.numAnnotations, self.numIDs) if len(dMatrix) > 0 else None
-        self.NRmatrix = self.normalize_matrix()
+        self.Dmatrix  = self._dense_matrix()
+        self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
+        self.NRmatrix = self._normalize_matrix()
         self.alpha_diversity = None
-        self.rarefaction = None
+        self.rarefaction     = None
     
-    def _build_url(self):
-        module = 'matrix/'+self.annotation if self.idType == 'metagenome' else 'genome_matrix'
-        params = [ ('format', 'biom'), ('id', self.inputIDs) ]
-        if self.resultType and (self.idType == 'metagenome'):
-            params.append(('result_type', self.resultType))
-        if self.source and (self.idType == 'metagenome'):
-            params.append(('source', self.source))
+    def _get_matrix(self):
+        params = map(lambda x: ('id', x), self.inputIDs)
         if self.level:
             params.append(('group_level', self.level))
-        return API_URL+module+'?'+urllib.urlencode(params, True)
+        if self.resultType:
+            params.append(('result_type', self.resultType))
+        if self.source:
+            params.append(('source', self.source))
+        return obj_from_url( API_URL+'matrix/'+self.annotation+'?'+urllib.urlencode(params, True) )
     
     def ids(self):
         if not self.biom:
@@ -53,7 +50,7 @@ class Analysis:
             return None
         items = self.ids()
         index = items.index(id)
-        return slice_column(self.matrix, index)
+        return slice_column(self.Dmatrix, index)
     
     def get_id_object(self, id):
         if not self.biom:
@@ -93,7 +90,6 @@ class Analysis:
         if self.annotation != 'organism':
             return None
         if self.rarefaction is None:
-            dMatrix = self.dense_matrix()
             rareFact = defaultdict(list)
             for i, aID in enumerate(self.ids()):
                 mg = self.get_id_object(id)
@@ -103,7 +99,7 @@ class Analysis:
                 except (ValueError, KeyError, TypeError, AttributeError):
                     rareFact[aID] = []
                     continue
-                nums = slice_column(dMatrix, i)
+                nums = slice_column(self.Dmatrix, i)
                 lnum = len(nums)
                 nums.sort()
                 for i in xrange(0, nseq, size):
@@ -135,12 +131,6 @@ class Analysis:
             return math.log(2 * math.pi) / 2 + x * s + s / 2 - x
         else:
             return 0
-    
-    def normalize_matrix(self):
-        if self.Rmatrix:
-            return ro.r.normalize(self.Rmatrix)
-        else:
-            return None
     
     def get_pco(self, method='bray-curtis', normalize=1):
         keyArgs = {'method': method}
@@ -176,7 +166,13 @@ class Analysis:
         ro.r.mheatmap(matrix, **keyArgs)
         return filename
     
-    def dense_matrix(self):
+    def _normalize_matrix(self):
+        if self.Rmatrix:
+            return ro.r.normalize(self.Rmatrix)
+        else:
+            return None
+    
+    def _dense_matrix(self):
         if not self.biom:
             return []
         if self.biom['matrix_type'] == 'dense':

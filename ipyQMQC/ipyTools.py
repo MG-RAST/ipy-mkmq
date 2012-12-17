@@ -4,7 +4,7 @@ import urllib, urllib2, json
 import string, random
 import rpy2.robjects as ro
 
-API_URL = 'http://api.metagenomics.anl.gov/'
+API_URL = 'http://api.metagenomics.anl.gov/api2.cgi'
 
 def obj_from_url(url):
     try:
@@ -39,12 +39,14 @@ def sparse_to_dense(sMatrix, rmax, cmax):
     return dMatrix
 
 def pyMatrix_to_rMatrix(matrix, rmax, cmax):
+    if len(matrix) == 0:
+        return None
     mList = []
     for i in range(cmax):
         cList = map(lambda x: x[i], matrix)
         mList.extend(cList)
     return ro.r.matrix(ro.IntVector(mList), nrow=rmax)
 
-def random_str(size=6):
+def random_str(size=8):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for x in range(size))

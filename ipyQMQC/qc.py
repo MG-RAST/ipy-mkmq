@@ -8,26 +8,27 @@ PLOT = flotplot.Plot()
 
 class QC:
     def __init__(self, aID):
-        self.ID       = aID
-        self.drisee   = Drisee(self.ID)
-        self.kmer     = Kmer(self.ID)
-        self.bp_histo = NucleoProfile(self.ID)
+        self.metagenome = metagenome.Metagenome(self.ID, True, True)
+        self.drisee     = Drisee(self.metagenome)
+        self.kmer       = Kmer(self.metagenome)
+        self.bp_histo   = NucleoProfile(self.metagenome)
 
 class Drisee:
-    def __init__(self, aID=None, data=None):
-        if aID:
-            self.ID   = aID
-            self.data = self.get_drisee()
-        if data:
-            self.data = data
-        self.error   = self.data['errors'] if self.data and ('errors' in self.data) else None
-        self.count   = self.data['count_profile'] if has_profile('count_profile', self.data) else None
-        self.percent = self.data['percent_profile'] if has_profile('percent_profile', self.data) else None
-        if self.count and (not self.percent):
-            self.percent = self.count_to_percent()
+    def __init__(self, mgObj=None, mgData=None):
+        data = None
+        if mg:
+            data = self._get_drisee(mgObj)
+        if mgData:
+            data = mgData
+        self.summary = data['summary'] if has_profile('summary', data) else None
+        self.count   = data['counts'] if has_profile('counts', data) else None
+        self.percent = data['percents'] if has_profile('percents', data) else None
         
-    def get_drisee(self):
-        return obj_from_url(API_URL+'drisee/'+self.ID)
+    def _get_drisee(self, mgObj):
+        try:
+            return mgObj.stats.qc.drisee
+        except:
+            return None
 
     def dump(self, filename=None, type='count'):
         if not filename:
@@ -41,95 +42,85 @@ class Drisee:
             return None
         fhdl = open(filename, 'w')
         fhdl.write("#\t"+"\t".join(profile['columns'])+"\n")
-        for i in range(len(profile['rows'])):
-            fhdl.write(str(profile['rows'][i])+"\t"+"\t".join(map(str, profile['data'][i]))+"\n")
+        for row in profile['data']:
+            fhdl.write("\t".join(map(str, row))+"\n")
         fhdl.close()
         return filename
-
-    def count_to_percent(self):
-        if not self.count:
-            return None
-        rows = []
-        data = []
-        for i, r in enumerate(self.count['rows']):
-            if r < 51:
-                continue
-            oldRow = self.count['data'][i]
-            total  = sum(oldRow)
-            percs  = map(lambda x: 100 * ((x * 1.0) / total), oldRow)
-            newRow = percs[6:]
-            newRow.append( sum(percs[6:]) )
-            rows.append(r)
-            data.append(newRow)
-        return {'rows': rows, 'columns': ['A','T','C','G','N','InDel','Total'], 'data': data}
 
     def plot(self):
         if not self.percent:
             return None
-        x = self.percent['rows']
         l = self.percent['columns']
-        yA = map(lambda y: y[0], self.percent['data'])
-        yT = map(lambda y: y[1], self.percent['data'])
-        yC = map(lambda y: y[2], self.percent['data'])
-        yG = map(lambda y: y[3], self.percent['data'])
-        yN = map(lambda y: y[4], self.percent['data'])
-        yX = map(lambda y: y[5], self.percent['data'])
-        yTot = map(lambda y: y[6], self.percent['data'])
+        x  = map(lambda y: y[0], self.percent['data'])
+        yA = map(lambda y: y[1], self.percent['data'])
+        yT = map(lambda y: y[2], self.percent['data'])
+        yC = map(lambda y: y[3], self.percent['data'])
+        yG = map(lambda y: y[4], self.percent['data'])
+        yN = map(lambda y: y[5], self.percent['data'])
+        yX = map(lambda y: y[6], self.percent['data'])
+        yTot = map(lambda y: y[7], self.percent['data'])
         PLOT.legendloc = 'nw'
         PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
 
 class NucleoProfile:
-    def __init__(self, aID):
-        self.ID      = aID
-        self.data    = self.get_bp_profile()
-        self.count   = self.data['counts'] if has_profile('counts', self.data) else None
-        self.percent = self.data['percents'] if has_profile('percents', self.data) else None
+    def __init__(self, mgObj):
+        data = self._get_bp_profile(mgObj)
+        self.count   = data['counts'] if has_profile('counts', data) else None
+        self.percent = data['percents'] if has_profile('percents', data) else None
 
-    def get_bp_profile(self):
-        return obj_from_url(API_URL+'bp_histogram/'+self.ID)
+    def _get_bp_profile(self, mgObj):
+        try:
+            return mgObj.stats.qc.bp_profile
+        except:
+            return None
 
     def plot(self):
         if not self.percent:
             return None
-        x = self.percent['rows']
         l = self.percent['columns']
-        yA = map(lambda y: y[0], self.percent['data'])
-        yT = map(lambda y: y[1], self.percent['data'])
-        yC = map(lambda y: y[2], self.percent['data'])
-        yG = map(lambda y: y[3], self.percent['data'])
-        yN = map(lambda y: y[4], self.percent['data'])
+        x  = map(lambda y: y[0], self.percent['data'])
+        yA = map(lambda y: y[1], self.percent['data'])
+        yT = map(lambda y: y[2], self.percent['data'])
+        yC = map(lambda y: y[3], self.percent['data'])
+        yG = map(lambda y: y[4], self.percent['data'])
+        yN = map(lambda y: y[5], self.percent['data'])
         PLOT.legendloc = 'se'
         PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
 class Kmer:
-    def __init__(self, aID):
-        self.ID   = aID
-        self.data = self.get_kmer()
+    def __init__(self, mgObj):
+        self.profile = self._get_kmer(mgObj)
 
-    def get_kmer(self):
-        return obj_from_url(API_URL+'kmer/'+self.ID)
+    def _get_kmer(self, mgObj):
+        try:
+            return mgObj.stats.qc.kmer['15_mer']
+        except:
+            try:
+                return mgObj.stats.qc.kmer['6_mer']
+            except:
+                return None
 
     def plot_abundance(self):
-        if not (self.data and ('profile' in self.data)):
+        if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[3], 10), self.data['profile'])
-        y = map(lambda z: math.log(z[0], 10), self.data['profile'])
+        x = map(lambda z: math.log(z[3], 10), self.profile['data'])
+        y = map(lambda z: math.log(z[0], 10), self.profile['data'])
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='kmer rank abundance')
 
     def plot_ranked(self):
-        if not (self.data and ('profile' in self.data)):
+        if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[3], 10), self.data['profile'])
-        y = map(lambda z: 1 - (1.0 * z[5]), self.data['profile'])
+        x = map(lambda z: math.log(z[3], 10), self.profile['data'])
+        y = map(lambda z: 1 - (1.0 * z[5]), self.profile['data'])
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='ranked kmer consumed')
 
     def plot_spectrum(self):
-        if not (self.data and ('profile' in self.data)):
+        if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[0], 10), self.data['profile'])
-        y = map(lambda z: math.log(z[1], 10), self.data['profile'])
+        x = map(lambda z: math.log(z[0], 10), self.profile['data'])
+        y = map(lambda z: math.log(z[1], 10), self.profile['data'])
         PLOT.legendloc = 'sw'
         PLOT.plot_figure(x,y,label='kmer spectrum')
 
@@ -156,7 +147,7 @@ def merge_drisee_profile(qc_set, profile='count'):
                 for c in range(colMax):
                     mMatrix[r][c] += qc.drisee.count['data'][r][c]
         mData = {'count_profile': {'rows': rows, 'columns': columns, 'data': mMatrix}}
-        return Drisee(data=mData)
+        return Drisee(mgData=mData)
     elif profile == 'percent':
         columns = qc_set[0].drisee.percent['columns']
         colMax  = len(columns)
@@ -178,6 +169,6 @@ def merge_drisee_profile(qc_set, profile='count'):
             for c in range(colMax):
                 mMatrix[r][c] = mMatrix[r][c] / rowNums[r]
         mData = {'percent_profile': {'rows': rows, 'columns': columns, 'data': mMatrix}}
-        return Drisee(data=mData)
+        return Drisee(mgData=mData)
     else:
         return None
