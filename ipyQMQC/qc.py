@@ -2,8 +2,10 @@
 
 import math
 import flotplot
+import retina
 from ipyTools import *
 
+RETINA = retina.Retina()
 PLOT = flotplot.Plot()
 
 class QC:
