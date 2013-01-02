@@ -1,39 +1,40 @@
 #!/usr/bin/env python
 
-import math
+import math, urllib
 import rpy2.robjects as ro
 import metagenome
 from ipyTools import *
 from collections import defaultdict
 
 class Analysis:
-    def __init__(self, ids, annotation='organism', level=None, resultType=None, source=None):
+    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None):
         ## load matR
         ro.r('library(matR)')
-        self.inputIDs   = ids
-        self.annotation = annotation
-        self.level      = level
-        self.resultType = resultType
-        self.source     = source
-        self.biom       = self._get_matrix()
-        self.matrix     = self.biom['data'] if self.biom else []
-        self.numIDs     = self.biom['shape'][1] if self.biom else 0
+        if biom is None:
+            self.biom = self._get_matrix(ids, annotation, level, resultType, source)
+        else:
+            self.biom = biom
+        self._init_matrix()
+    
+    def _init_matrix(self):
+        self.matrix = self.biom['data'] if self.biom else []
+        self.numIDs = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
-        self.Dmatrix  = self._dense_matrix()
-        self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
-        self.NRmatrix = self._normalize_matrix()
+        self.Dmatrix = self._dense_matrix()
+        self.Rmatrix = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
+        self.Nmatrix = self._normalize_matrix()
         self.alpha_diversity = None
         self.rarefaction     = None
     
-    def _get_matrix(self):
-        params = map(lambda x: ('id', x), self.inputIDs)
-        if self.level:
-            params.append(('group_level', self.level))
-        if self.resultType:
-            params.append(('result_type', self.resultType))
-        if self.source:
-            params.append(('source', self.source))
-        return obj_from_url( API_URL+'matrix/'+self.annotation+'?'+urllib.urlencode(params, True) )
+    def _get_matrix(self, ids, annotation, level, resultType, source):
+        params = map(lambda x: ('id', x), ids)
+        if level:
+            params.append(('group_level', level))
+        if resultType:
+            params.append(('result_type', resultType))
+        if source:
+            params.append(('source', source))
+        return obj_from_url( API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
     def ids(self):
         if not self.biom:
@@ -45,29 +46,38 @@ class Analysis:
             return None
         return map(lambda x: x['id'], self.biom['rows'])
     
-    def get_id_data(self, id):
+    def table_type(self):
+        if self.biom and ('type' in self.biom):
+            return self.biom['type'].split(' ')[0].lower()
+        else:
+            return None
+    
+    def get_id_data(self, aid):
         if not self.biom:
             return None
-        items = self.ids()
-        index = items.index(id)
+        try:
+            items = self.ids()
+            index = items.index(aid)
+        except (ValueError, AttributeError):
+            return None
         return slice_column(self.Dmatrix, index)
     
-    def get_id_object(self, id):
+    def get_id_object(self, aid):
         if not self.biom:
             return None
-        items = self.ids()
-        index = items.index(id)
-        if self.idType == 'metagenome':
-            mg = metagenome.Metagenome(id)
-            if mg.name is not None:
-                return mg
-            else:
-                return self.biom['columns'][index]
+        try:
+            items = self.ids()
+            index = items.index(aid)
+        except (ValueError, AttributeError):
+            return None        
+        mg = metagenome.Metagenome(aid)
+        if mg.name is not None:
+            return mg
         else:
             return self.biom['columns'][index]
     
     def alpha_diversity(self):
-        if self.annotation != 'organism':
+        if self.table_type != 'taxon':
             return None
         if self.alpha_diversity is None:
             alphaDiv = {}
@@ -87,7 +97,7 @@ class Analysis:
         return self.alpha_diversity
     
     def rarefaction(self, id):
-        if self.annotation != 'organism':
+        if self.table_type != 'taxon':
             return None
         if self.rarefaction is None:
             rareFact = defaultdict(list)
@@ -134,7 +144,7 @@ class Analysis:
     
     def get_pco(self, method='bray-curtis', normalize=1):
         keyArgs = {'method': method}
-        matrix  = self.NRmatrix if normalize else self.Rmatrix
+        matrix  = self.Nmatrix if normalize else self.Rmatrix
         if not matrix:
             return None
         return ro.r.mpco(matrix, **keyArgs)
@@ -153,7 +163,7 @@ class Analysis:
         return filename
     
     def plot_heatmap(self, filename=None, normalize=1, labels=None, title=None):
-        matrix = self.NRmatrix if normalize else self.Rmatrix
+        matrix = self.Nmatrix if normalize else self.Rmatrix
         if not matrix:
             return None
         if labels is None:

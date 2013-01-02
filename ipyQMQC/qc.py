@@ -3,6 +3,7 @@
 import math
 import flotplot
 import retina
+import metagenome
 from ipyTools import *
 
 RETINA = retina.Retina()
@@ -10,7 +11,7 @@ PLOT = flotplot.Plot()
 
 class QC:
     def __init__(self, aID):
-        self.metagenome = metagenome.Metagenome(self.ID, True, True)
+        self.metagenome = metagenome.Metagenome(aID, True, True)
         self.drisee     = Drisee(self.metagenome)
         self.kmer       = Kmer(self.metagenome)
         self.bp_histo   = NucleoProfile(self.metagenome)
@@ -18,7 +19,7 @@ class QC:
 class Drisee:
     def __init__(self, mgObj=None, mgData=None):
         data = None
-        if mg:
+        if mgObj:
             data = self._get_drisee(mgObj)
         if mgData:
             data = mgData
