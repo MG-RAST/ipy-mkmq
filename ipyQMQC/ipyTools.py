@@ -151,7 +151,7 @@ def merge_dense(data, cols, rows):
     return cm, rm, mm
 
 def get_taxonomy(level='species', parent=None):
-    params = ()
+    params = []
     if parent is not None:
         params.append(('parent_name', parent))
         params.append(('parent_level', level))

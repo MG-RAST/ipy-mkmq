@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+import sys
 import analysis
+import retina
 from ipyTools import *
+
+RETINA = retina.Retina()
 
 class Project:
     def __init__(self, pid, metadata=True):
@@ -43,7 +47,7 @@ class Project:
                 for d in stats[atype][level]:
                     if (names is not None) and (d[0] not in names):
                         continue
-                    data.append({'name': mg, 'data': [], colors[i]})
+                    data.append({'name': mg, 'data': [], 'fill': colors[i]})
                     annD[ d[0] ] = 1
             annL = annD.keys().sort()
             for d in data:

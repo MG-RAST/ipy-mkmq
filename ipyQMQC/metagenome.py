@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import retina
 from ipyTools import *
 
 RETINA = retina.Retina()
