@@ -8,8 +8,10 @@ from collections import defaultdict
 
 class Analysis:
     def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None):
-        ## load matR
-        ro.r('library(matR)')
+        ## load matR and extras
+        ro.r('suppressMessages(library(matR))')
+        ro.r('suppressMessages(library(gplots))')
+        ro.r('suppressMessages(library(scatterplot3d))')
         if biom is None:
             self.biom = self._get_matrix(ids, annotation, level, resultType, source)
         else:
@@ -22,7 +24,8 @@ class Analysis:
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
         self.Dmatrix = self._dense_matrix()
         self.Rmatrix = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
-        self.Nmatrix = self._normalize_matrix()
+        #self.Nmatrix = self._normalize_matrix()
+        self.Nmatrix = None
         self.alpha_diversity = None
         self.rarefaction     = None
     
@@ -40,6 +43,11 @@ class Analysis:
         if not self.biom:
             return None
         return map(lambda x: x['id'], self.biom['columns'])
+    
+    def names(self):
+        if not self.biom:
+            return None
+        return map(lambda x: x['name'], self.biom['columns'])
     
     def annotations(self):
         if not self.biom:
@@ -147,18 +155,44 @@ class Analysis:
         matrix  = self.Nmatrix if normalize else self.Rmatrix
         if not matrix:
             return None
-        return ro.r.mpco(matrix, **keyArgs)
+        return ro.r.pco(matrix, **keyArgs)
+    
+    def plot_boxplot(self, filename=None, normalize=1, labels=None, title=None):
+        matrix = self.Nmatrix if normalize else self.Rmatrix
+        if not matrix:
+            return None
+        if labels is None:
+            labels = self.names()
+        if filename is None:
+            filename = 'boxplot_'+random_str()+'.jpeg'
+        if title is None:
+            title = 'BoxPlot '+self.biom.id
+        keyArgs = { 'fname': filename,
+                    'names': ro.StrVector(labels),
+                    'main': title,
+                    'show.names': True,
+                    'las': 2,
+                    'outpch': 21,
+                    'outcex': 0.5,
+                    'cex.lab': 0.8,
+                    'boxwex': 0.6,
+                    'cex.axis': 0.7,
+                    'horizontal' = True }
+        ro.r.boxplot(matrix, **keyArgs)
+        return filename
     
     def plot_pco(self, filename=None, pco=None, labels=None, title=None):
         if pco is None:
             pco = self.get_pco()
         if labels is None:
-            labels = self.ids()
+            labels = self.names()
         if filename is None:
             filename = 'pco_'+random_str()+'.png'
         if title is None:
-            title = 'PCoA'
-        keyArgs = {'fname': filename, 'labels':ro.StrVector(labels), 'main': title}
+            title = 'PCoA '+self.biom.id
+        keyArgs = { 'fname': filename,
+                    'labels': ro.StrVector(labels),
+                    'main': title }
         ro.r.render(pco, **keyArgs)
         return filename
     
@@ -167,18 +201,23 @@ class Analysis:
         if not matrix:
             return None
         if labels is None:
-            labels = self.ids()
+            labels = self.names()
         if filename is None:
             filename = 'heatmap_'+random_str()+'.jpeg'
         if title is None:
-            title = 'HeatMap'
-        keyArgs = {'image_out': filename, 'labCol': ro.StrVector(labels), 'image_title': title, 'col_lab_mult': 1.2, 'margins': ro.r.c(9,1)}
-        ro.r.mheatmap(matrix, **keyArgs)
+            title = 'HeatMap '+self.biom.id
+        keyArgs = { 'image_out': filename,
+                    'labCol': ro.StrVector(labels),
+                    'labRow': 'NA',
+                    'main': title,
+                    'cexCol': 0.95,
+                    'margins': ro.r.c(8,1) }
+        ro.r.heatmap(matrix, **keyArgs)
         return filename
     
     def plot_annotation(self, ptype='column'):
         labels = self.annotations()
-        names  = self.ids()
+        names  = self.names()
         if not (labels and names and self.Dmatrix):
             return None
         colors = google_palette(len(names))
