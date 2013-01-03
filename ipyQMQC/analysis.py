@@ -53,7 +53,7 @@ class Analysis:
             return None
     
     def get_id_data(self, aid):
-        if not self.biom:
+        if not self.Dmatrix:
             return None
         try:
             items = self.ids()
@@ -175,6 +175,30 @@ class Analysis:
         keyArgs = {'image_out': filename, 'labCol': ro.StrVector(labels), 'image_title': title, 'col_lab_mult': 1.2, 'margins': ro.r.c(9,1)}
         ro.r.mheatmap(matrix, **keyArgs)
         return filename
+    
+    def plot_annotation(self, ptype='column'):
+        labels = self.annotations()
+        names  = self.ids()
+        if not (labels and names and self.Dmatrix):
+            return None
+        colors = google_palette(len(names))
+        data   = []
+        for i, n in enumerate(names):
+            data.append({'name': n, 'data': [], 'fill': colors[i]})
+        for row in self.Dmatrix:
+            for i, val in enumerate(row):
+                data[i]['data'].append(val)
+        keyArgs = { 'btype': ptype,
+                    'width': 700,
+                    'height': 350,
+                    'x_labels': labels,
+                    'title': self.biom.id,
+                    'target': self.biom.id+'_'+random_str(),
+                    'show_legend': True,
+                    'legend_position': 'right',
+                    'title_settings': {'font-size': '18px', 'font-weight': 'bold', 'x': 0, 'text-anchor': 'start'},
+                    'data': data }
+        RETINA.graph(**keyArgs)
     
     def _normalize_matrix(self):
         if self.Rmatrix:

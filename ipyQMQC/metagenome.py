@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import sys
-import retina
 from ipyTools import *
-
-RETINA = retina.Retina()
 
 class Metagenome:
     def __init__(self, mgid, metadata=True, stats=False):
@@ -29,11 +26,8 @@ class Metagenome:
         self.stats = obj_from_url(API_URL+'metagenome_statistics/'+self.id+'?verbosity=full')
     
     def plot_taxon(self, ptype='pie', level='domain', parent=None):
-        if parent is None:
-            self._plot_annotation('taxonomy', ptype, level)
-        else:
-            children = get_taxonomy(level, parent)
-            self._plot_annotation('taxonomy', ptype, level, children)
+        children = get_taxonomy(level, parent) if parent is not None else None
+        self._plot_annotation('taxonomy', ptype, level, children)
     
     def plot_function(self, ptype='pie', source='Subsystems'):
         self._plot_annotation('ontology', ptype, source)

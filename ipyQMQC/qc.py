@@ -1,13 +1,8 @@
 #!/usr/bin/env python
 
 import math
-import flotplot
-import retina
 import metagenome
 from ipyTools import *
-
-RETINA = retina.Retina()
-PLOT = flotplot.Plot()
 
 class QC:
     def __init__(self, aID):
@@ -62,8 +57,8 @@ class Drisee:
         yN = map(lambda y: y[5], self.percent['data'])
         yX = map(lambda y: y[6], self.percent['data'])
         yTot = map(lambda y: y[7], self.percent['data'])
-        PLOT.legendloc = 'nw'
-        PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
+        FL_PLOT.legendloc = 'nw'
+        FL_PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
 
 class NucleoProfile:
     def __init__(self, mgObj):
@@ -87,8 +82,8 @@ class NucleoProfile:
         yC = map(lambda y: y[3], self.percent['data'])
         yG = map(lambda y: y[4], self.percent['data'])
         yN = map(lambda y: y[5], self.percent['data'])
-        PLOT.legendloc = 'se'
-        PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
+        FL_PLOT.legendloc = 'se'
+        FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
 class Kmer:
     def __init__(self, mgObj):
@@ -108,24 +103,24 @@ class Kmer:
             return None
         x = map(lambda z: math.log(z[3], 10), self.profile['data'])
         y = map(lambda z: math.log(z[0], 10), self.profile['data'])
-        PLOT.legendloc = 'sw'
-        PLOT.plot_figure(x,y,label='kmer rank abundance')
+        FL_PLOT.legendloc = 'sw'
+        FL_PLOT.plot_figure(x,y,label='kmer rank abundance')
 
     def plot_ranked(self):
         if not (self.profile and ('data' in self.profile)):
             return None
         x = map(lambda z: math.log(z[3], 10), self.profile['data'])
         y = map(lambda z: 1 - (1.0 * z[5]), self.profile['data'])
-        PLOT.legendloc = 'sw'
-        PLOT.plot_figure(x,y,label='ranked kmer consumed')
+        FL_PLOT.legendloc = 'sw'
+        FL_PLOT.plot_figure(x,y,label='ranked kmer consumed')
 
     def plot_spectrum(self):
         if not (self.profile and ('data' in self.profile)):
             return None
         x = map(lambda z: math.log(z[0], 10), self.profile['data'])
         y = map(lambda z: math.log(z[1], 10), self.profile['data'])
-        PLOT.legendloc = 'sw'
-        PLOT.plot_figure(x,y,label='kmer spectrum')
+        FL_PLOT.legendloc = 'sw'
+        FL_PLOT.plot_figure(x,y,label='kmer spectrum')
 
 def has_profile(profile, data):
     if data and (profile in data) and ('data' in data[profile]) and (len(data[profile]['data']) > 0):

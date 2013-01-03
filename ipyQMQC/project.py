@@ -2,10 +2,7 @@
 
 import sys
 import analysis
-import retina
 from ipyTools import *
-
-RETINA = retina.Retina()
 
 class Project:
     def __init__(self, pid, metadata=True):
@@ -35,6 +32,13 @@ class Project:
     
     def analysis_matrix(self, annotation='organism', level=None, resultType=None, source=None):
         return analysis.Analysis([self.id], annotation, level, resultType, source)
+
+    def plot_taxon(self, ptype='column', level='domain', parent=None):
+        children = get_taxonomy(level, parent) if parent is not None else None
+        self._plot_annotation('taxonomy', ptype, level, children)
+
+    def plot_function(self, ptype='column', source='Subsystems'):
+        self._plot_annotation('ontology', ptype, source)
 
     def _plot_annotation(self, atype, ptype, level, names=None):
         if self.stats is None:

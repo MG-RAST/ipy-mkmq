@@ -5,7 +5,10 @@ from collections import defaultdict
 import sys, urllib, urllib2, json
 import string, random
 import rpy2.robjects as ro
+import retina, flotplot
 
+FL_PLOT = flotplot.Plot()
+RETINA  = retina.Retina()
 API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
 COLORS  = [ "#3366cc",
             "#dc3912",
@@ -151,11 +154,8 @@ def merge_dense(data, cols, rows):
     return cm, rm, mm
 
 def get_taxonomy(level='species', parent=None):
-    params = []
+    params = [('min_level', level)]
     if parent is not None:
         params.append(('parent_name', parent))
-        params.append(('parent_level', level))
-    else:
-        params.append(('min_level', level))
     return obj_from_url(API_URL+'m5nr/taxonomy?'+urllib.urlencode(params, True))
 
