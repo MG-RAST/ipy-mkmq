@@ -9,7 +9,7 @@ class Metagenome:
         metagenome = self._get_metagenome(mgid, metadata)
         if metagenome is not None:
             for key, val in metagenome.iteritems():
-                self[key] = val
+                setattr(self, key, val)
         else:
             self.id = mgid
             self.name = None
@@ -50,7 +50,6 @@ class Metagenome:
                         'target': self.id+"_"+level+'_'+random_str(),
                         'show_legend': True,
                         'legend_position': 'right',
-                        'title_settings': {'font-size': '18px', 'font-weight': 'bold', 'x': 0, 'text-anchor': 'start'},
                         'data': data }
             RETINA.graph(**keyArgs)
         except:

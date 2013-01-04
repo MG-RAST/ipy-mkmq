@@ -9,7 +9,7 @@ class Project:
         project = self._get_project(pid, metadata)
         if project is not None:
             for key, val in project.iteritems():
-                self[key] = val
+                setattr(self, key, val)
         else:
             self.id = pid
             self.name = None
@@ -72,7 +72,6 @@ class Project:
                         'target': self.id+"_"+level+'_'+random_str(),
                         'show_legend': True,
                         'legend_position': 'right',
-                        'title_settings': {'font-size': '18px', 'font-weight': 'bold', 'x': 0, 'text-anchor': 'start'},
                         'data': data }
             RETINA.graph(**keyArgs)
         except:

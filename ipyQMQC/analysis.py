@@ -177,7 +177,7 @@ class Analysis:
                     'cex.lab': 0.8,
                     'boxwex': 0.6,
                     'cex.axis': 0.7,
-                    'horizontal' = True }
+                    'horizontal': True }
         ro.r.boxplot(matrix, **keyArgs)
         return filename
     
@@ -235,7 +235,6 @@ class Analysis:
                     'target': self.biom.id+'_'+random_str(),
                     'show_legend': True,
                     'legend_position': 'right',
-                    'title_settings': {'font-size': '18px', 'font-weight': 'bold', 'x': 0, 'text-anchor': 'start'},
                     'data': data }
         RETINA.graph(**keyArgs)
     
