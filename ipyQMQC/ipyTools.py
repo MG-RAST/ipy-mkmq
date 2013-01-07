@@ -5,7 +5,7 @@ from collections import defaultdict
 import sys, urllib, urllib2, json
 import string, random
 import rpy2.robjects as ro
-import retina, flotplot
+import flotplot
 
 FL_PLOT = flotplot.Plot()
 API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
