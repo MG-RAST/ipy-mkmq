@@ -12,6 +12,7 @@ class Analysis:
         ro.r('suppressMessages(library(matR))')
         ro.r('suppressMessages(library(gplots))')
         ro.r('suppressMessages(library(scatterplot3d))')
+        self.retina = retina.Retina()
         if biom is None:
             self.biom = self._get_matrix(ids, annotation, level, resultType, source)
         else:
@@ -236,7 +237,7 @@ class Analysis:
                     'show_legend': True,
                     'legend_position': 'right',
                     'data': data }
-        RETINA.graph(**keyArgs)
+        self.retina.graph(**keyArgs)
     
     def _normalize_matrix(self):
         if self.Rmatrix:

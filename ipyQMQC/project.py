@@ -6,7 +6,8 @@ from ipyTools import *
 
 class Project:
     def __init__(self, pid, metadata=True):
-        project = self._get_project(pid, metadata)
+        self.retina = retina.Retina()
+        project     = self._get_project(pid, metadata)
         if project is not None:
             for key, val in project.iteritems():
                 setattr(self, key, val)
@@ -73,7 +74,7 @@ class Project:
                         'show_legend': True,
                         'legend_position': 'right',
                         'data': data }
-            RETINA.graph(**keyArgs)
+            self.retina.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None

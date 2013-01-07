@@ -5,8 +5,8 @@ from ipyTools import *
 
 class Metagenome:
     def __init__(self, mgid, metadata=True, stats=False):
-        # get mg
-        metagenome = self._get_metagenome(mgid, metadata)
+        self.retina = retina.Retina()
+        metagenome  = self._get_metagenome(mgid, metadata)
         if metagenome is not None:
             for key, val in metagenome.iteritems():
                 setattr(self, key, val)
@@ -51,7 +51,7 @@ class Metagenome:
                         'show_legend': True,
                         'legend_position': 'right',
                         'data': data }
-            RETINA.graph(**keyArgs)
+            self.retina.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None

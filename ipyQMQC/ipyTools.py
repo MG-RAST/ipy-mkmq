@@ -8,7 +8,6 @@ import rpy2.robjects as ro
 import retina, flotplot
 
 FL_PLOT = flotplot.Plot()
-RETINA  = retina.Retina()
 API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
 COLORS  = [ "#3366cc",
             "#dc3912",
