@@ -8,7 +8,9 @@ import rpy2.robjects as ro
 import flotplot
 
 FL_PLOT = flotplot.Plot()
-API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
+TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+#API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
+API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
 COLORS  = [ "#3366cc",
             "#dc3912",
             "#ff9900",
@@ -158,3 +160,20 @@ def get_taxonomy(level='species', parent=None):
         params.append(('parent_name', parent))
     return obj_from_url(API_URL+'m5nr/taxonomy?'+urllib.urlencode(params, True))
 
+def parent_tax_level(level):
+    try:
+        index = TAX_SET.index(level)
+    except (ValueError, AttributeError):
+        return None
+    if index == 0:
+        return None
+    return TAX_SET[index-1]
+
+def child_tax_level(level):
+    try:
+        index = TAX_SET.index(level)
+    except (ValueError, AttributeError):
+        return None
+    if index == (len(TAX_SET)-1):
+        return None
+    return TAX_SET[index+1]

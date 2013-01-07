@@ -20,7 +20,7 @@ class Retina:
 		"""
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs, css=self.rcss))
     
-    def graph(self, width=800, height=400, btype="column", target="target", data=None, title="", x_labels="[' ']", x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick="clickedCell"):
+    def graph(self, width=800, height=400, btype="column", target="target", data=None, title="", x_labels='[""]', x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
 	"""Graph Renderer
   
   Displays a graph of pie / bar charts with an optional legend.
@@ -116,6 +116,7 @@ class Retina:
             title = "Browser Usage"
             x_labels = "['2005','2006','2007','2008']"
             data = "Retina.RendererInstances.graph[0].exampleData()"
+            onclick = "'clickedCell = '+ JSON.stringify(params)"
         else:
             data = json.dumps(data)
 
@@ -125,11 +126,15 @@ class Retina:
             opt += ", chartArea: "+json.dumps(chartArea)
         if legendArea:
             opt += ", legendArea: "+json.dumps(legendArea)
+        if onclick:
+            onclick = ", onclick: function(params){ipy.write_cell(ipy.add_cell(),"+onclick+");}"
+        else:
+            onclick = ""
         
         src = """
 			(function(){
 				Retina.add_renderer({"name": "graph", "resource": '""" + self.renderer_resource + """', "filename": "renderer.graph.js" });
-				Retina.load_renderer("graph").then( function () { Retina.Renderer.create('graph', {""" + opt + """, onclick: function(params){ipy.write_cell(ipy.add_cell(), '""" + onclick + """ = '+ JSON.stringify(params));}}).render(); });
+				Retina.load_renderer("graph").then( function () { Retina.Renderer.create('graph', {""" + opt + onclick + """}).render(); });
                         })();
 		"""
         if self.debug:

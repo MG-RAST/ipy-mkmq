@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
-import sys
-import analysis
+import sys, traceback
+import analysis, retina
 from ipyTools import *
 
 class Project:
-    def __init__(self, pid, metadata=True):
-        self.retina = retina.Retina()
-        project     = self._get_project(pid, metadata)
+    def __init__(self, pid, metadata=True, auth=None, def_name=None):
+        self._retina = retina.Retina()
+        self._auth = auth
+        project = self._get_project(pid, metadata)
         if project is not None:
             for key, val in project.iteritems():
                 setattr(self, key, val)
@@ -15,19 +16,26 @@ class Project:
             self.id = pid
             self.name = None
         self.stats = None
+        # hack to get variable name
+        if def_name == None:
+            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+            def_name = text[:text.find('=')].strip()
+        self.defined_name = def_name
     
     def _get_project(self, pid, metadata):
         verb = 'full' if metadata else 'verbose'
-        return obj_from_url(API_URL+'project/'+pid+'?verbosity='+verb)
+        auth = '&auth='+self._auth if self._auth else ''
+        return obj_from_url(API_URL+'project/'+pid+'?verbosity='+verb+auth)
     
     def _set_statistics(self):
         self.stats = {}
+        auth = '&auth='+self._auth if self._auth else ''
         for mgid in self.metagenomes():
-            self.stats[mgid] = obj_from_url(API_URL+'metagenome_statistics/'+mgid+'?verbosity=verbose')
+            self.stats[mgid] = obj_from_url(API_URL+'metagenome_statistics/'+mgid+'?verbosity=verbose'+auth)
     
     def metagenomes(self):
         mlist = []
-        if 'analyzed' in self:
+        if hasattr(self, 'analyzed'):
             mlist = map(lambda x: x[0], self.analyzed)
         return mlist
     
@@ -43,7 +51,7 @@ class Project:
 
     def _plot_annotation(self, atype, ptype, level, names=None):
         if self.stats is None:
-            self.stats = self._set_statistics()
+            self._set_statistics()
         data = []
         annD = {}
         try:
@@ -61,7 +69,7 @@ class Project:
                     annMG[a] = v
                 for a in annL:
                     if a in annMG:
-                        d['data'].append(annMG[a])
+                        d['data'].append(int(annMG[a]))
                     else:
                         d['data'].append(0)
             
@@ -74,7 +82,8 @@ class Project:
                         'show_legend': True,
                         'legend_position': 'right',
                         'data': data }
-            self.retina.graph(**keyArgs)
+            print keyArgs
+            self._retina.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None

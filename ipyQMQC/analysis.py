@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
-import math, urllib
+import math, urllib, sys
 import rpy2.robjects as ro
-import metagenome
+import metagenome, retina
 from ipyTools import *
 from collections import defaultdict
 
 class Analysis:
-    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None):
+    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None, auth=None):
         ## load matR and extras
         ro.r('suppressMessages(library(matR))')
         ro.r('suppressMessages(library(gplots))')
         ro.r('suppressMessages(library(scatterplot3d))')
-        self.retina = retina.Retina()
+        self._retina = retina.Retina()
+        self._auth = auth
         if biom is None:
             self.biom = self._get_matrix(ids, annotation, level, resultType, source)
         else:
@@ -38,6 +39,8 @@ class Analysis:
             params.append(('result_type', resultType))
         if source:
             params.append(('source', source))
+        if self._auth:
+            params.append(('auth', self._auth))
         return obj_from_url( API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
     def ids(self):
@@ -151,25 +154,14 @@ class Analysis:
         else:
             return 0
     
-    def get_pco(self, method='bray-curtis', normalize=1):
-        keyArgs = {'method': method}
-        matrix  = self.Nmatrix if normalize else self.Rmatrix
-        if not matrix:
-            return None
-        return ro.r.pco(matrix, **keyArgs)
-    
-    def plot_boxplot(self, filename=None, normalize=1, labels=None, title=None):
+    def plot_boxplot(self, normalize=1, labels=None, title=''):
         matrix = self.Nmatrix if normalize else self.Rmatrix
+        fname  = 'boxplot_'+random_str()+'.svg'
         if not matrix:
             return None
         if labels is None:
-            labels = self.names()
-        if filename is None:
-            filename = 'boxplot_'+random_str()+'.jpeg'
-        if title is None:
-            title = 'BoxPlot '+self.biom.id
-        keyArgs = { 'fname': filename,
-                    'names': ro.StrVector(labels),
+            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        keyArgs = { 'names': ro.StrVector(labels),
                     'main': title,
                     'show.names': True,
                     'las': 2,
@@ -177,44 +169,44 @@ class Analysis:
                     'outcex': 0.5,
                     'cex.lab': 0.8,
                     'boxwex': 0.6,
-                    'cex.axis': 0.7,
-                    'horizontal': True }
+                    'cex.axis': 0.7 }
+        ro.r.svg(fname)
         ro.r.boxplot(matrix, **keyArgs)
-        return filename
+        ro.r("dev.off()")
+        return fname
     
-    def plot_pco(self, filename=None, pco=None, labels=None, title=None):
-        if pco is None:
-            pco = self.get_pco()
-        if labels is None:
-            labels = self.names()
-        if filename is None:
-            filename = 'pco_'+random_str()+'.png'
-        if title is None:
-            title = 'PCoA '+self.biom.id
-        keyArgs = { 'fname': filename,
-                    'labels': ro.StrVector(labels),
-                    'main': title }
-        ro.r.render(pco, **keyArgs)
-        return filename
-    
-    def plot_heatmap(self, filename=None, normalize=1, labels=None, title=None):
+    def plot_pco(self, normalize=1, method='bray-curtis', labels=None, title=''):
         matrix = self.Nmatrix if normalize else self.Rmatrix
+        fname  = 'pco_'+random_str()+'.svg'
         if not matrix:
             return None
         if labels is None:
-            labels = self.names()
-        if filename is None:
-            filename = 'heatmap_'+random_str()+'.jpeg'
-        if title is None:
-            title = 'HeatMap '+self.biom.id
-        keyArgs = { 'image_out': filename,
-                    'labCol': ro.StrVector(labels),
-                    'labRow': 'NA',
+            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        keyArgs = { 'labels': ro.StrVector(labels),
+                    'main': title,
+                    'method': method,
+                    'comp': ro.r.c(1,2,3) }
+        ro.r.svg(fname)
+        ro.r.pco(matrix, **keyArgs)
+        ro.r("dev.off()")
+        return fname
+    
+    def plot_heatmap(self, normalize=1, labels=None, title=''):
+        matrix = self.Nmatrix if normalize else self.Rmatrix
+        fname  = 'heatmap_'+random_str()+'.svg'
+        if not matrix:
+            return None
+        if labels is None:
+            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        keyArgs = { 'labCol': ro.StrVector(labels),
+                    'labRow': '',
                     'main': title,
                     'cexCol': 0.95,
                     'margins': ro.r.c(8,1) }
+        ro.r.svg(fname)
         ro.r.heatmap(matrix, **keyArgs)
-        return filename
+        ro.r("dev.off()")
+        return fname
     
     def plot_annotation(self, ptype='column'):
         labels = self.annotations()
@@ -232,12 +224,12 @@ class Analysis:
                     'width': 700,
                     'height': 350,
                     'x_labels': labels,
-                    'title': self.biom.id,
-                    'target': self.biom.id+'_'+random_str(),
+                    'title': self.biom['id'],
+                    'target': self.biom['id']+'_'+random_str(),
                     'show_legend': True,
                     'legend_position': 'right',
                     'data': data }
-        self.retina.graph(**keyArgs)
+        self._retina.graph(**keyArgs)
     
     def _normalize_matrix(self):
         if self.Rmatrix:
