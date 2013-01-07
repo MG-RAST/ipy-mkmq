@@ -4,7 +4,7 @@ import sys
 from ipyTools import *
 
 class Metagenome:
-    def __init__(self, mgid, metadata=True, stats=False):
+    def __init__(self, mgid, metadata=True, stats=True):
         self.retina = retina.Retina()
         metagenome  = self._get_metagenome(mgid, metadata)
         if metagenome is not None:
