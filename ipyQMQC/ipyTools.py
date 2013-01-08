@@ -82,13 +82,26 @@ def sparse_to_dense(sMatrix, rmax, cmax):
     return dMatrix
 
 def pyMatrix_to_rMatrix(matrix, rmax, cmax):
-    if len(matrix) == 0:
+    if (not matrix) or (len(matrix) == 0):
         return None
     mList = []
     for i in range(cmax):
         cList = map(lambda x: x[i], matrix)
         mList.extend(cList)
     return ro.r.matrix(ro.IntVector(mList), nrow=rmax)
+
+def rMatrix_to_pyMatrix(matrix, rmax, cmax):
+    if (not matrix) or (len(matrix) == 0):
+        return None
+    pyM = [[0 for i in range(cmax)] for j in range(rmax)]
+    col = 0
+    for i in range(len(matrix)):
+        row = i - (rmax * col)
+        pyM[row][col] = matrix[i] 
+        if row == (rmax-1):
+            col += 1
+    return pyM
+        
 
 def random_str(size=8):
     chars = string.ascii_letters + string.digits

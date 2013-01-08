@@ -27,7 +27,7 @@ class Analysis:
         self.Dmatrix = self._dense_matrix()
         self.Rmatrix = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
         #self.Nmatrix = self._normalize_matrix()
-        self.Nmatrix = None
+        self.Nmatrix = self.Rmatrix
         self.alpha_diversity = None
         self.rarefaction     = None
     
@@ -208,11 +208,12 @@ class Analysis:
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, ptype='column'):
+    def plot_annotation(self, normalize=1, ptype='column'):
         labels = self.annotations()
         names  = self.names()
         if not (labels and names and self.Dmatrix):
             return None
+        matrix = rMatrix_to_pyMatrix(self.Nmatrix, self.numAnnotations, self.numIDs) if normalize else self.Dmatrix
         colors = google_palette(len(names))
         data   = []
         for i, n in enumerate(names):
@@ -221,15 +222,19 @@ class Analysis:
             for i, val in enumerate(row):
                 data[i]['data'].append(val)
         keyArgs = { 'btype': ptype,
-                    'width': 700,
-                    'height': 350,
-                    'x_labels': labels,
+                    'width': 1100,
+                    'height': 400,
+                    'x_labels': json.dumps(labels),
                     'title': self.biom['id'],
-                    'target': self.biom['id']+'_'+random_str(),
+                    'target': random_str(),
                     'show_legend': True,
                     'legend_position': 'right',
                     'data': data }
-        self._retina.graph(**keyArgs)
+        try:
+            self._retina.graph(**keyArgs)
+        except:
+            sys.stderr.write("Error producing chart")
+            print None
     
     def _normalize_matrix(self):
         if self.Rmatrix:

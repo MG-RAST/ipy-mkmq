@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, traceback
+import json, sys, traceback
 import analysis, retina
 from ipyTools import *
 
@@ -54,35 +54,35 @@ class Project:
             self._set_statistics()
         data = []
         annD = {}
-        try:
-            colors = google_palette(len(self.stats))
-            for i, mg, stats in enumerate(self.stats.iteritems()):
-                for d in stats[atype][level]:
-                    if (names is not None) and (d[0] not in names):
-                        continue
-                    data.append({'name': mg, 'data': [], 'fill': colors[i]})
-                    annD[ d[0] ] = 1
-            annL = annD.keys().sort()
-            for d in data:
-                annMG = {}
-                for a, v in self.stats[d['name']][atype][level]:
-                    annMG[a] = v
-                for a in annL:
-                    if a in annMG:
-                        d['data'].append(int(annMG[a]))
-                    else:
-                        d['data'].append(0)
+        colors = google_palette(len(self.stats))
+        for i, item in enumerate(self.stats.iteritems()):
+            mg, stats = item
+            data.append({'name': mg, 'data': [], 'fill': colors[i]})
+            for d in stats[atype][level]:
+                if (names is not None) and (d[0] not in names):
+                    continue
+                annD[ d[0] ] = 1
+        annL = sorted(annD.keys())
+        for d in data:
+            annMG = {}
+            for a, v in self.stats[d['name']][atype][level]:
+                annMG[a] = v
+            for a in annL:
+                if a in annMG:
+                    d['data'].append(int(annMG[a]))
+                else:
+                    d['data'].append(0)
             
-            keyArgs = { 'btype': ptype,
-                        'width': 700,
-                        'height': 350,
-                        'x_labels': annL,
-                        'title': self.id+" "+level,
-                        'target': self.id+"_"+level+'_'+random_str(),
-                        'show_legend': True,
-                        'legend_position': 'right',
-                        'data': data }
-            print keyArgs
+        keyArgs = { 'btype': ptype,
+                    'width': 1100,
+                    'height': 400,
+                    'x_labels': json.dumps(annL),
+                    'title': self.id+" "+level,
+                    'target': self.id+"_"+level+'_'+random_str(),
+                    'show_legend': True,
+                    'legend_position': 'right',
+                    'data': data }
+        try:
             self._retina.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
