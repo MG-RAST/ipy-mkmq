@@ -9,8 +9,8 @@ import flotplot
 
 FL_PLOT = flotplot.Plot()
 TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-#API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
-API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
+API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
+#API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
 COLORS  = [ "#3366cc",
             "#dc3912",
             "#ff9900",
