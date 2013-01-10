@@ -46,14 +46,14 @@ class Collection(object):
                     'auth': self._auth }
         return analysis.Analysis(**keyArgs)
 
-    def plot_taxon(self, ptype='column', level='domain', parent=None):
+    def plot_taxon(self, ptype='column', level='domain', parent=None, width=1100, height=400, x_rotate='300', title=None, legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None
-        self._plot_annotation('taxonomy', ptype, level, children)
+        self._plot_annotation('taxonomy', ptype, level, width, height, x_rotate, title, legend, names=children)
 
-    def plot_function(self, ptype='column', source='Subsystems'):
-        self._plot_annotation('ontology', ptype, source)
+    def plot_function(self, ptype='column', source='Subsystems', width=1100, height=400, x_rotate='300', title=None, legend=True):
+        self._plot_annotation('ontology', ptype, source, width, height, x_rotate, title, legend)
 
-    def _plot_annotation(self, atype, ptype, level, names=None):
+    def _plot_annotation(self, atype, ptype, level, width, height, x_rotate, title, legend, names=None):
         if not self._stats:
             self._set_statistics()
         data = []
@@ -78,13 +78,13 @@ class Collection(object):
                     d['data'].append(0)
             
         keyArgs = { 'btype': ptype,
-                    'width': 1100,
-                    'height': 400,
+                    'width': width,
+                    'height': height,
                     'x_labels': json.dumps(annL),
-                    'x_labels_rotation': '300',
-                    'title': '_'.join(self.metagenomes())+" "+level,
+                    'x_labels_rotation': x_rotate,
+                    'title': title,
                     'target': '_'.join(self.metagenomes())+"_"+level+'_'+random_str(),
-                    'show_legend': True,
+                    'show_legend': legend,
                     'legend_position': 'right',
                     'data': data }
         try:

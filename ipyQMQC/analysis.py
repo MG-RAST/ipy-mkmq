@@ -1,18 +1,26 @@
 #!/usr/bin/env python
 
-import math, urllib, sys
+import math, urllib, sys, os
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
 
 class Analysis(object):
-    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None, auth=None):
+    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None, bfile=None, auth=None):
         self._auth = auth
-        if biom is None:
+        if (biom is None) and (bfile is None):
             self.biom = self._get_matrix(ids, annotation, level, resultType, source)
-        else:
+        elif biom and isinstance(biom, dict):
             self.biom = biom
+        elif bfile and os.path.isfile(bfile):
+            try:
+                bhdl = open(bfile, 'rU')
+                self.biom = json.load(bhdl)
+            except:
+                self.biom = None
+        else:
+            self.biom = None
         self._init_matrix()
     
     def _init_matrix(self):
@@ -203,7 +211,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, ptype='column'):
+    def plot_annotation(self, normalize=1, ptype='column', width=1100, height=400, x_rotate='300', title=None, legend=True):
         labels = self.annotations()
         names  = self.names()
         if not (labels and names and self.Dmatrix):
@@ -213,17 +221,17 @@ class Analysis(object):
         data   = []
         for i, n in enumerate(names):
             data.append({'name': n, 'data': [], 'fill': colors[i]})
-        for row in self.Dmatrix:
+        for row in matrix:
             for i, val in enumerate(row):
                 data[i]['data'].append(val)
         keyArgs = { 'btype': ptype,
-                    'width': 1100,
-                    'height': 400,
+                    'width': width,
+                    'height': height,
                     'x_labels': json.dumps(labels),
-                    'x_labels_rotation': '300',
-                    'title': self.biom['id'],
+                    'x_labels_rotation': x_rotate,
+                    'title': title,
                     'target': random_str(),
-                    'show_legend': True,
+                    'show_legend': legend,
                     'legend_position': 'right',
                     'data': data }
         try:
