@@ -17,6 +17,7 @@ class Analysis(object):
             try:
                 bhdl = open(bfile, 'rU')
                 self.biom = json.load(bhdl)
+                bhdl.close()
             except:
                 self.biom = None
         else:
@@ -45,6 +46,12 @@ class Analysis(object):
         if self._auth:
             params.append(('auth', self._auth))
         return obj_from_url( API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
+    
+    def dump(self, fname):
+        if self.biom:
+            fhdl = open(fname, 'w')
+            json.dump(self.biom, fhdl)
+            fhdl.close()
     
     def ids(self):
         if not self.biom:
