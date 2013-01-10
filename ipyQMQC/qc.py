@@ -1,17 +1,25 @@
 #!/usr/bin/env python
 
-import math
-import metagenome
+import math, sys
+from metagenome import Metagenome
 from ipyTools import *
 
-class QC:
-    def __init__(self, aID):
-        self.metagenome = metagenome.Metagenome(aID, True, True)
-        self.drisee     = Drisee(self.metagenome)
-        self.kmer       = Kmer(self.metagenome)
-        self.bp_histo   = NucleoProfile(self.metagenome)
+class QC(object):
+    def __init__(self, mgid=None, metagenome=None, auth=None):
+        if metagenome:
+            self.metagenome = metagenome
+            if self.metagenome.stats is None:
+                self.metagenome._set_statistics()
+        elif mgid:
+            self.metagenome = Metagenome(mgid, True, True, auth)
+        else:
+            sys.stderr.write("Must pass metagenome id or metagenome object")
+            return
+        self.drisee   = Drisee(self.metagenome)
+        self.kmer     = Kmer(self.metagenome)
+        self.bp_histo = NucleoProfile(self.metagenome)
 
-class Drisee:
+class Drisee(object):
     def __init__(self, mgObj=None, mgData=None):
         data = None
         if mgObj:
@@ -24,7 +32,7 @@ class Drisee:
         
     def _get_drisee(self, mgObj):
         try:
-            return mgObj.stats.qc.drisee
+            return mgObj.stats['qc']['drisee']
         except:
             return None
 
@@ -60,7 +68,7 @@ class Drisee:
         FL_PLOT.legendloc = 'nw'
         FL_PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
 
-class NucleoProfile:
+class NucleoProfile(object):
     def __init__(self, mgObj):
         data = self._get_bp_profile(mgObj)
         self.count   = data['counts'] if has_profile('counts', data) else None
@@ -68,7 +76,7 @@ class NucleoProfile:
 
     def _get_bp_profile(self, mgObj):
         try:
-            return mgObj.stats.qc.bp_profile
+            return mgObj.stats['qc']['bp_profile']
         except:
             return None
 
@@ -85,16 +93,16 @@ class NucleoProfile:
         FL_PLOT.legendloc = 'se'
         FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
-class Kmer:
+class Kmer(object):
     def __init__(self, mgObj):
         self.profile = self._get_kmer(mgObj)
 
     def _get_kmer(self, mgObj):
         try:
-            return mgObj.stats.qc.kmer['15_mer']
+            return mgObj.stats['qc']['kmer']['15_mer']
         except:
             try:
-                return mgObj.stats.qc.kmer['6_mer']
+                return mgObj.stats['qc']['kmer']['6_mer']
             except:
                 return None
 

@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 
 import sys, traceback
-import retina
 from ipyTools import *
 
-class Metagenome:
+class Metagenome(object):
     def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None):
-        self._retina = retina.Retina()
         self._auth = auth
         metagenome = self._get_metagenome(mgid, metadata)
         if metagenome is not None:
@@ -63,7 +61,7 @@ class Metagenome:
                         'data': data }
             if atype == 'taxonomy':
                 keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_tax_level(level))
-            self._retina.graph(**keyArgs)
+            RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None

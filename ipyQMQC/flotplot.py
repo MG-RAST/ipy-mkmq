@@ -32,7 +32,7 @@ import IPython.core.display
 # Classes and functions
 #-----------------------------------------------------------------------------
 
-class Plot():
+class Plot(object):
     '''
     This class contains methods for using the javascript plotting backend flot
     to plot in an ipython notebook. the number of pixels can be set using the

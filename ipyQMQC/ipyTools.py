@@ -3,11 +3,13 @@
 from time import localtime, strftime
 from collections import defaultdict
 import sys, urllib, urllib2, json
-import string, random
+import string, random, re
 import rpy2.robjects as ro
-import flotplot
+import flotplot, retina
 
-FL_PLOT = flotplot.Plot()
+FL_PLOT = None
+RETINA  = None
+DEBUG   = False
 TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
 API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
 #API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
@@ -42,6 +44,17 @@ COLORS  = [ "#3366cc",
             "#bea413",
             "#0c5922",
             "#743411" ]
+
+def init_ipy(debug=False):
+    global FL_PLOT, RETINA, DEBUG
+    # set graphing tools
+    FL_PLOT = flotplot.Plot()
+    RETINA  = retina.Retina()
+    DEBUG   = debug
+    ## load matR and extras
+    ro.r('suppressMessages(library(matR))')
+    ro.r('suppressMessages(library(gplots))')
+    ro.r('suppressMessages(library(scatterplot3d))')
 
 def google_palette(num):
     if not num:
@@ -101,11 +114,33 @@ def rMatrix_to_pyMatrix(matrix, rmax, cmax):
         if row == (rmax-1):
             col += 1
     return pyM
-        
 
 def random_str(size=8):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for x in range(size))
+
+def sub_biom(b, text):
+    str_re = re.compile(text)
+    sBiom = { "generated_by": b['generated_by'],
+               "matrix_type": 'dense',
+               "date": strftime("%Y-%m-%dT%H:%M:%S", localtime()),
+               "data": [],
+               "rows": [],
+               "matrix_element_value": b['matrix_element_value'],
+               "matrix_element_type": b['matrix_element_type'],
+               "format_url": "http://biom-format.org",
+               "format": "Biological Observation Matrix 1.0",
+               "columns": b['columns'],
+               "id": b['id']+'_sub_'+text,
+               "type": b['type'],
+               "shape": [] }
+    matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
+    for r, row in enumerate(b['rows']):
+        if str_re.search(row['id']) or (row['metadata'] and (str_re.search(row['metadata']['ontology'][-1]) or str_re.search(row['metadata']['taxonomy'][-1]))):
+            sBiom['data'].append(matrix[r])
+            sBiom['rows'].append(row)
+    sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
+    return sBiom
 
 def merge_biom(b1, b2):
     if b1 and b2 and (b1['type'] == b2['type']) and (b1['matrix_type'] == b2['matrix_type']) and (b1['matrix_element_type'] == b2['matrix_element_type']) and (b1['matrix_element_value'] == b2['matrix_element_value']):
@@ -125,10 +160,10 @@ def merge_biom(b1, b2):
         cols, rows = merge_matrix_info(b1['columns'], b2['columns'], b1['rows'], b2['rows'])
         merge_func = merge_sparse if b1['type'] == 'sparse' else merge_dense
         mCol, mRow, mData = merge_func([b1['data'], b2['data']], cols, rows)
-        mBiom['columns'] = mCol
-        mBiom['rows'] = mRow
-        mBiom['data'] = mData
-        mBiom['shape'] = [ len(mRow), len(mCol) ]
+        mBiom['columns']  = mCol
+        mBiom['rows']     = mRow
+        mBiom['data']     = mData
+        mBiom['shape']    = [ len(mRow), len(mCol) ]
         return mBiom
     else:
         sys.stderr.write("The inputed biom objects are not compatable for merging\n")

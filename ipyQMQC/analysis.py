@@ -2,17 +2,12 @@
 
 import math, urllib, sys
 import rpy2.robjects as ro
-import metagenome, retina
+from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
 
-class Analysis:
+class Analysis(object):
     def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None, auth=None):
-        ## load matR and extras
-        ro.r('suppressMessages(library(matR))')
-        ro.r('suppressMessages(library(gplots))')
-        ro.r('suppressMessages(library(scatterplot3d))')
-        self._retina = retina.Retina()
         self._auth = auth
         if biom is None:
             self.biom = self._get_matrix(ids, annotation, level, resultType, source)
@@ -82,7 +77,7 @@ class Analysis:
             index = items.index(aid)
         except (ValueError, AttributeError):
             return None        
-        mg = metagenome.Metagenome(aid)
+        mg = Metagenome(aid)
         if mg.name is not None:
             return mg
         else:
@@ -225,13 +220,14 @@ class Analysis:
                     'width': 1100,
                     'height': 400,
                     'x_labels': json.dumps(labels),
+                    'x_labels_rotation': '300',
                     'title': self.biom['id'],
                     'target': random_str(),
                     'show_legend': True,
                     'legend_position': 'right',
                     'data': data }
         try:
-            self._retina.graph(**keyArgs)
+            RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             print None

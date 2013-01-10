@@ -3,7 +3,7 @@
 import IPython.core.display
 import json
 
-class Retina:
+class Retina(object):
     def __init__(self, action='none', debug=False):
         self.action = action
         self.debug  = debug
