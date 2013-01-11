@@ -7,7 +7,14 @@ import string, random, re
 import rpy2.robjects as ro
 import IPython.core.display
 import IPython.utils.path
-import flotplot, retina
+
+from qc import QC
+from metagenome import Metagenome
+from collection import Collection
+from project import Project
+from analysis import Analysis
+from retina import Retina
+from flotplot import FlotPlot
 
 class Ipy(object):
     FL_PLOT = None
@@ -50,8 +57,8 @@ class Ipy(object):
 
 def init_ipy(debug=False):
     # set graphing tools
-    Ipy.FL_PLOT = flotplot.Plot()
-    Ipy.RETINA  = retina.Retina()
+    Ipy.FL_PLOT = FlotPlot()
+    Ipy.RETINA  = Retina()
     Ipy.DEBUG   = debug
     ## load matR and extras
     ro.r('suppressMessages(library(matR))')
