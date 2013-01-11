@@ -83,13 +83,13 @@ def obj_from_url(url):
         return None
     return obj
 
-def download(afile):
-    try:
-        path = IPython.utils.path.filefind(afile)
-        html = "<p>Right-click the link and choose 'Save Link As...' to save the document: <a href='%s'>%s</a></p>"%(path, afile)
-        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
-    except IOError:
-        sys.stderr.write("ERROR: unable to find '%s'\n"%afile)
+#def download(afile):
+#    try:
+#        path = IPython.utils.path.filefind(afile)
+#        html = "<p>Right-click the link and choose 'Save Link As...' to save the document: <a href='%s'>%s</a></p>"%(path, afile)
+#        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+#    except IOError:
+#        sys.stderr.write("ERROR: unable to find '%s'\n"%afile)
 
 def slice_column(matrix, index):
     data = []
