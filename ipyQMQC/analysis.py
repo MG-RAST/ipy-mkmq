@@ -224,7 +224,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, ptype='column', width=1100, height=400, x_rotate='300', title=None, legend=True):
+    def plot_annotation(self, normalize=1, ptype='row', width=900, height=400, x_rotate='0', title=None, legend=True):
         labels = self.annotations()
         names  = self.names()
         if not (labels and names and self.Dmatrix):

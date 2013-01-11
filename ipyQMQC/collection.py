@@ -46,11 +46,11 @@ class Collection(object):
                     'auth': self._auth }
         return analysis.Analysis(**keyArgs)
 
-    def plot_taxon(self, ptype='column', level='domain', parent=None, width=1100, height=400, x_rotate='300', title=None, legend=True):
+    def plot_taxon(self, ptype='row', level='domain', parent=None, width=900, height=400, x_rotate='0', title=None, legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None
         self._plot_annotation('taxonomy', ptype, level, width, height, x_rotate, title, legend, names=children)
 
-    def plot_function(self, ptype='column', source='Subsystems', width=1100, height=400, x_rotate='300', title=None, legend=True):
+    def plot_function(self, ptype='row', source='Subsystems', width=900, height=400, x_rotate='0', title=None, legend=True):
         self._plot_annotation('ontology', ptype, source, width, height, x_rotate, title, legend)
 
     def _plot_annotation(self, atype, ptype, level, width, height, x_rotate, title, legend, names=None):
