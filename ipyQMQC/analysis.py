@@ -47,10 +47,16 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
-    def dump(self, fname):
+    def dump(self, fname, fformat='biom'):
         if self.biom:
             fhdl = open(fname, 'w')
-            json.dump(self.biom, fhdl)
+            if fformat == 'biom':
+                json.dump(self.biom, fhdl)
+            else:
+                ann = self.annotations()
+                fhdl.write("\t%s\n"%"\t".join(self.ids()))
+                for i, row in enumerate(self.Dmatrix):
+                    fhdl.write("%s\t%s\n"%(ann[i], "\t".join(row)))
             fhdl.close()
     
     def ids(self):
