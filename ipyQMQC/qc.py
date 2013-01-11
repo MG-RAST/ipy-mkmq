@@ -90,8 +90,8 @@ class NucleoProfile(object):
         yC = map(lambda y: y[3], self.percent['data'])
         yG = map(lambda y: y[4], self.percent['data'])
         yN = map(lambda y: y[5], self.percent['data'])
-        FL_PLOT.legendloc = 'se'
-        FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
+        Ipy.FL_PLOT.legendloc = 'se'
+        Ipy.FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
 class Kmer(object):
     def __init__(self, mgObj):
