@@ -5,6 +5,8 @@ from collections import defaultdict
 import sys, urllib, urllib2, json
 import string, random, re
 import rpy2.robjects as ro
+import IPython.core.display
+import IPython.utils.path
 import flotplot, retina
 
 FL_PLOT = None
@@ -48,9 +50,11 @@ COLORS  = [ "#3366cc",
 def init_ipy(debug=False):
     global FL_PLOT, RETINA, DEBUG
     # set graphing tools
+    print "Initalizing plotting objects ... "
     FL_PLOT = flotplot.Plot()
     RETINA  = retina.Retina()
     DEBUG   = debug
+    print "Done"
     ## load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
@@ -70,16 +74,24 @@ def obj_from_url(url):
         req = urllib2.Request(url, headers={'Accept': 'application/json'})
         res = urllib2.urlopen(req)
     except urllib2.HTTPError, error:
-        print "ERROR (%s): %s"%(url, error.read())
+        sys.stderr.write("ERROR (%s): %s\n"%(url, error.read()))
         return None
     if not res:
-        print "ERROR (%s): no results returned"%url
+        sys.stderr.write("ERROR (%s): no results returned\n"%url)
         return None
     obj = json.loads(res.read())
     if not obj:
-        print "ERROR (%s): return structure not valid json format"%url
+        sys.stderr.write("ERROR (%s): return structure not valid json format\n"%url)
         return None
     return obj
+
+def download(afile):
+    try:
+        path = IPython.utils.path.filefind(afile)
+        html = "<p>Right-click the link and choose 'Save Link As...' to save the document to your computer</p><a href='%s'></a>"%path
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+    except IOError:
+        sys.stderr.write("ERROR: unable to find '%s'\n"%afile)
 
 def slice_column(matrix, index):
     data = []
