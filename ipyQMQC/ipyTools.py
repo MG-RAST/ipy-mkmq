@@ -9,52 +9,50 @@ import IPython.core.display
 import IPython.utils.path
 import flotplot, retina
 
-FL_PLOT = None
-RETINA  = None
-DEBUG   = False
-TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
-API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
-#API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
-COLORS  = [ "#3366cc",
-            "#dc3912",
-            "#ff9900",
-            "#109618",
-            "#990099",
-            "#0099c6",
-            "#dd4477",
-            "#66aa00",
-            "#b82e2e",
-            "#316395",
-            "#994499",
-            "#22aa99",
-            "#aaaa11",
-            "#6633cc",
-            "#e67300",
-            "#8b0707",
-            "#651067",
-            "#329262",
-            "#5574a6",
-            "#3b3eac",
-            "#b77322",
-            "#16d620",
-            "#b91383",
-            "#f4359e",
-            "#9c5935",
-            "#a9c413",
-            "#2a778d",
-            "#668d1c",
-            "#bea413",
-            "#0c5922",
-            "#743411" ]
+class Ipy(object):
+    FL_PLOT = None
+    RETINA  = None
+    DEBUG   = False
+    TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+    API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
+    #API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
+    COLORS  = [ "#3366cc",
+                "#dc3912",
+                "#ff9900",
+                "#109618",
+                "#990099",
+                "#0099c6",
+                "#dd4477",
+                "#66aa00",
+                "#b82e2e",
+                "#316395",
+                "#994499",
+                "#22aa99",
+                "#aaaa11",
+                "#6633cc",
+                "#e67300",
+                "#8b0707",
+                "#651067",
+                "#329262",
+                "#5574a6",
+                "#3b3eac",
+                "#b77322",
+                "#16d620",
+                "#b91383",
+                "#f4359e",
+                "#9c5935",
+                "#a9c413",
+                "#2a778d",
+                "#668d1c",
+                "#bea413",
+                "#0c5922",
+                "#743411" ]
 
 def init_ipy(debug=False):
-    global FL_PLOT, RETINA, DEBUG
     # set graphing tools
-    print "Initalizing plotting objects ... "
-    FL_PLOT = flotplot.Plot()
-    RETINA  = retina.Retina()
-    DEBUG   = debug
-    print "Done"
+    Ipy.FL_PLOT = flotplot.Plot()
+    Ipy.RETINA  = retina.Retina()
+    Ipy.DEBUG   = debug
     ## load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
@@ -62,11 +60,11 @@ def init_ipy(debug=False):
 
 def google_palette(num):
     if not num:
-        return COLORS
+        return Ipy.COLORS
     num_colors = []
     for i in range(num):
-        c_index = i % len(COLORS);
-        num_colors.append( COLORS[c_index] )
+        c_index = i % len(Ipy.COLORS);
+        num_colors.append( Ipy.COLORS[c_index] )
     return num_colors
 
 def obj_from_url(url):
@@ -218,22 +216,22 @@ def get_taxonomy(level='species', parent=None):
     params = [('min_level', level)]
     if parent is not None:
         params.append(('parent_name', parent))
-    return obj_from_url(API_URL+'m5nr/taxonomy?'+urllib.urlencode(params, True))
+    return obj_from_url(Ipy.API_URL+'m5nr/taxonomy?'+urllib.urlencode(params, True))
 
 def parent_tax_level(level):
     try:
-        index = TAX_SET.index(level)
+        index = Ipy.TAX_SET.index(level)
     except (ValueError, AttributeError):
         return None
     if index == 0:
         return None
-    return TAX_SET[index-1]
+    return Ipy.TAX_SET[index-1]
 
 def child_tax_level(level):
     try:
-        index = TAX_SET.index(level)
+        index = Ipy.TAX_SET.index(level)
     except (ValueError, AttributeError):
         return None
-    if index == (len(TAX_SET)-1):
+    if index == (len(Ipy.TAX_SET)-1):
         return None
-    return TAX_SET[index+1]
+    return Ipy.TAX_SET[index+1]

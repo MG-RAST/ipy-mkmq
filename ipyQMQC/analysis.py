@@ -45,7 +45,7 @@ class Analysis(object):
             params.append(('source', source))
         if self._auth:
             params.append(('auth', self._auth))
-        return obj_from_url( API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
+        return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
     def dump(self, fname, fformat='biom'):
         if self.biom:
@@ -248,7 +248,7 @@ class Analysis(object):
                     'legend_position': 'right',
                     'data': data }
         try:
-            RETINA.graph(**keyArgs)
+            Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             print None

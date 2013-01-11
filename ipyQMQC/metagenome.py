@@ -26,11 +26,11 @@ class Metagenome(object):
     def _get_metagenome(self, mgid, metadata):
         verb = 'full' if metadata else 'verbose'
         auth = '&auth='+self._auth if self._auth else ''
-        return obj_from_url(API_URL+'metagenome/'+mgid+'?verbosity='+verb+auth)
+        return obj_from_url(Ipy.API_URL+'metagenome/'+mgid+'?verbosity='+verb+auth)
 
     def _set_statistics(self):
         auth = '&auth='+self._auth if self._auth else ''
-        self.stats = obj_from_url(API_URL+'metagenome_statistics/'+self.id+'?verbosity=full'+auth)
+        self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full'+auth)
     
     def plot_taxon(self, ptype='pie', level='domain', parent=None):
         children = get_taxonomy(level, parent) if parent is not None else None
@@ -61,7 +61,7 @@ class Metagenome(object):
                         'data': data }
             if atype == 'taxonomy':
                 keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_tax_level(level))
-            RETINA.graph(**keyArgs)
+            Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None

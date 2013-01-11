@@ -88,7 +88,7 @@ class Collection(object):
                     'legend_position': 'right',
                     'data': data }
         try:
-            RETINA.graph(**keyArgs)
+            Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
             return None
