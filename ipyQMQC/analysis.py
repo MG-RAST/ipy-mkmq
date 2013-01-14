@@ -268,7 +268,7 @@ class Analysis(object):
     
     def plot_boxplot(self, normalize=1, labels=None, title=''):
         matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'boxplot_'+random_str()+'.svg'
+        fname  = 'images/boxplot_'+random_str()+'.svg'
         if not matrix:
             return None
         if labels is None:
@@ -289,7 +289,7 @@ class Analysis(object):
     
     def plot_pco(self, normalize=1, method='bray-curtis', labels=None, title=''):
         matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'pco_'+random_str()+'.svg'
+        fname  = 'images/pco_'+random_str()+'.svg'
         if not matrix:
             return None
         if labels is None:
@@ -305,7 +305,7 @@ class Analysis(object):
     
     def plot_heatmap(self, normalize=1, labels=None, title=''):
         matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'heatmap_'+random_str()+'.svg'
+        fname  = 'images/heatmap_'+random_str()+'.svg'
         if not matrix:
             return None
         if labels is None:

@@ -65,7 +65,10 @@ def init_ipy(debug=False):
     Ipy.FL_PLOT = flotplot.FlotPlot()
     Ipy.RETINA  = retina.Retina()
     Ipy.DEBUG   = debug
+    # set pathing
     Ipy.NB_DIR  = os.getcwd()
+    if not os.path.isdir(Ipy.NB_DIR+'/images'):
+        os.mkdir(Ipy.NB_DIR+'/images')
     ## load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
