@@ -330,7 +330,7 @@ class Analysis(object):
         data   = []
         for i, n in enumerate(names):
             data.append({'name': n, 'data': [], 'fill': colors[i]})
-        for r, row in matrix:
+        for r, row in enumerate(matrix):
             if (subset is not None) and (self.biom['rows'][r]['id'] not in subset):
                 continue
             labels.append(self.biom['rows'][r]['id'])
