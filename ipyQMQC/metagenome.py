@@ -19,8 +19,11 @@ class Metagenome(object):
             self._set_statistics()
         # hack to get variable name
         if def_name == None:
-            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
-            def_name = text[:text.find('=')].strip()
+            try:
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
+            except:
+                def_name = None
         self.defined_name = def_name
         
     def _get_metagenome(self, mgid, metadata):
@@ -60,7 +63,7 @@ class Metagenome(object):
                         'legend_position': 'right',
                         'data': data }
             if atype == 'taxonomy':
-                keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_tax_level(level))
+                keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
             Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")

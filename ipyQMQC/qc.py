@@ -130,6 +130,32 @@ class Kmer(object):
         Ipy.FL_PLOT.legendloc = 'sw'
         Ipy.FL_PLOT.plot_figure(x,y,label='kmer spectrum')
 
+class Rarefaction(object):
+    def __init__(self, mgObj=None, points=None, alpha=None):
+        if mgObj:
+            self.points, self.alpha = self._get_rarefaction(mgObj)
+        elif points and (len(points) > 0):
+            self.points = points
+            self.alpha  = alpha if alpha else None
+        else:
+            self.points = None
+
+    def _get_rarefaction(self, mgObj):
+        try:
+            return mgObj.stats['rarefaction'], mgObj.stats['sequence_stats']['alpha_diversity_shannon']
+        except:
+            return None, None
+    
+    def plot(self):
+        if not self.points:
+            return None
+        l = 'rarefaction curve'
+        if self.alpha:
+            l += ': alpha diversity = '+str(self.alpha)
+        x = map(lambda z: z[0], self.points)
+        y = map(lambda z: z[1], self.points)
+        Ipy.FL_PLOT.plot_figure(x,y,label=l)
+
 def has_profile(profile, data):
     if data and (profile in data) and ('data' in data[profile]) and (len(data[profile]['data']) > 0):
         return True
@@ -178,3 +204,4 @@ def merge_drisee_profile(qc_set, profile='count'):
         return Drisee(mgData=mData)
     else:
         return None
+

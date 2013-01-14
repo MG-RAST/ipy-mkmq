@@ -2,7 +2,7 @@
 
 from time import localtime, strftime
 from collections import defaultdict
-import sys, urllib, urllib2, json
+import os, sys, urllib, urllib2, json
 import string, random, re
 import rpy2.robjects as ro
 import IPython.core.display
@@ -13,7 +13,19 @@ class Ipy(object):
     FL_PLOT = None
     RETINA  = None
     DEBUG   = False
+    NB_DIR  = None
+    VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
+    ONT_SET = ['level1', 'level2', 'level3', 'function']
+    MATRIX  = { 'annotation': 'organism',
+                'level': 'strain',
+                'result_type': 'abundance',
+                'source': 'M5NR',
+                'e_val': 5,
+                'ident': 60,
+                'alen': 15,
+                'filters': [],
+                'filter_source': None }
     API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
     #API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
     COLORS  = [ "#3366cc",
@@ -53,6 +65,7 @@ def init_ipy(debug=False):
     Ipy.FL_PLOT = flotplot.FlotPlot()
     Ipy.RETINA  = retina.Retina()
     Ipy.DEBUG   = debug
+    Ipy.NB_DIR  = os.getcwd()
     ## load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
@@ -212,26 +225,34 @@ def merge_dense(data, cols, rows):
                     mm[i][j] += data[ r[0] ][ r[1] ][ c[1] ]
     return cm, rm, mm
 
-def get_taxonomy(level='species', parent=None):
+def get_hierarchy(htype='taxonomy', level='species', parent=None):
     params = [('min_level', level)]
     if parent is not None:
         params.append(('parent_name', parent))
-    return obj_from_url(Ipy.API_URL+'m5nr/taxonomy?'+urllib.urlencode(params, True))
+    return obj_from_url(Ipy.API_URL+'m5nr/'+htype+'?'+urllib.urlencode(params, True))
 
-def parent_tax_level(level):
+def get_taxonomy(level='species', parent=None):
+    return get_hierarchy(htype='taxonomy', level=level, parent=parent)
+
+def get_ontology(level='function', parent=None):
+    return get_hierarchy(htype='ontology', level=level, parent=parent)
+
+def parent_level(level, htype='taxonomy'):
+    hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
     try:
-        index = Ipy.TAX_SET.index(level)
+        index = hierarchy.index(level)
     except (ValueError, AttributeError):
         return None
     if index == 0:
         return None
-    return Ipy.TAX_SET[index-1]
+    return hierarchy[index-1]
 
-def child_tax_level(level):
+def child_level(level, htype='taxonomy'):
+    hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
     try:
-        index = Ipy.TAX_SET.index(level)
+        index = hierarchy.index(level)
     except (ValueError, AttributeError):
         return None
-    if index == (len(Ipy.TAX_SET)-1):
+    if index == (len(hierarchy)-1):
         return None
-    return Ipy.TAX_SET[index+1]
+    return hierarchy[index+1]

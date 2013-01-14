@@ -1,16 +1,96 @@
 #!/usr/bin/env python
 
-import math, urllib, sys, os
+import math, urllib, sys, os, traceback
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
 
+class AnalysisSet(object):
+    def __init__(self, ids=[], auth=None, adir=None, def_name=None):
+        if adir is None:
+            adir = random_str()
+        self._dir  = adir
+        self._path = Ipy.NB_DIR+'/'+adir
+        self._auth = auth
+        # hack to get variable name
+        if def_name == None:
+            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+            def_name = text[:text.find('=')].strip()
+        self.defined_name = def_name
+        for tax in Ipy.TAX_SET:
+            setattr(self, tax, {})
+            for val in Ipy.VALUES:
+                self[tax][val] = self._get_analysis(ids, 'organism', tax, val, 'M5NR')
+        for ont in Ipy.ONT_SET:
+            setattr(self, ont, {})
+            for val in Ipy.VALUES:
+                self[ont][val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
+
+    def dump(self):
+        for tax in Ipy.TAX_SET:
+            for analysis in self[tax].itervalues():
+                fname = self._path+'/'+analysis.id+'.biom'
+                analysis.dump(fname, fformat='biom')
+        for ont in Ipy.ONT_SET:
+            for analysis in self[ont].itervalues():
+                fname = self._path+'/'+analysis.id+'.biom'
+                analysis.dump(fname, fformat='biom')
+
+    def _get_analysis(self, ids, annotation, level, result_type, source):
+        # this needs to be created same way as matrix api builds it
+        matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, result_type])
+        matrix_id += "_%d_%d_%d"%(Ipy.MATRIX['e_val'], Ipy.MATRIX['ident'], Ipy.MATRIX['alen'])
+        # load from client cache if exists
+        biom_file = self._path+'/'+matrix_id+'.biom'
+        if os.path.isfile(biom_file):
+            return Analysis(bfile=biom_file, auth=self._auth)
+        else:
+            keyArgs = Ipy.MATRIX
+            keyArgs['ids'] = ids
+            keyArgs['annotation'] = annotation
+            keyArgs['level'] = level
+            keyArgs['result_type'] = result_type
+            keyArgs['source'] = source
+            if self._auth:
+                keyArgs['auth'] = self._auth
+            return Analysis(**keyArgs)
+    
+    def plot_taxon(self, normalize=1, level='domain', parent=None, width=800, height=800, title="", legend=True):
+        children = get_taxonomy(level, parent) if parent is not None else None
+        keyArgs = { 'normalize': normalize,
+                    'ptype': 'row',
+                    'width': width,
+                    'height': height,
+                    'x_rotate': '0',
+                    'title': title,
+                    'legend': legend,
+                    'subset': children }
+        if child_level(level, htype='taxonomy'):
+            click_opts = (self.defined_name, child_level(level, htype='taxonomy'), normalize, width, height, title, 'True' if legend else 'False')
+            keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+        self[level]['abundance'].plot_annotation(**keyArgs)
+        
+    def plot_function(self, normalize=1, level='level1', parent=None, width=800, height=800, title="", legend=True):
+        children = get_ontology(level, parent) if parent is not None else None
+        keyArgs = { 'normalize': normalize,
+                    'ptype': 'row',
+                    'width': width,
+                    'height': height,
+                    'x_rotate': '0',
+                    'title': title,
+                    'legend': legend,
+                    'subset': children }
+        if child_level(level, htype='ontology'):
+            click_opts = (self.defined_name, child_level(level, htype='ontology'), normalize, width, height, title, 'True' if legend else 'False')
+            keyArgs['onclick'] = "'%s.plot_function(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+        self[level]['abundance'].plot_annotation(**keyArgs)
+
 class Analysis(object):
-    def __init__(self, ids=[], annotation='organism', level=None, resultType=None, source=None, biom=None, bfile=None, auth=None):
+    def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None):
         self._auth = auth
         if (biom is None) and (bfile is None):
-            self.biom = self._get_matrix(ids, annotation, level, resultType, source)
+            self.biom = self._get_matrix(ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source)
         elif biom and isinstance(biom, dict):
             self.biom = biom
         elif bfile and os.path.isfile(bfile):
@@ -25,6 +105,7 @@ class Analysis(object):
         self._init_matrix()
     
     def _init_matrix(self):
+        self.id = self.biom['id'] if self.biom else ""
         self.matrix = self.biom['data'] if self.biom else []
         self.numIDs = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
@@ -35,14 +116,26 @@ class Analysis(object):
         self.alpha_diversity = None
         self.rarefaction     = None
     
-    def _get_matrix(self, ids, annotation, level, resultType, source):
+    def _get_matrix(self, ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source):
         params = map(lambda x: ('id', x), ids)
+        if not annotation:
+            annotation = Ipy.MATRIX['annotation']
         if level:
             params.append(('group_level', level))
-        if resultType:
-            params.append(('result_type', resultType))
+        if result_type:
+            params.append(('result_type', result_type))
         if source:
             params.append(('source', source))
+        if e_val:
+            params.append(('evalue', str(e_val)))
+        if ident:
+            params.append(('identity', str(ident)))
+        if alen:
+            params.append(('length', str(alen)))
+        if len(filters) > 0:
+            params.extend( map(lambda x: ('filter', x), filters) )
+            if filter_source:
+                params.append(('filter_source', filter_source))
         if self._auth:
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
@@ -98,7 +191,7 @@ class Analysis(object):
             index = items.index(aid)
         except (ValueError, AttributeError):
             return None        
-        mg = Metagenome(aid)
+        mg = Metagenome(aid, auth=self._auth)
         if mg.name is not None:
             return mg
         else:
@@ -124,13 +217,16 @@ class Analysis(object):
             self.alpha_diversity = alphaDiv
         return self.alpha_diversity
     
-    def rarefaction(self, id):
+    def rarefaction(self):
         if self.table_type != 'taxon':
             return None
         if self.rarefaction is None:
             rareFact = defaultdict(list)
             for i, aID in enumerate(self.ids()):
-                mg = self.get_id_object(id)
+                mg = self.get_id_object(aID)
+                if ('rarefaction' in mg.stats) and (len(mg.stats['rarefaction']) > 0):
+                    rareFact[aID] = mg.stats['rarefaction']
+                    continue
                 try:
                     nseq = int(mg.stats['sequence_count_raw'])
                     size = int(nseq/1000) if nseq > 1000 else 1
@@ -224,19 +320,23 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, ptype='row', width=900, height=400, x_rotate='0', title=None, legend=True):
-        labels = self.annotations()
-        names  = self.names()
-        if not (labels and names and self.Dmatrix):
+    def plot_annotation(self, normalize=1, ptype='row', width=800, height=800, x_rotate='0', title="", legend=True, subset=None, onclick=None):
+        names = self.names()
+        if not (names and self.Dmatrix):
             return None
+        labels = []
         matrix = rMatrix_to_pyMatrix(self.Nmatrix, self.numAnnotations, self.numIDs) if normalize else self.Dmatrix
         colors = google_palette(len(names))
         data   = []
         for i, n in enumerate(names):
             data.append({'name': n, 'data': [], 'fill': colors[i]})
-        for row in matrix:
-            for i, val in enumerate(row):
-                data[i]['data'].append(val)
+        for r, row in matrix:
+            if (subset is not None) and (self.biom['rows'][r]['id'] not in subset):
+                continue
+            labels.append(self.biom['rows'][r]['id'])
+            for c, val in enumerate(row):
+                data[c]['data'].append(val)
+        
         keyArgs = { 'btype': ptype,
                     'width': width,
                     'height': height,
@@ -246,7 +346,8 @@ class Analysis(object):
                     'target': random_str(),
                     'show_legend': legend,
                     'legend_position': 'right',
-                    'data': data }
+                    'data': data,
+                    'onclick': onclick }
         try:
             Ipy.RETINA.graph(**keyArgs)
         except:
