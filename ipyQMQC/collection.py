@@ -34,11 +34,11 @@ class Collection(object):
         for mg in self.metagenomes.itervalues():
             mg._set_statistics()
     
-    def metagenomes(self):
+    def mgids(self):
         return self._mgids
         
     def analysis_matrix(self, annotation='organism', level=None, resultType=None, source=None):
-        keyArgs = { 'ids': self.metagenomes(),
+        keyArgs = { 'ids': self.mgids(),
                     'annotation': annotation,
                     'level': level,
                     'resultType': resultType,
@@ -83,7 +83,7 @@ class Collection(object):
                     'x_labels': json.dumps(annL),
                     'x_labels_rotation': x_rotate,
                     'title': title,
-                    'target': '_'.join(self.metagenomes())+"_"+level+'_'+random_str(),
+                    'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
                     'show_legend': legend,
                     'legend_position': 'right',
                     'data': data }

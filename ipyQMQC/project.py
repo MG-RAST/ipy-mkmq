@@ -14,14 +14,14 @@ class Project(Collection):
         for key, val in project.iteritems():
             setattr(self, key, val)
         # call collection init
-        super(Collection, self).__init__(self.metagenomes(), metadata, stats, auth, def_name)
+        Collection.__init__(self, self.mgids(), metadata=metadata, stats=stats, auth=auth, def_name=def_name)
     
     def _get_project(self, pid, metadata, auth):
         verb = 'full' if metadata else 'verbose'
         key  = '&auth='+auth if auth else ''
         return obj_from_url(Ipy.API_URL+'project/'+pid+'?verbosity='+verb+key)
     
-    def metagenomes(self):
+    def mgids(self):
         mlist = []
         if hasattr(self, 'analyzed'):
             mlist = map(lambda x: x[0], self.analyzed)
