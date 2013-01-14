@@ -19,21 +19,25 @@ class AnalysisSet(object):
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
         for tax in Ipy.TAX_SET:
-            setattr(self, tax, {})
+            values = {}
             for val in Ipy.VALUES:
-                self[tax][val] = self._get_analysis(ids, 'organism', tax, val, 'M5NR')
+                values[val] = self._get_analysis(ids, 'organism', tax, val, 'M5NR')
+            setattr(self, tax, values)
         for ont in Ipy.ONT_SET:
-            setattr(self, ont, {})
+            values = {}
             for val in Ipy.VALUES:
-                self[ont][val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
+                values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
+            setattr(self, ont, values)
 
     def dump(self):
         for tax in Ipy.TAX_SET:
-            for analysis in self[tax].itervalues():
+            tax_set = self.__getitem__(tax)
+            for analysis in tax_set.itervalues():
                 fname = self._path+'/'+analysis.id+'.biom'
                 analysis.dump(fname, fformat='biom')
         for ont in Ipy.ONT_SET:
-            for analysis in self[ont].itervalues():
+            ont_set = self.__getitem__(ont)
+            for analysis in ont_set.itervalues():
                 fname = self._path+'/'+analysis.id+'.biom'
                 analysis.dump(fname, fformat='biom')
 
