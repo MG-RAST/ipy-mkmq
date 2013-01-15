@@ -7,11 +7,11 @@ from ipyTools import *
 from collections import defaultdict
 
 class AnalysisSet(object):
-    def __init__(self, ids=[], auth=None, adir=None, def_name=None):
-        if adir is None:
-            adir = random_str()
-        self._dir  = adir
-        self._path = Ipy.NB_DIR+'/'+adir
+    def __init__(self, ids=[], auth=None, cache=None, def_name=None):
+        if cache is None:
+            cache = random_str()
+        self._dir  = cache
+        self._path = Ipy.NB_DIR+'/'+cache
         self._auth = auth
         # hack to get variable name
         if def_name == None:
@@ -30,6 +30,8 @@ class AnalysisSet(object):
             setattr(self, ont, values)
 
     def dump(self):
+        if not os.path.isdir(self._path):
+            os.mkdir(self._path)
         for tax in Ipy.TAX_SET:
             tax_set = getattr(self, tax)
             for analysis in tax_set.itervalues():
@@ -144,7 +146,9 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
-    def dump(self, fname, fformat='biom'):
+    def dump(self, fname=None, fformat='biom'):
+        if not fname:
+            fname = self.id+'.biom' if fformat == 'biom' else self.id+'.tab'
         if self.biom:
             fhdl = open(fname, 'w')
             if fformat == 'biom':
@@ -155,6 +159,7 @@ class Analysis(object):
                 for i, row in enumerate(self.Dmatrix):
                     fhdl.write("%s\t%s\n"%(ann[i], "\t".join(row)))
             fhdl.close()
+        return fname
     
     def ids(self):
         if not self.biom:
