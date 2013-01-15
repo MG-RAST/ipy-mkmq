@@ -14,6 +14,7 @@ class Ipy(object):
     RETINA  = None
     DEBUG   = False
     NB_DIR  = None
+    R_LIB   = None
     VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
     ONT_SET = ['level1', 'level2', 'level3', 'function']
@@ -66,7 +67,8 @@ def init_ipy(debug=False):
     Ipy.RETINA  = retina.Retina()
     Ipy.DEBUG   = debug
     # set pathing
-    Ipy.NB_DIR  = os.getcwd()
+    Ipy.NB_DIR = os.getcwd()
+    Ipy.R_LIB  = Ipy.NB_DIR+'/R'
     if not os.path.isdir(Ipy.NB_DIR+'/images'):
         os.mkdir(Ipy.NB_DIR+'/images')
     ## load matR and extras
