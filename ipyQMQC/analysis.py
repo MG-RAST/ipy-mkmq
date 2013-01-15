@@ -31,12 +31,12 @@ class AnalysisSet(object):
 
     def dump(self):
         for tax in Ipy.TAX_SET:
-            tax_set = self.__getitem__(tax)
+            tax_set = getattr(self, tax)
             for analysis in tax_set.itervalues():
                 fname = self._path+'/'+analysis.id+'.biom'
                 analysis.dump(fname, fformat='biom')
         for ont in Ipy.ONT_SET:
-            ont_set = self.__getitem__(ont)
+            ont_set = getattr(self, ont)
             for analysis in ont_set.itervalues():
                 fname = self._path+'/'+analysis.id+'.biom'
                 analysis.dump(fname, fformat='biom')
