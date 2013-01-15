@@ -15,9 +15,9 @@ class QC(object):
         else:
             sys.stderr.write("Must pass metagenome id or metagenome object")
             return
-        self.drisee   = Drisee(self.metagenome)
-        self.kmer     = Kmer(self.metagenome)
-        self.bp_histo = NucleoProfile(self.metagenome)
+        self.drisee   = Drisee(mgObj=self.metagenome)
+        self.kmer     = Kmer(mgObj=self.metagenome)
+        self.bp_histo = NucleoProfile(mgObj=self.metagenome)
 
 class Drisee(object):
     def __init__(self, mgObj=None, mgData=None):
@@ -69,8 +69,12 @@ class Drisee(object):
         Ipy.FL_PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
 
 class NucleoProfile(object):
-    def __init__(self, mgObj):
-        data = self._get_bp_profile(mgObj)
+    def __init__(self, mgObj=None, mgData=None):
+        data = None
+        if mgObj:
+            data = self._get_bp_profile(mgObj)
+        if mgData:
+            data = mgData
         self.count   = data['counts'] if has_profile('counts', data) else None
         self.percent = data['percents'] if has_profile('percents', data) else None
 
@@ -94,8 +98,13 @@ class NucleoProfile(object):
         Ipy.FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
 
 class Kmer(object):
-    def __init__(self, mgObj):
-        self.profile = self._get_kmer(mgObj)
+    def __init__(self, mgObj=None, profile=None):
+        if mgObj:
+            self.profile = self._get_kmer(mgObj)
+        elif profile:
+            self.profile = profile
+        else:
+            self.profile = None
 
     def _get_kmer(self, mgObj):
         try:
@@ -139,6 +148,7 @@ class Rarefaction(object):
             self.alpha  = alpha if alpha else None
         else:
             self.points = None
+            self.alpha  = None
 
     def _get_rarefaction(self, mgObj):
         try:
