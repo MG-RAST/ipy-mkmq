@@ -21,6 +21,7 @@ class Ipy(object):
     VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
     ONT_SET = ['level1', 'level2', 'level3', 'function']
+    MD_CATS = ['project', 'sample', 'library', 'env_package']
     MATRIX  = { 'annotation': 'organism',
                 'level': 'strain',
                 'result_type': 'abundance',
