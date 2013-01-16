@@ -56,7 +56,7 @@ class Metagenome(object):
             keyArgs = { 'btype': ptype,
                         'width': 700,
                         'height': 350,
-                        'x_labels': '[""]',
+                        'x_labels': [""],
                         'title': self.id+" "+level,
                         'target': self.id+"_"+level+'_'+random_str(),
                         'show_legend': True,

@@ -80,7 +80,7 @@ class Collection(object):
         keyArgs = { 'btype': ptype,
                     'width': width,
                     'height': height,
-                    'x_labels': json.dumps(annL),
+                    'x_labels': annL,
                     'x_labels_rotation': x_rotate,
                     'title': title,
                     'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
