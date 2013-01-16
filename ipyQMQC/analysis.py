@@ -33,6 +33,7 @@ class AnalysisSet(object):
 
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
+            sys.stdout.write("setting %s.display_mgs to all metagenomes in set")%self.defined_name
             self.display_mgs = self.all_mgs
         else:
             self.display_mgs = ids
