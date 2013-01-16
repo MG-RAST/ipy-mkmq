@@ -11,6 +11,7 @@ import retina, flotplot
 
 # class for ipy lib env
 class Ipy(object):
+    """Constants for ipy-qmqc library interface"""
     FL_PLOT = None
     RETINA  = None
     DEBUG   = False
@@ -87,6 +88,10 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
     ro.r('suppressMessages(library(scatterplot3d))')
+    # echo
+    if Ipy.DEBUG:
+        for k in Ipy.__dict__.keys():
+            print k, getattr(Ipy, k)
 
 def google_palette(num):
     if not num:

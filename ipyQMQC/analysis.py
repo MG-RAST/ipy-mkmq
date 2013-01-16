@@ -59,8 +59,12 @@ class AnalysisSet(object):
         # load from client cache if exists
         biom_file = self._path+'/'+matrix_id+'.biom'
         if os.path.isfile(biom_file):
+            if Ipy.DEBUG:
+                sys.stdout.write("loading %s.biom from cache %s ... \n"%(matrix_id, self._dir))
             return Analysis(bfile=biom_file, auth=self._auth)
         else:
+            if Ipy.DEBUG:
+                sys.stdout.write("loading %s.biom through api ... \n"%matrix_id)
             keyArgs = Ipy.MATRIX
             keyArgs['ids'] = ids
             keyArgs['annotation'] = annotation
