@@ -2,6 +2,7 @@
 
 import IPython.core.display
 import json
+import ipyTools
 
 class Retina(object):
     def __init__(self, action='none', debug=False):
@@ -20,8 +21,8 @@ class Retina(object):
 		"""
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs, css=self.rcss))
     
-    def graph(self, width=800, height=400, btype="column", target="target", data=None, title="", x_labels='[""]', x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
-	"""Graph Renderer
+    def graph(self, width=800, height=400, btype="column", target="", data=None, title="", x_labels=[], x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
+        """Graph Renderer
   
   Displays a graph of pie / bar charts with an optional legend.
   
@@ -93,7 +94,7 @@ class Retina(object):
         bottom
   
   chartArea (ARRAY of FLOAT)
-     The values passed correspond to the left, top, right and bottom margin of the chart area respectively. The position is relative to the top left corner of the containing div. Values less than 1 are interpreted as fractions. Values greater than 1 are interpreted as absolute pixel values.
+     The values passed correspond to the left, top, width and height margin of the chart area respectively. The position is relative to the top left corner of the containing div. Values less than 1 are interpreted as fractions. Values greater than 1 are interpreted as absolute pixel values.
   
   legendArea (ARRAY of FLOAT)
       If this parameter is set, the legend_position parameter will not be used. Instead pass an array of floats. The values correspond to the left, top, right and bottom margin of the legend area respectively. The position is relative to the top left corner of the containing div. Values less than 1 are interpreted as fractions. Values greater than 1 are interpreted as absolute pixel values.
@@ -107,11 +108,20 @@ class Retina(object):
   data (ARRAY of OBJECT)
       List of data series. Each series has a name and a data attribute. The data attribute is a list of y-values for the series.
   
-  onclick (STRING)
-      Name of the variable the data of the clicked slice / bar should be written to. Default is clickedCell.
-	"""
+  onclick (FUNCTION)
+      The passed function will be called when a bar / pie slice is clicked. It will receive an object with the attributes
+        series - the name of the series this bar belongs to
+        value  - the value of the bar
+        label  - the label of the bar
+        item   - the svg element that was clicked
+        index  - the zero based index of this bar within its series
+        series_index - the zero based index of this series"""
+        if not target:
+            target = 'div_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        if len(x_labels) == 0:
+            x_labels = [""]
         if data is None:
             title = "Browser Usage"
             x_labels = "['2005','2006','2007','2008']"
@@ -119,6 +129,7 @@ class Retina(object):
             onclick = "'clickedCell = '+ JSON.stringify(params)"
         else:
             data = json.dumps(data)
+            x_labels = json.dumps(x_labels)
 
         opt = "width: %d, height: %d, type: '%s', target: document.getElementById('%s'), data: %s, title: '%s', x_labels: %s, x_title: '%s', y_title: '%s', show_legend: %s, legend_position: '%s', title_color: '%s', x_title_color: '%s', y_title_color: '%s', x_labels_rotation: '%s', x_tick_interval: %d, y_tick_interval: %d, x_labeled_tick_interval: %d, y_labeled_tick_interval: %d, default_line_color: '%s', default_line_width: %d"%(width, height, btype, target, data, title, x_labels, x_title, y_title, self._bool(show_legend), legend_position, title_color, x_title_color, y_title_color, x_labels_rotation, x_tick_interval, y_tick_interval, x_labeled_tick_interval, y_labeled_tick_interval, default_line_color, default_line_width)
         
@@ -142,7 +153,9 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def plot(self, width=800, height=400, target="target", data=None, title="", show_legend=True, legend_position='left'):
+    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='left'):
+        if not target:
+            target = 'div_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
@@ -163,7 +176,9 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def paragraph(self, width="span12", target="target", data=None, title_color='black', header_color='black', text_color='black', raw=False):
+    def paragraph(self, width="span12", target="", data=None, title_color='black', header_color='black', text_color='black', raw=False):
+        if not target:
+            target = 'div_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
@@ -183,6 +198,79 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
+    def heatmap(self, width=700, height=600, target="", data=None, tree_height=50, tree_width=50, legend_height=250, legend_width=250, row_text_size=15, col_text_size=15, min_cell_height=19):
+        """Heatmap Renderer
+
+          Displays a heatmap.
+
+          Options
+
+          width (int)
+             Number of pixels the resulting image is wide. Default is 700
+
+          height (int)
+             Number of pixels the resulting image is high. This will be adjusted to at least rows * min_cell_height + legend and tree heights. Default is 600.
+
+          tree_height (int)
+             Number of pixels the dendogram tree for the columns is high. Default is 50.
+
+          tree_width (int)
+             Number of pixels the dendogram tree for the rows is wide. Default is 50.
+
+          legend_height (int)
+             Number of pixels for the column names. Default is 250.
+
+          legend_width (int)
+             Number of pixels for the row names. Default is 250.
+
+          row_text_size (int)
+             Number of pixels of the row text font size. Default is 15.
+
+          col_text_size (int)
+             Number of pixels of the column text font size. Default is 15.
+
+          min_cell_height (int)
+             Minimum number of pixels a row is high. This may cause the defined height of the resulting image to be overwritten. Default is 19.
+
+          selectedRows (array of boolean)
+             Returns an array that has a value of true for all row indices that are currently selected.
+
+          data (object)
+             columns (array of string)
+                names of the columns
+             rows (array of string)
+                names of the rows
+             colindex (array of int)
+                1 based indices of the original column order. This converts the original order (columns) into the one ordered by distance.
+             rowindex (array of int)
+                1 based indices of the original row order. This converts the original order (rows) into the one ordered by distance.
+             coldend (array of array of float)
+                distance matrix for the columns
+             rowdend
+                distance matrix for the rows
+             data (array of array of float)
+                normalized value matrix"""
+        if not target:
+            target = 'div_'+ipyTools.random_str()
+        html = "<div id='%s'></div>"%(target)
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        if data is None:
+            data = "Retina.RendererInstances.paragraph[0].exampleData()"
+        else:
+            data = json.dumps(data)
+            
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, tree_height: %d, tree_width: %d, legend_height: %d, legend_width: %d, row_text_size: %d, col_text_size: %d, min_cell_height: %d"%(width, height, target, data, tree_height, tree_width, legend_height, legend_width, row_text_size, col_text_size, min_cell_height)
+        src = """
+            (function(){
+                Retina.add_renderer({ name: 'heatmap', resource: '""" + self.renderer_resource + """', filename: 'renderer.heatmap.js' });
+                Retina.load_renderer('heatmap').then( function () { Retina.Renderer.create('heatmap', {""" + opt + """} ).render(); } );
+            })();
+        """
+        if self.debug:
+            print src
+        else:
+            IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+        
     def _bool(self, aBool):
         if aBool:
             return 'true'
