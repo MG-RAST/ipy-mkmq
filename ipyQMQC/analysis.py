@@ -75,7 +75,8 @@ class AnalysisSet(object):
         if child_level(level, htype='taxonomy'):
             click_opts = (self.defined_name, child_level(level, htype='taxonomy'), normalize, width, height, title, 'True' if legend else 'False')
             keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
-        self[level]['abundance'].plot_annotation(**keyArgs)
+        to_plot = getattr(self, level)
+        to_plot['abundance'].plot_annotation(**keyArgs)
         
     def plot_function(self, normalize=1, level='level1', parent=None, width=800, height=800, title="", legend=True):
         children = get_ontology(level, parent) if parent is not None else None
@@ -90,7 +91,8 @@ class AnalysisSet(object):
         if child_level(level, htype='ontology'):
             click_opts = (self.defined_name, child_level(level, htype='ontology'), normalize, width, height, title, 'True' if legend else 'False')
             keyArgs['onclick'] = "'%s.plot_function(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
-        self[level]['abundance'].plot_annotation(**keyArgs)
+        to_plot = getattr(self, level)
+        to_plot['abundance'].plot_annotation(**keyArgs)
 
 class Analysis(object):
     def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None):
