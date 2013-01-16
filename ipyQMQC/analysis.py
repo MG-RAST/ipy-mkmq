@@ -444,7 +444,7 @@ class Analysis(object):
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
                 self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs)
             except:
-                sys.stderr.write("Error normalizing matrix\n")
+                sys.stderr.write("Error normalizing matrix (%s)\n"%self.id)
 
     def _dense_matrix(self):
         if not self.biom:
