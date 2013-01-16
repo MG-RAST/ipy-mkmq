@@ -13,6 +13,8 @@ class AnalysisSet(object):
         self._dir  = cache
         self._path = Ipy.NB_DIR+'/'+cache
         self._auth = auth
+        self.all_mgs = ids
+        self.display_mgs = self.all_mgs
         # hack to get variable name
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
@@ -28,6 +30,12 @@ class AnalysisSet(object):
             for val in Ipy.VALUES:
                 values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
             setattr(self, ont, values)
+
+    def set_display_mgs(self, ids=[]):
+        if (not ids) or (len(ids) == 0):
+            self.display_mgs = self.all_mgs
+        else:
+            self.display_mgs = ids
 
     def dump(self):
         if not os.path.isdir(self._path):
@@ -63,23 +71,29 @@ class AnalysisSet(object):
             return Analysis(**keyArgs)
     
     def plot_taxon(self, normalize=1, level='domain', parent=None, width=800, height=800, title="", legend=True):
-        children = get_taxonomy(level, parent) if parent is not None else None
-        keyArgs = { 'normalize': normalize,
-                    'ptype': 'row',
+        keyArgs = { 'atype': 'taxonomy',
+                    'normalize': normalize,
+                    'level': level,
+                    'parent': parent,
                     'width': width,
                     'height': height,
-                    'x_rotate': '0',
                     'title': title,
-                    'legend': legend,
-                    'subset': children }
-        if child_level(level, htype='taxonomy'):
-            click_opts = (self.defined_name, child_level(level, htype='taxonomy'), normalize, width, height, title, 'True' if legend else 'False')
-            keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
-        to_plot = getattr(self, level)
-        to_plot['abundance'].plot_annotation(**keyArgs)
+                    'legend': legend }
+        self._plot_annotation(**keyArgs)
         
     def plot_function(self, normalize=1, level='level1', parent=None, width=800, height=800, title="", legend=True):
-        children = get_ontology(level, parent) if parent is not None else None
+        keyArgs = { 'atype': 'ontology',
+                    'normalize': normalize,
+                    'level': level,
+                    'parent': parent,
+                    'width': width,
+                    'height': height,
+                    'title': title,
+                    'legend': legend }
+        self._plot_annotation(**keyArgs)
+    
+    def _plot_annotation(self, atype='taxonomy', normalize=1, level='domain', parent=None, width=800, height=800, title="", legend=True):
+        children = get_hierarchy(htype=atype, level=level, parent=parent)
         keyArgs = { 'normalize': normalize,
                     'ptype': 'row',
                     'width': width,
@@ -87,10 +101,11 @@ class AnalysisSet(object):
                     'x_rotate': '0',
                     'title': title,
                     'legend': legend,
+                    'submg': self.display_mgs,
                     'subset': children }
-        if child_level(level, htype='ontology'):
-            click_opts = (self.defined_name, child_level(level, htype='ontology'), normalize, width, height, title, 'True' if legend else 'False')
-            keyArgs['onclick'] = "'%s.plot_function(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+        if child_level(level, htype=atype):
+            click_opts = (self.defined_name, 'taxon' if atype == 'taxonomy' else 'function', child_level(level, htype=atype), normalize, width, height, title, 'True' if legend else 'False')
+            keyArgs['onclick'] = "'%s.plot_%s(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
         to_plot = getattr(self, level)
         to_plot['abundance'].plot_annotation(**keyArgs)
 
@@ -348,7 +363,7 @@ class Analysis(object):
         try:
             Ipy.RETINA.heatmap(**keyArgs)
         except:
-            sys.stderr.write("Error producing heatmap")
+            sys.stderr.write("Error producing heatmap\n")
     
     def _matr_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
@@ -366,22 +381,31 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, ptype='row', width=800, height=800, x_rotate='0', title="", legend=True, subset=None, onclick=None):
-        names = self.names()
-        if not (names and self.Dmatrix):
-            return None
-        labels = []
+    def plot_annotation(self, normalize=1, ptype='row', width=800, height=800, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-        colors = google_palette(len(names))
+        if not matrix:
+            sys.stderr.write("Error producing chart: empty matrix\n")
+            return
+        if (not submg) or (len(submg) == 0):
+            # default is all
+            submg = self.ids()
+        colors = google_palette(len(submg))
+        labels = []
         data   = []
-        for i, n in enumerate(names):
-            data.append({'name': n, 'data': [], 'fill': colors[i]})
+        # set retina data
+        for i, col in enumerate(self.biom['columns']):
+            if col['id'] in submg:
+                data.append({'name': col['id'], 'data': [], 'fill': colors[i]})
+        # populate data from matrix
         for r, row in enumerate(matrix):
+            # only use subset rows if subset given
             if (subset is not None) and (self.biom['rows'][r]['id'] not in subset):
                 continue
             labels.append(self.biom['rows'][r]['id'])
-            for c, val in enumerate(row):
-                data[c]['data'].append(val)
+            for c, col in enumerate(self.biom['columns']):
+                # only use submg cols
+                if col['id'] in submg:
+                    data[c]['data'].append(row[c])
         
         keyArgs = { 'btype': ptype,
                     'width': width,
@@ -397,7 +421,7 @@ class Analysis(object):
         try:
             Ipy.RETINA.graph(**keyArgs)
         except:
-            sys.stderr.write("Error producing chart")
+            sys.stderr.write("Error producing chart\n")
     
     def _normalize_matrix(self):
         try:
@@ -415,7 +439,7 @@ class Analysis(object):
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
                 self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs)
             except:
-                sys.stderr.write("Error normalizing matrix")
+                sys.stderr.write("Error normalizing matrix\n")
 
     def _dense_matrix(self):
         if not self.biom:

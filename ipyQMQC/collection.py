@@ -36,7 +36,30 @@ class Collection(object):
     
     def mgids(self):
         return self._mgids
+    
+    def sub_mgs(self, field=None, text=None):
+        sub_mgs = set()
+        all_fields = self.metadata_fields()
+        if not (field and text and (field in all_fields)):
+            sys.stderr.write("field '%s' does not exist\n")
+            return self.mgids()
+        for mg in self.metagenomes:
+            for cat in Ipy.MD_CATS:
+                for key, val in mg.metadata[cat]['data'].iteritems():
+                    if key == field:
+                        x = str(val).find(text)
+                        if x != -1:
+                            sub_mgs.add(mg.id)
+        return list(sub_mgs)
         
+    def metadata_fields(self):
+        fields = set()
+        for mg in self.metagenomes:
+            for cat in Ipy.MD_CATS:
+                for key in mg.metadata[cat]['data'].iterkeys():
+                    fields.add(key)
+        return list(fields)
+    
     def analysis_matrix(self, annotation='organism', level=None, resultType=None, source=None):
         keyArgs = { 'ids': self.mgids(),
                     'annotation': annotation,
