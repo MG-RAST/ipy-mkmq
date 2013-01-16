@@ -32,6 +32,7 @@ class Ipy(object):
                 'alen': 15,
                 'filters': [],
                 'filter_source': None }
+    RETINA_URL = 'http://raw.github.com/MG-RAST/Retina/master/'
     API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
     COLORS  = [ "#3366cc",
                 "#dc3912",

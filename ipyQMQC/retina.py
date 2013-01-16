@@ -8,15 +8,16 @@ class Retina(object):
     def __init__(self, action='none', debug=False):
         self.action = action
         self.debug  = debug
-        self.rcss   = [ 'http://raw.github.com/MG-RAST/Retina/master/css/bootstrap.min.css' ]
-        self.rlibs  = [ 'http://raw.github.com/MG-RAST/Retina/master/js/bootstrap.min.js',
-                        'http://raw.github.com/MG-RAST/Retina/master/js/retina.js' ,
-                        'http://raw.github.com/MG-RAST/Retina/master/js/stm.js',
-                        'http://raw.github.com/MG-RAST/Retina/master/js/ipy.js' ]
+        self.rjs = ipyTools.Ipy.RETINA_URL+'js/'
+        self.rcss   = [ ipyTools.Ipy.RETINA_URL+'css/bootstrap.min.css' ]
+        self.rlibs  = [ self.rjs+'bootstrap.min.js',
+                        self.rjs+'retina.js',
+                        self.rjs+'stm.js',
+                        self.rjs+'ipy.js' ]
         self.renderer_resource = "http://raw.github.com/MG-RAST/Retina/master/renderers/";
         src = """
 			(function(){
-				Retina.init( { library_resource: "http://raw.github.com/MG-RAST/Retina/master/js/" });
+				Retina.init( { library_resource: '"""+self.rjs+"""'});
 			})();
 		"""
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs, css=self.rcss))
