@@ -9,12 +9,15 @@ import IPython.core.display
 import IPython.utils.path
 import retina, flotplot
 
+# class for ipy lib env
 class Ipy(object):
     FL_PLOT = None
     RETINA  = None
     DEBUG   = False
     NB_DIR  = None
-    R_LIB   = None
+    LIB_DIR = None
+    TMP_DIR = None
+    IMG_DIR = None
     VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
     ONT_SET = ['level1', 'level2', 'level3', 'function']
@@ -28,7 +31,6 @@ class Ipy(object):
                 'filters': [],
                 'filter_source': None }
     API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
-    #API_URL = 'http://dunkirk.mcs.anl.gov/~tharriso/mgrast/api2.cgi/'
     COLORS  = [ "#3366cc",
                 "#dc3912",
                 "#ff9900",
@@ -61,17 +63,26 @@ class Ipy(object):
                 "#0c5922",
                 "#743411" ]
 
-def init_ipy(debug=False):
+def init_ipy(debug=False, nb_dir=None, api_url=None):
     # set graphing tools
     Ipy.FL_PLOT = flotplot.FlotPlot()
     Ipy.RETINA  = retina.Retina()
     Ipy.DEBUG   = debug
     # set pathing
-    Ipy.NB_DIR = os.getcwd()
-    Ipy.R_LIB  = Ipy.NB_DIR+'/R'
-    if not os.path.isdir(Ipy.NB_DIR+'/images'):
-        os.mkdir(Ipy.NB_DIR+'/images')
-    ## load matR and extras
+    if nb_dir and os.path.isdir(nb_dir):
+        Ipy.NB_DIR = nb_dir
+    else:
+        Ipy.NB_DIR = os.getcwd()
+    Ipy.LIB_DIR = Ipy.NB_DIR+'/lib'
+    Ipy.TMP_DIR = Ipy.NB_DIR+'/tmp'
+    Ipy.IMG_DIR = Ipy.NB_DIR+'/images'
+    for d in (Ipy.LIB_DIR, Ipy.TMP_DIR, Ipy.IMG_DIR):
+        if not os.path.isdir(d):
+            os.mkdir(d)
+    # set api
+    if api_url is not None:
+        Ipy.API_URL = api_url
+    # load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
     ro.r('suppressMessages(library(scatterplot3d))')
@@ -114,6 +125,30 @@ def slice_column(matrix, index):
     for row in matrix:
         data.append(row[index])
     return data
+
+def matrix_from_file(fname, has_col_names=True, has_row_names=True):
+    fhdl = open(fname, 'rU')
+    matrix = []
+    if has_col_names:
+        fhdl.readline()
+    for line in fhdl:
+        row = line.strip().split("\t")
+        if has_row_names:
+            row.pop(0)
+        matrix.append(row)
+    fhdl.close()
+    return matrix
+
+def ordered_distance_from_file(fname):
+    fhdl  = open(fname, 'rU')
+    line1 = fhdl.readline()
+    line2 = fhdl.readline()
+    order_dist  = line1.strip().split(',')
+    dist_matrix = []
+    for line in fhdl:
+        dist_matrix.append( line.strip().split() )        
+    fhdl.close()
+    return order_dist, dist_matrix
 
 def sparse_to_dense(sMatrix, rmax, cmax):
     dMatrix = [[0 for i in range(cmax)] for j in range(rmax)]

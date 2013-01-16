@@ -114,13 +114,16 @@ class Analysis(object):
     
     def _init_matrix(self):
         self.id = self.biom['id'] if self.biom else ""
+        self.result_type = self.biom['matrix_element_value'] if self.biom else ""
         self.matrix = self.biom['data'] if self.biom else []
         self.numIDs = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
-        self.Dmatrix = self._dense_matrix()
-        self.Rmatrix = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs)
-        #self.Nmatrix = self._normalize_matrix()
-        self.Nmatrix = self.Rmatrix
+        self.Dmatrix  = self._dense_matrix()  # count dense matrix
+        self.NDmatrix = None  # normalized dense matrix
+        self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs) # R count matrix object
+        self.NRmatrix = None  # R normalized matrix object
+        if self.result_type == 'abundance':
+            self._normalize_matrix() # only normalize abundance counts
         self.alpha_diversity = None
         self.rarefaction     = None
     
@@ -148,7 +151,7 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
     
-    def dump(self, fname=None, fformat='biom'):
+    def dump(self, fname=None, fformat='biom', normalize=0):
         if not fname:
             fname = self.id+'.biom' if fformat == 'biom' else self.id+'.tab'
         if self.biom:
@@ -156,10 +159,14 @@ class Analysis(object):
             if fformat == 'biom':
                 json.dump(self.biom, fhdl)
             else:
-                ann = self.annotations()
+                matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+                annot  = self.annotations()
                 fhdl.write("\t%s\n"%"\t".join(self.ids()))
-                for i, row in enumerate(self.Dmatrix):
-                    fhdl.write("%s\t%s\n"%(ann[i], "\t".join(row)))
+                for i, row in enumerate(matrix):
+                    fhdl.write(annot[i])
+                    for r in row:
+                        fhdl.write("\t"+str(r))
+                    fhdl.write("\n")
             fhdl.close()
         return fname
     
@@ -277,13 +284,12 @@ class Analysis(object):
         else:
             return 0
     
-    def plot_boxplot(self, normalize=1, labels=None, title=''):
-        matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'images/boxplot_'+random_str()+'.svg'
+    def plot_boxplot(self, normalize=1, title=''):
+        matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
+        fname  = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
+        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         if not matrix:
             return None
-        if labels is None:
-            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         keyArgs = { 'names': ro.StrVector(labels),
                     'main': title,
                     'show.names': True,
@@ -298,29 +304,58 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_pco(self, normalize=1, method='bray-curtis', labels=None, title=''):
-        matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'images/pco_'+random_str()+'.svg'
+    def plot_pco(self, normalize=1, dist='bray-curtis', title=''):
+        matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
+        fname  = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
+        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         if not matrix:
             return None
-        if labels is None:
-            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         keyArgs = { 'labels': ro.StrVector(labels),
                     'main': title,
-                    'method': method,
+                    'method': dist,
                     'comp': ro.r.c(1,2,3) }
         ro.r.svg(fname)
         ro.r.pco(matrix, **keyArgs)
         ro.r("dev.off()")
         return fname
     
-    def plot_heatmap(self, normalize=1, labels=None, title=''):
-        matrix = self.Nmatrix if normalize else self.Rmatrix
-        fname  = 'images/heatmap_'+random_str()+'.svg'
+    def plot_heatmap(self, normalize=1, title='', source='retina', dist='bray-curtis', clust='ward', width=700, height=600):
+        keyArgs = {'normalize': normalize, 'title': title, 'dist': dist, 'clust': clust, 'width': width, 'height': height}
+        if source == 'retina':
+            self._retina_heatmap(**keyArgs)
+        else:
+            self._matr_heatmap(**keyArgs)
+    
+    def _retina_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600):
+        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        # run our own R code
+        matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
+        col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
+        row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
+        self.dump(fname=matrix_file, fformat='tab', normalize=normalize)
+        rcmd = 'source("%s")\nMGRAST_dendrograms(file_in="%s", file_out_column="%s", file_out_row="%s", dist_method="%s", clust_method="%s", produce_figures="FALSE")\n'%(Ipy.LIB_DIR+'/dendrogram.r', matrix_file, col_file, row_file, dist, clust)
+        ro.r(rcmd)
+        cord, cdist = ordered_distance_from_file(col_file)
+        rord, rdist = ordered_distance_from_file(row_file)
+        data = { 'columns': self.ids(),
+                 'rows': self.annotations(),
+                 'colindex': cord,
+                 'rowindex': rord,
+                 'coldend': cdist,
+                 'rowdend': rdist,
+                 'data': matrix }
+        keyArgs = { 'data': data, 'width': width, 'height': height }
+        try:
+            Ipy.RETINA.heatmap(**keyArgs)
+        except:
+            sys.stderr.write("Error producing heatmap")
+    
+    def _matr_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600):
+        matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
+        fname  = Ipy.IMG_DIR+'/heatmap_'+random_str()+'.svg'
+        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         if not matrix:
             return None
-        if labels is None:
-            labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
         keyArgs = { 'labCol': ro.StrVector(labels),
                     'labRow': '',
                     'main': title,
@@ -336,7 +371,7 @@ class Analysis(object):
         if not (names and self.Dmatrix):
             return None
         labels = []
-        matrix = rMatrix_to_pyMatrix(self.Nmatrix, self.numAnnotations, self.numIDs) if normalize else self.Dmatrix
+        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         colors = google_palette(len(names))
         data   = []
         for i, n in enumerate(names):
@@ -351,7 +386,7 @@ class Analysis(object):
         keyArgs = { 'btype': ptype,
                     'width': width,
                     'height': height,
-                    'x_labels': json.dumps(labels),
+                    'x_labels': labels,
                     'x_labels_rotation': x_rotate,
                     'title': title,
                     'target': random_str(),
@@ -363,14 +398,25 @@ class Analysis(object):
             Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart")
-            print None
     
     def _normalize_matrix(self):
-        if self.Rmatrix:
-            return ro.r.normalize(self.Rmatrix)
-        else:
-            return None
-    
+        try:
+            # can matr do it ?
+            self.NRmatrix = ro.r.normalize(self.Rmatrix)
+            self.NDmatrix = rMatrix_to_pyMatrix(self.NRmatrix, self.numAnnotations, self.numIDs)
+        except:
+            try:
+                # run our own R code
+                raw_file  = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
+                norm_file = Ipy.TMP_DIR+'/norm.'+random_str()+'.tab'
+                self.dump(fname=raw_file, fformat='tab', normalize=0)
+                rcmd = 'source("%s")\nMGRAST_preprocessing(file_in="%s", file_out="%s", produce_fig="FALSE")\n'%(Ipy.LIB_DIR+'/preprocessing.r', raw_file, norm_file)
+                ro.r(rcmd)
+                self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
+                self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs)
+            except:
+                sys.stderr.write("Error normalizing matrix")
+
     def _dense_matrix(self):
         if not self.biom:
             return []
