@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
+import shutil
 import math, urllib, sys, os, traceback
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
+from datetime import datetime
 
 class AnalysisSet(object):
     def __init__(self, ids=[], auth=None, cache=None, def_name=None):
@@ -30,6 +32,8 @@ class AnalysisSet(object):
             for val in Ipy.VALUES:
                 values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
             setattr(self, ont, values)
+        # cache this!
+        self.dump()
 
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
@@ -38,9 +42,27 @@ class AnalysisSet(object):
         else:
             self.display_mgs = ids
 
-    def dump(self):
-        if not os.path.isdir(self._path):
-            os.mkdir(self._path)
+    def dump(self, force=False):
+        # force re-cache
+        if force and os.path.isdir(self._path):
+            shutil.rmtree(self._path)
+        # test if exists
+        if os.path.isdir(self._path):
+            thdl = open(self._path+'/TIMESTAMP', 'w')
+            now = thdl.read()
+            thdl.close()
+            self.cache_time = now.strip()
+            if Ipy.DEBUG:
+                sys.stdout.write("cache %s already exists, skipping dump"%self.cache)
+            return
+        # set dir and time
+        os.mkdir(self._path)
+        now = str(datetime.now())
+        self.cache_time = now
+        thdl = open(self._path+'/TIMESTAMP', 'w')
+        thdl.write(now+"\n")
+        thdl.close()
+        # dump individual files
         for tax in Ipy.TAX_SET:
             tax_set = getattr(self, tax)
             for analysis in tax_set.itervalues():
