@@ -48,7 +48,7 @@ class AnalysisSet(object):
             shutil.rmtree(self._path)
         # test if exists
         if os.path.isdir(self._path):
-            thdl = open(self._path+'/TIMESTAMP', 'w')
+            thdl = open(self._path+'/TIMESTAMP', 'rU')
             now = thdl.read()
             thdl.close()
             self.cache_time = now.strip()
