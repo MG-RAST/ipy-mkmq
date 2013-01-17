@@ -442,7 +442,7 @@ class Analysis(object):
                 rcmd = 'source("%s")\nMGRAST_preprocessing(file_in="%s", file_out="%s", produce_fig="FALSE")\n'%(Ipy.LIB_DIR+'/preprocessing.r', raw_file, norm_file)
                 ro.r(rcmd)
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
-                self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs)
+                self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs, normalize=1)
             except:
                 sys.stderr.write("Error normalizing matrix (%s)\n"%self.id)
 

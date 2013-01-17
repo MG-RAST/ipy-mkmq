@@ -164,14 +164,20 @@ def sparse_to_dense(sMatrix, rmax, cmax):
         dMatrix[r][c] = v
     return dMatrix
 
-def pyMatrix_to_rMatrix(matrix, rmax, cmax):
+def pyMatrix_to_rMatrix(matrix, rmax, cmax, normalize=0):
     if (not matrix) or (len(matrix) == 0):
         return None
     mList = []
     for i in range(cmax):
-        cList = map(lambda x: x[i], matrix)
+        if normalize:
+            cList = map(lambda x: float(x[i]), matrix)
+        else:
+            cList = map(lambda x: int(x[i]), matrix)
         mList.extend(cList)
-    return ro.r.matrix(ro.IntVector(mList), nrow=rmax)
+    if normalize:
+        return ro.r.matrix(ro.FloatVector(mList), nrow=rmax)
+    else:
+        return ro.r.matrix(ro.IntVector(mList), nrow=rmax)
 
 def rMatrix_to_pyMatrix(matrix, rmax, cmax):
     if (not matrix) or (len(matrix) == 0):
