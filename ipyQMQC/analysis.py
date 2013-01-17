@@ -98,9 +98,8 @@ class AnalysisSet(object):
         self._plot_annotation(**keyArgs)
     
     def _plot_annotation(self, atype='taxonomy', normalize=1, level='domain', parent=None, width=800, height=800, title="", legend=True):
-        children = get_hierarchy(htype=atype, level=level, parent=parent)
+        children = get_hierarchy(htype=atype, level=level, parent=parent) if parent is not None else None
         keyArgs = { 'normalize': normalize,
-                    'ptype': 'row',
                     'width': width,
                     'height': height,
                     'x_rotate': '0',
@@ -110,7 +109,7 @@ class AnalysisSet(object):
                     'subset': children }
         if child_level(level, htype=atype):
             click_opts = (self.defined_name, 'taxon' if atype == 'taxonomy' else 'function', child_level(level, htype=atype), normalize, width, height, title, 'True' if legend else 'False')
-            keyArgs['onclick'] = "'%s.plot_%s(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+            keyArgs['onclick'] = "'%s.plot_%s(level=\"%s\", parent=\"'+params['label']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
         if Ipy.DEBUG:
             print atype, level, keyArgs
         to_plot = getattr(self, level)
@@ -341,7 +340,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_heatmap(self, normalize=1, title='', source='retina', dist='bray-curtis', clust='ward', width=700, height=600):
+    def plot_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, source='retina'):
         if source == 'retina':
             self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height)
         else:
@@ -365,7 +364,13 @@ class Analysis(object):
                  'coldend': cdist,
                  'rowdend': rdist,
                  'data': matrix }
-        keyArgs = { 'data': data, 'width': width, 'height': height }
+        lwidth  = len(max(self.annotations(), key=len)) * 7.2
+        keyArgs = { 'data': data,
+                    'width': width+lwidth,
+                    'height': height,
+                    'target': 'div_heatmap_'+random_str(),
+                    'tree_width': 200,
+                    'legend_width': lwidth }
         if Ipy.DEBUG:
             print keyArgs
         try:
@@ -389,7 +394,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, ptype='row', width=800, height=800, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
+    def plot_annotation(self, normalize=1, width=800, height=800, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
@@ -413,19 +418,24 @@ class Analysis(object):
             for c, col in enumerate(self.biom['columns']):
                 # only use submg cols
                 if col['id'] in submg:
-                    data[c]['data'].append(row[c])
-        
-        keyArgs = { 'btype': ptype,
-                    'width': width,
+                    data[c]['data'].append(toNum(row[c]))
+        lheight = min(0.95, len(submg)*0.5)
+        lwidth  = len(max(labels, key=len)) * 7.2
+        cwidth  = 0.85 if legend else 0.99
+        keyArgs = { 'btype': 'row',
+                    'width': width+lwidth,
                     'height': height,
                     'x_labels': labels,
                     'x_labels_rotation': x_rotate,
                     'title': title,
-                    'target': random_str(),
+                    'target': 'div_graph_'+random_str(),
                     'show_legend': legend,
-                    'legend_position': 'right',
+                    'legendArea': [0.87, 0.1, 0.2, lheight],
+                    'chartArea': [lwidth, 0.02, cwidth, 0.95],
                     'data': data,
                     'onclick': onclick }
+        if normalize and self.NDmatrix:
+            keyArgs['y_labeled_tick_interval'] = 0.1
         if Ipy.DEBUG:
             print submg, subset, keyArgs
         try:

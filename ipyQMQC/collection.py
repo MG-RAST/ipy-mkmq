@@ -46,17 +46,17 @@ class Collection(object):
         if not (field and text and (field in all_fields)):
             sys.stderr.write("field '%s' does not exist\n")
             return self.mgids()
-        for mg in self.metagenomes:
+        for mid, mg in self.metagenomes.iteritems():
             for key, val in mg.metadata[category]['data'].iteritems():
                 if key == field:
-                    x = str(val).find(text)
+                    x = str(val).find(value)
                     if x != -1:
-                        sub_mgs.add(mg.id)
+                        sub_mgs.add(mid)
         return list(sub_mgs)
         
     def metadata_fields(self):
         fields = set()
-        for mg in self.metagenomes:
+        for mg in self.metagenomes.itervalues():
             for cat in Ipy.MD_CATS:
                 for key in mg.metadata[cat]['data'].iterkeys():
                     fields.add(key)

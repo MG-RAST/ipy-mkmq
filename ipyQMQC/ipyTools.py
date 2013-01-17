@@ -119,19 +119,18 @@ def obj_from_url(url):
         return None
     return obj
 
-#def download(afile):
-#    try:
-#        path = IPython.utils.path.filefind(afile)
-#        html = "<p>Right-click the link and choose 'Save Link As...' to save the document: <a href='%s'>%s</a></p>"%(path, afile)
-#        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
-#    except IOError:
-#        sys.stderr.write("ERROR: unable to find '%s'\n"%afile)
-
 def slice_column(matrix, index):
     data = []
     for row in matrix:
         data.append(row[index])
     return data
+
+def toNum(s):
+    s = str(s)
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
 
 def matrix_from_file(fname, has_col_names=True, has_row_names=True):
     fhdl = open(fname, 'rU')
@@ -142,7 +141,7 @@ def matrix_from_file(fname, has_col_names=True, has_row_names=True):
         row = line.strip().split("\t")
         if has_row_names:
             row.pop(0)
-        matrix.append(row)
+        matrix.append( map(lambda x: toNum(x), row) )
     fhdl.close()
     return matrix
 
@@ -150,10 +149,11 @@ def ordered_distance_from_file(fname):
     fhdl  = open(fname, 'rU')
     line1 = fhdl.readline()
     line2 = fhdl.readline()
-    order_dist  = line1.strip().split(',')
+    order_dist  = map(lambda x: toNum(x), line1.strip().split(','))
     dist_matrix = []
     for line in fhdl:
-        dist_matrix.append( line.strip().split() )        
+        row = map(lambda x: toNum(x), line.strip().split())
+        dist_matrix.append(row)        
     fhdl.close()
     return order_dist, dist_matrix
 

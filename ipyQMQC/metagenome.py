@@ -36,17 +36,17 @@ class Metagenome(object):
         self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full'+auth)
     
     def show_metadata(self):
-        data = []
+        mdTable = []
         if hasattr(self, 'metadata'):
             for cat, data in self.metadata.iteritems():
                 for field, value in data['data'].iteritems():
-                    data.append([cat, field, value])
-        if len(data) == 0:
+                    mdTable.append([cat, field, value])
+        if len(mdTable) == 0:
             sys.stderr.write("No metadata to display\n")
         keyArgs = { 'width': 700,
                     'height': 600,
                     'target': self.id+"_metadata_"+random_str(),
-                    'data': data,
+                    'data': mdTable,
                     'rows_per_page': 20 }
         try:
             Ipy.RETINA.table(**keyArgs)

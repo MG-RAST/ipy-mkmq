@@ -132,7 +132,7 @@ class Retina(object):
             data = json.dumps(data)
             x_labels = json.dumps(x_labels)
 
-        opt = "width: %d, height: %d, type: '%s', target: document.getElementById('%s'), data: %s, title: '%s', x_labels: %s, x_title: '%s', y_title: '%s', show_legend: %s, legend_position: '%s', title_color: '%s', x_title_color: '%s', y_title_color: '%s', x_labels_rotation: '%s', x_tick_interval: %d, y_tick_interval: %d, x_labeled_tick_interval: %d, y_labeled_tick_interval: %d, default_line_color: '%s', default_line_width: %d"%(width, height, btype, target, data, title, x_labels, x_title, y_title, self._bool(show_legend), legend_position, title_color, x_title_color, y_title_color, x_labels_rotation, x_tick_interval, y_tick_interval, x_labeled_tick_interval, y_labeled_tick_interval, default_line_color, default_line_width)
+        opt = "width: %d, height: %d, type: '%s', target: document.getElementById('%s'), data: %s, title: '%s', x_labels: %s, x_title: '%s', y_title: '%s', show_legend: %s, legend_position: '%s', title_color: '%s', x_title_color: '%s', y_title_color: '%s', x_labels_rotation: '%s', x_tick_interval: %f, y_tick_interval: %f, x_labeled_tick_interval: %f, y_labeled_tick_interval: %f, default_line_color: '%s', default_line_width: %d"%(width, height, btype, target, data, title, x_labels, x_title, y_title, self._bool(show_legend), legend_position, title_color, x_title_color, y_title_color, x_labels_rotation, x_tick_interval, y_tick_interval, x_labeled_tick_interval, y_labeled_tick_interval, default_line_color, default_line_width)
         
         if chartArea:
             opt += ", chartArea: "+json.dumps(chartArea)
