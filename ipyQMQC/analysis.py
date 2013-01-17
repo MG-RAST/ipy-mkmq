@@ -48,7 +48,7 @@ class AnalysisSet(object):
             shutil.rmtree(self._path)
         # test if exists
         if os.path.isdir(self._path):
-            thdl = open(self._path+'/TIMESTAMP', 'rU')
+            thdl = open(self._path+'/CACHE_TIME', 'rU')
             now = thdl.read()
             thdl.close()
             self.cache_time = now.strip()
@@ -58,7 +58,7 @@ class AnalysisSet(object):
         os.mkdir(self._path)
         now = str(datetime.now())
         self.cache_time = now
-        thdl = open(self._path+'/TIMESTAMP', 'w')
+        thdl = open(self._path+'/CACHE_TIME', 'w')
         thdl.write(now+"\n")
         thdl.close()
         # dump individual files
