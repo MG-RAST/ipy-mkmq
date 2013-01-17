@@ -46,6 +46,7 @@ class Metagenome(object):
         keyArgs = { 'width': 700,
                     'height': 600,
                     'target': self.id+"_metadata_"+random_str(),
+                    'header': ['category', 'field', 'value'],
                     'data': mdTable,
                     'rows_per_page': 20 }
         try:

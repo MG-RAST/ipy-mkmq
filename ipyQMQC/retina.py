@@ -271,7 +271,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
             
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, rows_per_page: %d, sort_autodetect: %d, filter_autodetect: %s"%(width, height, target, data, rows_per_page, self._bool(sort_autodetect), self._bool(filter_autodetect))
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, rows_per_page: %d, sort_autodetect: %s, filter_autodetect: %s"%(width, height, target, data, rows_per_page, self._bool(sort_autodetect), self._bool(filter_autodetect))
         src = """
             (function(){
                 Retina.add_renderer({ name: 'table', resource: '""" + self.renderer_resource + """', filename: 'renderer.table.js' });

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json, sys, traceback
-import analysis
 from metagenome import Metagenome
 from ipyTools import *
 
@@ -43,8 +42,8 @@ class Collection(object):
         if not (category and (category in Ipy.MD_CATS)):
             sys.stderr.write("category must be one of: %s\n"%", ".join(Ipy.MD_CATS))
             return self.mgids()
-        if not (field and text and (field in all_fields)):
-            sys.stderr.write("field '%s' does not exist\n")
+        if not (field and value and (field in all_fields)):
+            sys.stderr.write("field '%s' does not exist\n"%field)
             return self.mgids()
         for mid, mg in self.metagenomes.iteritems():
             for key, val in mg.metadata[category]['data'].iteritems():
@@ -62,14 +61,34 @@ class Collection(object):
                     fields.add(key)
         return list(fields)
     
-    def analysis_matrix(self, annotation='organism', level=None, resultType=None, source=None):
-        keyArgs = { 'ids': self.mgids(),
-                    'annotation': annotation,
-                    'level': level,
-                    'resultType': resultType,
-                    'source': source,
-                    'auth': self._auth }
-        return analysis.Analysis(**keyArgs)
+    def show_metadata(self):
+        header = []
+        tdata  = []
+        mdata  = dict([(x, {}) for x in Ipy.MD_CATS])
+        for mid, mg in self.metagenomes.iteritems():
+            if hasattr(mg, 'metadata'):
+                header.append(mg.id)
+        if len(header) == 0:
+            sys.stderr.write("No metadata to display\n")
+        for i, mid in enumerate(header):
+            for cat, data in self.metagenomes[mid].metadata.iteritems():
+                for field, value in data['data'].iteritems():
+                    if field not in mdata[cat]:
+                        mdata[cat][field] = ['' for x in range(len(header))]
+                    mdata[cat][field][i] = value
+        for cat in mdata.iterkeys():
+            for field in mdata[cat].iterkeys():
+                tdata = [cat, field] + mdata[cat][field]
+        keyArgs = { 'width': 700,
+                    'height': 600,
+                    'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
+                    'header': ['category', 'field'] + header,
+                    'data': tdata,
+                    'rows_per_page': 20 }
+        try:
+            Ipy.RETINA.table(**keyArgs)
+        except:
+            sys.stderr.write("Error producing metadata table\n")
 
     def plot_taxon(self, ptype='row', level='domain', parent=None, width=800, height=800, x_rotate='0', title="", legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None
@@ -117,4 +136,3 @@ class Collection(object):
         except:
             sys.stderr.write("Error producing chart")
             return None
-    
