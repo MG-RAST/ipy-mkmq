@@ -10,7 +10,7 @@ class AnalysisSet(object):
     def __init__(self, ids=[], auth=None, cache=None, def_name=None):
         if cache is None:
             cache = random_str()
-        self._dir  = cache
+        self.cache = cache
         self._path = Ipy.NB_DIR+'/'+cache
         self._auth = auth
         self.all_mgs = ids
@@ -60,7 +60,7 @@ class AnalysisSet(object):
         biom_file = self._path+'/'+matrix_id+'.biom'
         if os.path.isfile(biom_file):
             if Ipy.DEBUG:
-                sys.stdout.write("loading %s.biom from cache %s ... \n"%(matrix_id, self._dir))
+                sys.stdout.write("loading %s.biom from cache %s ... \n"%(matrix_id, self.cache))
             return Analysis(bfile=biom_file, auth=self._auth)
         else:
             if Ipy.DEBUG:
@@ -111,6 +111,8 @@ class AnalysisSet(object):
         if child_level(level, htype=atype):
             click_opts = (self.defined_name, 'taxon' if atype == 'taxonomy' else 'function', child_level(level, htype=atype), normalize, width, height, title, 'True' if legend else 'False')
             keyArgs['onclick'] = "'%s.plot_%s(level=\"%s\", parent=\"'+params['series']+'\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+        if Ipy.DEBUG:
+            print atype, level, keyArgs
         to_plot = getattr(self, level)
         to_plot['abundance'].plot_annotation(**keyArgs)
 
@@ -340,13 +342,12 @@ class Analysis(object):
         return fname
     
     def plot_heatmap(self, normalize=1, title='', source='retina', dist='bray-curtis', clust='ward', width=700, height=600):
-        keyArgs = {'normalize': normalize, 'title': title, 'dist': dist, 'clust': clust, 'width': width, 'height': height}
         if source == 'retina':
-            self._retina_heatmap(**keyArgs)
+            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height)
         else:
-            self._matr_heatmap(**keyArgs)
+            self._matr_heatmap(normalize=normalize, title=title)
     
-    def _retina_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600):
+    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         # run our own R code
         matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
@@ -365,12 +366,14 @@ class Analysis(object):
                  'rowdend': rdist,
                  'data': matrix }
         keyArgs = { 'data': data, 'width': width, 'height': height }
+        if Ipy.DEBUG:
+            print keyArgs
         try:
             Ipy.RETINA.heatmap(**keyArgs)
         except:
             sys.stderr.write("Error producing heatmap\n")
     
-    def _matr_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600):
+    def _matr_heatmap(self, normalize=1, title=''):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/heatmap_'+random_str()+'.svg'
         labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
@@ -423,6 +426,8 @@ class Analysis(object):
                     'legend_position': 'right',
                     'data': data,
                     'onclick': onclick }
+        if Ipy.DEBUG:
+            print submg, subset, keyArgs
         try:
             Ipy.RETINA.graph(**keyArgs)
         except:
