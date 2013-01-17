@@ -37,19 +37,21 @@ class Collection(object):
     def mgids(self):
         return self._mgids
     
-    def sub_mgs(self, field=None, text=None):
+    def sub_mgs(self, category=None, field=None, value=None):
         sub_mgs = set()
         all_fields = self.metadata_fields()
+        if not (category and (category in Ipy.MD_CATS)):
+            sys.stderr.write("category must be one of: %s\n"%", ".join(Ipy.MD_CATS))
+            return self.mgids()
         if not (field and text and (field in all_fields)):
             sys.stderr.write("field '%s' does not exist\n")
             return self.mgids()
         for mg in self.metagenomes:
-            for cat in Ipy.MD_CATS:
-                for key, val in mg.metadata[cat]['data'].iteritems():
-                    if key == field:
-                        x = str(val).find(text)
-                        if x != -1:
-                            sub_mgs.add(mg.id)
+            for key, val in mg.metadata[category]['data'].iteritems():
+                if key == field:
+                    x = str(val).find(text)
+                    if x != -1:
+                        sub_mgs.add(mg.id)
         return list(sub_mgs)
         
     def metadata_fields(self):

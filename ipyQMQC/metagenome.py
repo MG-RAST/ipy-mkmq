@@ -35,6 +35,24 @@ class Metagenome(object):
         auth = '&auth='+self._auth if self._auth else ''
         self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full'+auth)
     
+    def show_metadata(self):
+        data = []
+        if hasattr(self, 'metadata'):
+            for cat, data in self.metadata.iteritems():
+                for field, value in data['data'].iteritems():
+                    data.append([cat, field, value])
+        if len(data) == 0:
+            sys.stderr.write("No metadata to display\n")
+        keyArgs = { 'width': 700,
+                    'height': 600,
+                    'target': self.id+"_metadata_"+random_str(),
+                    'data': data,
+                    'rows_per_page': 20 }
+        try:
+            Ipy.RETINA.table(**keyArgs)
+        except:
+            sys.stderr.write("Error producing metadata table\n")
+    
     def plot_taxon(self, ptype='pie', level='domain', parent=None):
         children = get_taxonomy(level, parent) if parent is not None else None
         self._plot_annotation('taxonomy', ptype, level, children)
@@ -66,5 +84,4 @@ class Metagenome(object):
                 keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
             Ipy.RETINA.graph(**keyArgs)
         except:
-            sys.stderr.write("Error producing chart")
-            return None
+            sys.stderr.write("Error producing %s chart"%atype)
