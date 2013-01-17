@@ -211,7 +211,7 @@ class Analysis(object):
                     for m in mgids:
                         c = all_mgids.index(m)
                         fhdl.write("\t"+str(matrix[r][c]))
-                        fhdl.write("\n")
+                    fhdl.write("\n")
             except:
                 sys.stderr.write("Error dumping %s, invalid rows or cols\n"%self.id)
         fhdl.close()
