@@ -52,8 +52,7 @@ class AnalysisSet(object):
             now = thdl.read()
             thdl.close()
             self.cache_time = now.strip()
-            if Ipy.DEBUG:
-                sys.stdout.write("cache %s already exists, skipping dump"%self.cache)
+            sys.stdout.write("analysis-set '%s' from cache %s (%s)"%(self.defined_name, self.cache, self.cache_time)
             return
         # set dir and time
         os.mkdir(self._path)
