@@ -48,19 +48,21 @@ class Metagenome(object):
                     'target': self.id+"_metadata_"+random_str(),
                     'data': {'data': mdTable, 'header': ['category', 'field', 'value']},
                     'rows_per_page': 20 }
+        if Ipy.DEBUG:
+            print keyArgs
         try:
             Ipy.RETINA.table(**keyArgs)
         except:
             sys.stderr.write("Error producing metadata table\n")
     
-    def plot_taxon(self, ptype='pie', level='domain', parent=None):
+    def piechart_taxon(self, level='domain', parent=None):
         children = get_taxonomy(level, parent) if parent is not None else None
-        self._plot_annotation('taxonomy', ptype, level, children)
+        self._piechart('taxonomy', level, children)
     
-    def plot_function(self, ptype='pie', source='Subsystems'):
-        self._plot_annotation('ontology', ptype, source)
+    def piechart_function(self, source='Subsystems'):
+        self._piechart('ontology', source)
     
-    def _plot_annotation(self, atype, ptype, level, names=None):
+    def _piechart(self, atype, level, names=None):
         if self.stats is None:
             self._set_statistics()
         data = []
@@ -71,7 +73,7 @@ class Metagenome(object):
                     continue
                 data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
 
-            keyArgs = { 'btype': ptype,
+            keyArgs = { 'btype': 'pie',
                         'width': 700,
                         'height': 350,
                         'x_labels': [""],
@@ -82,6 +84,8 @@ class Metagenome(object):
                         'data': data }
             if atype == 'taxonomy':
                 keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
+            if Ipy.DEBUG:
+                print keyArgs
             Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing %s chart"%atype)

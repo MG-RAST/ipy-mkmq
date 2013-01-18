@@ -91,14 +91,14 @@ class Collection(object):
         except:
             sys.stderr.write("Error producing metadata table\n")
 
-    def plot_taxon(self, ptype='row', level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
+    def barchart_taxon(self, level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None
-        self._plot_annotation('taxonomy', ptype, level, width, height, x_rotate, title, legend, names=children)
+        self._barchart('taxonomy', level, width, height, x_rotate, title, legend, names=children)
 
-    def plot_function(self, ptype='row', source='Subsystems', width=800, height=0, x_rotate='0', title="", legend=True):
-        self._plot_annotation('ontology', ptype, source, width, height, x_rotate, title, legend)
+    def barchart_function(self, source='Subsystems', width=800, height=0, x_rotate='0', title="", legend=True):
+        self._barchart('ontology', source, width, height, x_rotate, title, legend)
 
-    def _plot_annotation(self, atype, ptype, level, width, height, x_rotate, title, legend, names=None):
+    def _barchart(self, atype, level, width, height, x_rotate, title, legend, names=None):
         if not self._stats:
             self._set_statistics()
         data = []
@@ -125,7 +125,7 @@ class Collection(object):
         lheight = min(height, len(self.metagenomes)*35)
         lwidth  = len(max(annL, key=len)) * 7.2
         cwidth  = 0.85 if legend else 0.99
-        keyArgs = { 'btype': ptype,
+        keyArgs = { 'btype': 'row',
                     'width': width+lwidth,
                     'height': height,
                     'x_labels': annL,
