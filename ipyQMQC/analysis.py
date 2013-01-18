@@ -52,11 +52,13 @@ class AnalysisSet(object):
             thdl  = open(self._path+'/CACHE_TIME', 'rU')
             ctime = thdl.read().strip()
             thdl.close()
-            sys.stdout.write("analysis-set '%s' from cache %s (%s)"%(self.defined_name, self.cache, ctime))
+            sys.stdout.write("analysis-set '%s' loaded from cache %s (%s)"%(self.defined_name, self.cache, ctime))
             return ctime
         # set dir and time
         os.mkdir(self._path)
-        return self._timestamp_cache()
+        ctime = self._timestamp_cache()
+        sys.stdout.write("analysis-set '%s' saved to cache %s (%s)"%(self.defined_name, self.cache, ctime))
+        return ctime
 
     def _timestamp_cache(self, ctime=None):
         if os.path.isdir(self._path):
@@ -364,6 +366,8 @@ class Analysis(object):
                     'cex.lab': 0.8,
                     'boxwex': 0.6,
                     'cex.axis': 0.7 }
+        if Ipy.DEBUG:
+            print fname, keyArgs
         ro.r.svg(fname)
         ro.r.boxplot(matrix, **keyArgs)
         ro.r("dev.off()")
@@ -379,6 +383,8 @@ class Analysis(object):
                     'main': title,
                     'method': dist,
                     'comp': ro.r.c(1,2,3) }
+        if Ipy.DEBUG:
+            print fname, keyArgs
         ro.r.svg(fname)
         ro.r.pco(matrix, **keyArgs)
         ro.r("dev.off()")
@@ -387,8 +393,9 @@ class Analysis(object):
     def heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, source='retina'):
         if source == 'retina':
             self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height)
+            return
         else:
-            self._matr_heatmap(normalize=normalize, title=title)
+            return self._matr_heatmap(normalize=normalize, title=title)
     
     def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None):
         # default is all
@@ -441,6 +448,8 @@ class Analysis(object):
                     'main': title,
                     'cexCol': 0.95,
                     'margins': ro.r.c(8,1) }
+        if Ipy.DEBUG:
+            print fname, keyArgs
         ro.r.svg(fname)
         ro.r.heatmap(matrix, **keyArgs)
         ro.r("dev.off()")

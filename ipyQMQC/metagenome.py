@@ -55,14 +55,14 @@ class Metagenome(object):
         except:
             sys.stderr.write("Error producing metadata table\n")
     
-    def piechart_taxon(self, level='domain', parent=None):
+    def piechart_taxon(self, level='domain', parent=None, title=''):
         children = get_taxonomy(level, parent) if parent is not None else None
-        self._piechart('taxonomy', level, children)
+        self._piechart('taxonomy', level, names=children, title=title)
     
-    def piechart_function(self, source='Subsystems'):
-        self._piechart('ontology', source)
+    def piechart_function(self, source='Subsystems', title=''):
+        self._piechart('ontology', source, title=title)
     
-    def _piechart(self, atype, level, names=None):
+    def _piechart(self, atype, level, names=None, title=''):
         if self.stats is None:
             self._set_statistics()
         data = []
@@ -72,15 +72,16 @@ class Metagenome(object):
                 if (names is not None) and (d[0] not in names):
                     continue
                 data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
-
+            lheight = len(self.stats[atype][level])*30
+            lwidth  = int(len(max(self.stats[atype][level], key=len))*7.2)
             keyArgs = { 'btype': 'pie',
-                        'width': 700,
+                        'width': 700 + int((float(lwidth)/2)),
                         'height': 350,
                         'x_labels': [""],
-                        'title': self.id+" "+level,
+                        'title': title,
                         'target': self.id+"_"+level+'_'+random_str(),
                         'show_legend': True,
-                        'legend_position': 'right',
+                        'legendArea': [0.80, 0.05, lwidth, lheight],
                         'data': data }
             if atype == 'taxonomy':
                 keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
