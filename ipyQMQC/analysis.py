@@ -451,10 +451,10 @@ class Analysis(object):
                 # only use submg cols
                 if col['id'] in submg:
                     data[c]['data'].append(toNum(row[c]))
+        height  = height if height else len(labels)*len(submg)*7.5
         lheight = min(height, len(submg)*35)
         lwidth  = len(max(labels, key=len)) * 7.2
         cwidth  = 0.85 if legend else 0.99
-        height  = height if height else len(labels)*len(submg)*7.5
         keyArgs = { 'btype': 'row',
                     'width': width+lwidth,
                     'height': height,
