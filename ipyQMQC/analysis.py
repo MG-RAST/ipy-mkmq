@@ -205,15 +205,22 @@ class Analysis(object):
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
             annot  = rows if rows and (len(rows) > 0) else all_annot
             mgids  = cols if cols and (len(cols) > 0) else all_mgids
-            try:
-                fhdl.write("\t%s\n"%"\t".join(mgids))
-                for a in annot:
+            fhdl.write("\t%s\n"%"\t".join(mgids))
+            for a in annot:
+                try:
                     r = all_annot.index(a)
-                    fhdl.write(a)
-                    for m in mgids:
+                except:
+                    sys.stderr.write("Error: '%s' is not in annotations of %s"%(a, self.id))
+                    return
+                fhdl.write(a)
+                for m in mgids:
+                    try:
                         c = all_mgids.index(m)
-                        fhdl.write("\t"+str(matrix[r][c]))
-                    fhdl.write("\n")
+                    except:
+                        sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(m, self.id))
+                        return
+                    fhdl.write("\t"+str(matrix[r][c]))
+                fhdl.write("\n")
             except:
                 sys.stderr.write("Error dumping %s, invalid rows or cols\n"%self.id)
         fhdl.close()
