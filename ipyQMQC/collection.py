@@ -78,12 +78,11 @@ class Collection(object):
                     mdata[cat][field][i] = value
         for cat in mdata.iterkeys():
             for field in mdata[cat].iterkeys():
-                tdata = [cat, field] + mdata[cat][field]
+                tdata.append( [cat, field] + mdata[cat][field] )
         keyArgs = { 'width': 700,
                     'height': 600,
                     'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
-                    'header': ['category', 'field'] + header,
-                    'data': tdata,
+                    'data': {'data': tdata, 'header': ['category', 'field'] + header},
                     'rows_per_page': 20 }
         try:
             Ipy.RETINA.table(**keyArgs)

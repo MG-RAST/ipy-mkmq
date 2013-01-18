@@ -96,7 +96,7 @@ class AnalysisSet(object):
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
     
-    def plot_annotation(self, annot='taxonomy', level='domain', parent=None, width=800, height=800, title="", legend=True, normalize=1):
+    def plot_annotation(self, annot='taxonomy', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
         keyArgs = { 'normalize': normalize,
                     'width': width,
@@ -425,7 +425,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_annotation(self, normalize=1, width=800, height=800, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
+    def plot_annotation(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
@@ -451,9 +451,10 @@ class Analysis(object):
                 # only use submg cols
                 if col['id'] in submg:
                     data[c]['data'].append(toNum(row[c]))
-        lheight = min(0.95, len(submg)*0.05)
+        lheight = min(height, len(submg)*35)
         lwidth  = len(max(labels, key=len)) * 7.2
         cwidth  = 0.85 if legend else 0.99
+        height  = height if height else len(labels)*len(submg)*7.5
         keyArgs = { 'btype': 'row',
                     'width': width+lwidth,
                     'height': height,
@@ -462,7 +463,7 @@ class Analysis(object):
                     'title': title,
                     'target': 'div_graph_'+random_str(),
                     'show_legend': legend,
-                    'legendArea': [0.87, 0.1, 0.2, lheight],
+                    'legendArea': [0.87, 0.05, 0.2, lheight],
                     'chartArea': [lwidth, 0.02, cwidth, 0.95],
                     'data': data,
                     'onclick': onclick }
