@@ -117,6 +117,9 @@ def obj_from_url(url):
     if not obj:
         sys.stderr.write("ERROR (%s): return structure not valid json format\n"%url)
         return None
+    if 'ERROR' in obj:
+        sys.stderr.write("ERROR (%s): %s"%(url, obj['ERROR']))
+        return None
     return obj
 
 def slice_column(matrix, index):

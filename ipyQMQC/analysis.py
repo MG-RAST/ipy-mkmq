@@ -38,7 +38,7 @@ class AnalysisSet(object):
 
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
-            sys.stdout.write("setting %s.display_mgs to all metagenomes in set"%self.defined_name)
+            sys.stdout.write("setting %s.display_mgs to all metagenomes in set\n"%self.defined_name)
             self.display_mgs = self.all_mgs
         else:
             self.display_mgs = ids
@@ -52,12 +52,12 @@ class AnalysisSet(object):
             thdl  = open(self._path+'/CACHE_TIME', 'rU')
             ctime = thdl.read().strip()
             thdl.close()
-            sys.stdout.write("analysis-set '%s' loaded from cache %s (%s)"%(self.defined_name, self.cache, ctime))
+            sys.stdout.write("analysis-set '%s' loaded from cache %s (%s)\n"%(self.defined_name, self.cache, ctime))
             return ctime
         # set dir and time
         os.mkdir(self._path)
         ctime = self._timestamp_cache()
-        sys.stdout.write("analysis-set '%s' saved to cache %s (%s)"%(self.defined_name, self.cache, ctime))
+        sys.stdout.write("analysis-set '%s' saved to cache %s (%s)\n"%(self.defined_name, self.cache, ctime))
         return ctime
 
     def _timestamp_cache(self, ctime=None):
