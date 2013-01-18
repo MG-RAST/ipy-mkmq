@@ -98,6 +98,8 @@ class AnalysisSet(object):
     
     def plot_annotation(self, annot='taxonomy', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
+        if children:
+            children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
                     'width': width,
                     'height': height,
@@ -110,7 +112,7 @@ class AnalysisSet(object):
             click_opts = (self.defined_name, child_level(level, htype=annot), annot, normalize, width, height, title, 'True' if legend else 'False')
             keyArgs['onclick'] = "'%s.plot_annotation(level=\"%s\", parent=\"'+params['label']+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
         if Ipy.DEBUG:
-            print annot, level, keyArgs
+            print annot, level, child_level(level, htype=annot), keyArgs
         to_plot = getattr(self, level)
         to_plot['abundance'].plot_annotation(**keyArgs)
         
