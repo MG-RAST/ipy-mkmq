@@ -8,13 +8,13 @@ class Retina(object):
     def __init__(self, action='none', debug=False):
         self.action = action
         self.debug  = debug
-        self.rjs = ipyTools.Ipy.RETINA_URL+'js/'
+        self.rjs = ipyTools.Ipy.RETINA_URL+'js'
         self.rcss   = [ ipyTools.Ipy.RETINA_URL+'css/bootstrap.min.css' ]
-        self.rlibs  = [ self.rjs+'bootstrap.min.js',
-                        self.rjs+'retina.js',
-                        self.rjs+'stm.js',
-                        self.rjs+'ipy.js' ]
-        self.renderer_resource = ipyTools.Ipy.RETINA_URL+"renderers/";
+        self.rlibs  = [ self.rjs+'/bootstrap.min.js',
+                        self.rjs+'/retina.js',
+                        self.rjs+'/stm.js',
+                        self.rjs+'/ipy.js' ]
+        self.renderer_resource = ipyTools.Ipy.RETINA_URL+"renderers";
         src = """
 			(function(){
 				Retina.init( { library_resource: '"""+self.rjs+"""'});
