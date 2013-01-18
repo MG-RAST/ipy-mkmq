@@ -14,7 +14,7 @@ class Retina(object):
                         self.rjs+'/retina.js',
                         self.rjs+'/stm.js',
                         self.rjs+'/ipy.js' ]
-        self.renderer_resource = ipyTools.Ipy.RETINA_URL+"renderers";
+        self.renderer_resource = ipyTools.Ipy.RETINA_URL+"renderers/";
         src = """
 			(function(){
 				Retina.init( { library_resource: '"""+self.rjs+"""'});
