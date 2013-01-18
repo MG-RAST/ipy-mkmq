@@ -84,16 +84,18 @@ class Collection(object):
                     'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
                     'data': {'data': tdata, 'header': ['category', 'field'] + header},
                     'rows_per_page': 20 }
+        if Ipy.DEBUG:
+            print keyArgs
         try:
             Ipy.RETINA.table(**keyArgs)
         except:
             sys.stderr.write("Error producing metadata table\n")
 
-    def plot_taxon(self, ptype='row', level='domain', parent=None, width=800, height=800, x_rotate='0', title="", legend=True):
+    def plot_taxon(self, ptype='row', level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None
         self._plot_annotation('taxonomy', ptype, level, width, height, x_rotate, title, legend, names=children)
 
-    def plot_function(self, ptype='row', source='Subsystems', width=800, height=800, x_rotate='0', title="", legend=True):
+    def plot_function(self, ptype='row', source='Subsystems', width=800, height=0, x_rotate='0', title="", legend=True):
         self._plot_annotation('ontology', ptype, source, width, height, x_rotate, title, legend)
 
     def _plot_annotation(self, atype, ptype, level, width, height, x_rotate, title, legend, names=None):
@@ -119,17 +121,23 @@ class Collection(object):
                     d['data'].append(int(annMG[a]))
                 else:
                     d['data'].append(0)
-            
+        height  = height if height else len(annL)*len(self.metagenomes)*7.5
+        lheight = min(height, len(self.metagenomes)*35)
+        lwidth  = len(max(annL, key=len)) * 7.2
+        cwidth  = 0.85 if legend else 0.99
         keyArgs = { 'btype': ptype,
-                    'width': width,
+                    'width': width+lwidth,
                     'height': height,
                     'x_labels': annL,
                     'x_labels_rotation': x_rotate,
                     'title': title,
                     'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
                     'show_legend': legend,
-                    'legend_position': 'right',
+                    'legendArea': [0.87, 0.05, 0.2, lheight],
+                    'chartArea': [lwidth, 0.02, cwidth, 0.95],
                     'data': data }
+        if Ipy.DEBUG:
+            print keyArgs
         try:
             Ipy.RETINA.graph(**keyArgs)
         except:
