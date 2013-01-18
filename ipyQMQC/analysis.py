@@ -391,7 +391,6 @@ class Analysis(object):
             self._matr_heatmap(normalize=normalize, title=title)
     
     def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None):
-        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         # default is all
         all_annot = self.annotations()
         if (not submg) or (len(submg) == 0):
@@ -409,20 +408,21 @@ class Analysis(object):
         ro.r(rcmd)
         cord, cdist = ordered_distance_from_file(col_file)
         rord, rdist = ordered_distance_from_file(row_file)
+        sub_matrix  = matrix_from_file(matrix_file)
         data = { 'columns': submg,
                  'rows': subset,
                  'colindex': cord,
                  'rowindex': rord,
                  'coldend': cdist,
                  'rowdend': rdist,
-                 'data': matrix }
+                 'data': sub_matrix }
         lwidth  = len(max(subset, key=len)) * 7.2
         keyArgs = { 'data': data,
-                    'width': width+lwidth,
+                    'width': int(width+lwidth),
                     'height': height,
                     'target': 'div_heatmap_'+random_str(),
                     'tree_width': 200,
-                    'legend_width': lwidth }
+                    'legend_width': int(lwidth) }
         if Ipy.DEBUG:
             print keyArgs
         try:
@@ -477,15 +477,15 @@ class Analysis(object):
         lwidth  = len(max(labels, key=len)) * 7.2
         cwidth  = 0.85 if legend else 0.99
         keyArgs = { 'btype': 'row',
-                    'width': width+lwidth,
-                    'height': height,
+                    'width': int(width+lwidth),
+                    'height': int(height),
                     'x_labels': labels,
                     'x_labels_rotation': x_rotate,
                     'title': title,
                     'target': 'div_graph_'+random_str(),
                     'show_legend': legend,
-                    'legendArea': [0.87, 0.05, 0.2, lheight],
-                    'chartArea': [lwidth, 0.02, cwidth, 0.95],
+                    'legendArea': [0.87, 0.05, 0.2, int(lheight)],
+                    'chartArea': [int(lwidth), 0.02, cwidth, 0.95],
                     'data': data,
                     'onclick': onclick }
         if normalize and self.NDmatrix:
