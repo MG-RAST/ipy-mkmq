@@ -9,7 +9,7 @@ from collections import defaultdict
 from datetime import datetime
 
 class AnalysisSet(object):
-    def __init__(self, ids=[], auth=None, cache=None, def_name=None):
+    def __init__(self, ids=[], auth=None, cache=None, def_name=None, reset_cache=False):
         if cache is None:
             cache = random_str()
         self.cache = cache
@@ -22,6 +22,9 @@ class AnalysisSet(object):
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
+        # set cache
+        self.cache_time = self._set_cache(reset_cache)
+        # get data
         for tax in Ipy.TAX_SET:
             values = {}
             for val in Ipy.VALUES:
@@ -32,8 +35,6 @@ class AnalysisSet(object):
             for val in Ipy.VALUES:
                 values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
             setattr(self, ont, values)
-        # cache this!
-        self.dump()
 
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
@@ -42,36 +43,43 @@ class AnalysisSet(object):
         else:
             self.display_mgs = ids
 
-    def dump(self, force=False):
+    def _set_cache(self, reset=False):
         # force re-cache
-        if force and os.path.isdir(self._path):
+        if reset and os.path.isdir(self._path):
             shutil.rmtree(self._path)
         # test if exists
-        if os.path.isdir(self._path):
-            thdl = open(self._path+'/CACHE_TIME', 'rU')
-            now = thdl.read()
+        if os.path.isdir(self._path) and os.path.isfile(self._path+'/CACHE_TIME'):
+            thdl  = open(self._path+'/CACHE_TIME', 'rU')
+            ctime = thdl.read().strip()
             thdl.close()
-            self.cache_time = now.strip()
-            sys.stdout.write("analysis-set '%s' from cache %s (%s)"%(self.defined_name, self.cache, self.cache_time))
-            return
+            sys.stdout.write("analysis-set '%s' from cache %s (%s)"%(self.defined_name, self.cache, ctime))
+            return ctime
         # set dir and time
         os.mkdir(self._path)
-        now = str(datetime.now())
-        self.cache_time = now
-        thdl = open(self._path+'/CACHE_TIME', 'w')
-        thdl.write(now+"\n")
-        thdl.close()
+        return self._timestamp_cache()
+
+    def _timestamp_cache(self, ctime=None):
+        if os.path.isdir(self._path):
+            ctime = ctime if ctime else str(datetime.now())
+            thdl  = open(self._path+'/CACHE_TIME', 'w')
+            thdl.write(ctime+"\n")
+            thdl.close()
+            return ctime
+        else:
+            return None
+
+    def dump(self, force=False):
+        if not os.path.isdir(self._path):
+            self.cache_time = self._set_cache()
         # dump individual files
-        for tax in Ipy.TAX_SET:
-            tax_set = getattr(self, tax)
-            for analysis in tax_set.itervalues():
+        for key in Ipy.TAX_SET+Ipy.ONT_SET:
+            item = getattr(self, key)
+            for analysis in item.itervalues():
                 fname = self._path+'/'+analysis.id+'.biom'
-                analysis.dump(fname=fname, fformat='biom')
-        for ont in Ipy.ONT_SET:
-            ont_set = getattr(self, ont)
-            for analysis in ont_set.itervalues():
-                fname = self._path+'/'+analysis.id+'.biom'
-                analysis.dump(fname=fname, fformat='biom')
+                if force or (not os.path.isfile(fname)):
+                    analysis.dump(fname=fname, fformat='biom')
+        if force:
+            self.cache_time = self._timestamp_cache()
 
     def _get_analysis(self, ids, annotation, level, result_type, source):
         # this needs to be created same way as matrix api builds it
@@ -94,9 +102,13 @@ class AnalysisSet(object):
             keyArgs['source'] = source
             if self._auth:
                 keyArgs['auth'] = self._auth
-            return Analysis(**keyArgs)
+            thisAnalysis = Analysis(**keyArgs)
+            thisAnalysis.dump(fname=biom_file, fformat='biom')
+            if Ipy.DEBUG:
+                sys.stdout.write("caching %s.biom to %s ... \n"%(matrix_id, self.cache))
+            return thisAnalysis
     
-    def plot_annotation(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
+    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
         if children:
             children = filter(lambda x: x, children)
@@ -114,9 +126,9 @@ class AnalysisSet(object):
         if Ipy.DEBUG:
             print annot, level, child_level(level, htype=annot), keyArgs
         to_plot = getattr(self, level)
-        to_plot['abundance'].plot_annotation(**keyArgs)
+        to_plot['abundance'].barchart(**keyArgs)
         
-    def plot_heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
+    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
         keyArgs = { 'normalize': normalize,
                     'width': width,
@@ -152,12 +164,11 @@ class Analysis(object):
     def _init_matrix(self):
         self.id = self.biom['id'] if self.biom else ""
         self.result_type = self.biom['matrix_element_value'] if self.biom else ""
-        self.matrix = self.biom['data'] if self.biom else []
         self.numIDs = self.biom['shape'][1] if self.biom else 0
         self.numAnnotations = self.biom['shape'][0] if self.biom else 0
         self.Dmatrix  = self._dense_matrix()  # count dense matrix
-        self.NDmatrix = None  # normalized dense matrix
         self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs) # R count matrix object
+        self.NDmatrix = None  # normalized dense matrix
         self.NRmatrix = None  # R normalized matrix object
         if self.result_type == 'abundance':
             self._normalize_matrix() # only normalize abundance counts
@@ -338,7 +349,7 @@ class Analysis(object):
         else:
             return 0
     
-    def plot_boxplot(self, normalize=1, title=''):
+    def boxplot(self, normalize=1, title=''):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
         labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
@@ -358,7 +369,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
     
-    def plot_pco(self, normalize=1, dist='bray-curtis', title=''):
+    def pco(self, normalize=1, dist='bray-curtis', title=''):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
         labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
@@ -372,8 +383,8 @@ class Analysis(object):
         ro.r.pco(matrix, **keyArgs)
         ro.r("dev.off()")
         return fname
-    
-    def plot_heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, source='retina'):
+
+    def heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, source='retina'):
         if source == 'retina':
             self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height)
         else:
@@ -382,10 +393,13 @@ class Analysis(object):
     def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         # default is all
+        all_annot = self.annotations()
         if (not submg) or (len(submg) == 0):
             submg = self.ids()
         if (not subset) or (len(subset) == 0):
-            subset = self.annotations()
+            subset = all_annot
+        else:
+            subset = filter(lambda x: x in all_annot, subset)
         # run our own R code
         matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
@@ -415,7 +429,7 @@ class Analysis(object):
             Ipy.RETINA.heatmap(**keyArgs)
         except:
             sys.stderr.write("Error producing heatmap\n")
-    
+
     def _matr_heatmap(self, normalize=1, title=''):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/heatmap_'+random_str()+'.svg'
@@ -431,8 +445,8 @@ class Analysis(object):
         ro.r.heatmap(matrix, **keyArgs)
         ro.r("dev.off()")
         return fname
-    
-    def plot_annotation(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
+
+    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
@@ -482,7 +496,7 @@ class Analysis(object):
             Ipy.RETINA.graph(**keyArgs)
         except:
             sys.stderr.write("Error producing chart\n")
-    
+
     def _normalize_matrix(self):
         try:
             # can matr do it ?
@@ -505,6 +519,6 @@ class Analysis(object):
         if not self.biom:
             return []
         if self.biom['matrix_type'] == 'dense':
-            return self.matrix
+            return self.biom['data']
         else:
-            return sparse_to_dense(self.matrix, self.numAnnotations, self.numIDs)
+            return sparse_to_dense(self.biom['data'], self.numAnnotations, self.numIDs)
