@@ -201,8 +201,8 @@ class Analysis(object):
             all_annot = self.annotations()
             all_mgids = self.ids()
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-            annot  = cols if cols and (len(cols) > 0) else all_annot
-            mgids  = rows if rows and (len(rows) > 0) else all_mgids
+            annot  = rows if rows and (len(rows) > 0) else all_annot
+            mgids  = cols if cols and (len(cols) > 0) else all_mgids
             try:
                 fhdl.write("\t%s\n"%"\t".join(mgids))
                 for a in annot:
