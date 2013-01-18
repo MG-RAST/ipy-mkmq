@@ -279,6 +279,10 @@ def merge_dense(data, cols, rows):
     return cm, rm, mm
 
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
+    if htype == 'organism':
+        htype = 'taxonomy'
+    if htype == 'function':
+        htype = 'ontology'
     params = [('min_level', level)]
     if parent is not None:
         params.append(('parent_name', parent))
@@ -291,6 +295,8 @@ def get_ontology(level='function', parent=None):
     return get_hierarchy(htype='ontology', level=level, parent=parent)
 
 def parent_level(level, htype='taxonomy'):
+    if htype == 'organism':
+        htype = 'taxonomy'
     hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
     try:
         index = hierarchy.index(level)
@@ -301,6 +307,8 @@ def parent_level(level, htype='taxonomy'):
     return hierarchy[index-1]
 
 def child_level(level, htype='taxonomy'):
+    if htype == 'organism':
+        htype = 'taxonomy'
     hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
     try:
         index = hierarchy.index(level)

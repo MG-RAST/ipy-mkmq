@@ -96,7 +96,7 @@ class AnalysisSet(object):
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
     
-    def plot_annotation(self, annot='taxonomy', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
+    def plot_annotation(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
         if children:
             children = filter(lambda x: x, children)
@@ -116,7 +116,7 @@ class AnalysisSet(object):
         to_plot = getattr(self, level)
         to_plot['abundance'].plot_annotation(**keyArgs)
         
-    def plot_heatmap(self, annot='taxonomy', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
+    def plot_heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
         children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
         keyArgs = { 'normalize': normalize,
                     'width': width,
