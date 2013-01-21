@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import shutil
+import shutil, hashlib
 import math, urllib, sys, os, traceback
 import rpy2.robjects as ro
 from metagenome import Metagenome
@@ -77,7 +77,7 @@ class AnalysisSet(object):
         for key in Ipy.TAX_SET+Ipy.ONT_SET:
             item = getattr(self, key)
             for analysis in item.itervalues():
-                fname = self._path+'/'+analysis.id+'.biom'
+                fname = self._path+'/'+hashlib.md5(analysis.id).hexdigest()+'.biom'
                 if force or (not os.path.isfile(fname)):
                     analysis.dump(fname=fname, fformat='biom')
         if force:
@@ -88,14 +88,15 @@ class AnalysisSet(object):
         matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, result_type])
         matrix_id += "_%d_%d_%d"%(Ipy.MATRIX['e_val'], Ipy.MATRIX['ident'], Ipy.MATRIX['alen'])
         # load from client cache if exists
-        biom_file = self._path+'/'+matrix_id+'.biom'
+        matrix_md5 = hashlib.md5(matrix_id).hexdigest()
+        biom_file  = self._path+'/'+matrix_md5+'.biom'
         if os.path.isfile(biom_file):
             if Ipy.DEBUG:
-                sys.stdout.write("loading %s.biom from cache %s ... \n"%(matrix_id, self.cache))
+                sys.stdout.write("loading %s.biom (%s) from cache %s ... \n"%(matrix_md5, matrix_id, self.cache))
             return Analysis(bfile=biom_file, auth=self._auth)
         else:
             if Ipy.DEBUG:
-                sys.stdout.write("loading %s.biom through api ... \n"%matrix_id)
+                sys.stdout.write("loading %s through api ... \n"%matrix_id)
             keyArgs = Ipy.MATRIX
             keyArgs['ids'] = ids
             keyArgs['annotation'] = annotation
@@ -107,7 +108,7 @@ class AnalysisSet(object):
             thisAnalysis = Analysis(**keyArgs)
             thisAnalysis.dump(fname=biom_file, fformat='biom')
             if Ipy.DEBUG:
-                sys.stdout.write("caching %s.biom to %s ... \n"%(matrix_id, self.cache))
+                sys.stdout.write("caching %s.biom (%s) to %s ... \n"%(matrix_md5, matrix_id, self.cache))
             return thisAnalysis
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
@@ -201,9 +202,50 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
 
+    def sub_matrix(self, normalize=0, cols=None, rows=None):
+        all_annot = self.annotations()
+        all_mgids = self.ids()
+        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        # validate rows
+        aIndex = []
+        if rows and (len(rows) > 0):
+            aIndex = range(len(all_annot))
+        else:
+            for r in rows:
+                try:
+                    a = all_annot.index(r)
+                except (ValueError, AttributeError):
+                    continue
+                aIndex.append(a)
+        # validate cols
+        mgids  = []
+        mIndex = []
+        if cols and (len(cols) > 0):
+            mgids  = all_mgids
+            mIndex = range(len(all_mgids))
+        else:
+            for c in cols:
+                try:
+                    m = all_mgids.index(c)
+                except (ValueError, AttributeError):
+                    continue
+                mgids.append(all_mgids[m])
+                mIndex.append(m)
+        # build matrix
+        sub_matrix = []
+        good_rows = []
+        for i in aIndex:
+            rdata = []
+            for j in mIndex:
+                rdata.append(matrix[i][j])
+            if sum(rdata) > 0:
+                sub_matrix.append(rdata)
+                good_rows.append(all_annot[i])
+        return good_rows, mgids, matrix
+
     def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None):
         if not fname:
-            fname = self.id+'.biom' if fformat == 'biom' else self.id+'.tab'
+            fname = hashlib.md5(self.id).hexdigest()+'.biom' if fformat == 'biom' else hashlib.md5(self.id).hexdigest()+'.tab'
         if not self.biom:
             sys.stderr.write("Error dumping %s, no data\n"%self.id)
             return
