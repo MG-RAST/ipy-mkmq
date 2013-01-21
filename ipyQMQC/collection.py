@@ -5,7 +5,7 @@ from metagenome import Metagenome
 from ipyTools import *
 
 class Collection(object):
-    def __init__(self, mgids, metadata=True, stats=True, auth=None, def_name=None):
+    def __init__(self, mgids, metadata=True, stats=True, auth=None, def_name=None, cache=None):
         self._auth  = auth
         self._stats = stats
         # hack to get variable name
@@ -15,16 +15,19 @@ class Collection(object):
         self.defined_name = def_name
         # get metagenomes
         self._mgids = mgids
-        self.metagenomes = self._get_metagenomes(mgids, metadata, stats)
+        self.metagenomes = self._get_metagenomes(mgids, metadata, stats, cdir=cache)
     
-    def _get_metagenomes(self, mgids, metadata, stats):
+    def _get_metagenomes(self, mgids, metadata, stats, cdir=None):
         mgs = {}
         for mg in mgids:
             keyArgs = { 'metadata': metadata,
                         'stats': stats,
                         'auth': self._auth,
+                        'cache': cdir,
                         'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
                        }
+            if cdir and os.path.isfile(cdir+'/'+mg+'.json'):
+                keyArgs['mfile'] = cdir+'/'+mg+'.json'
             mgs[mg] = Metagenome(mg, **keyArgs)
         return mgs
     

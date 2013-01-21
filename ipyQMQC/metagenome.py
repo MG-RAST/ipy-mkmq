@@ -1,12 +1,28 @@
 #!/usr/bin/env python
 
-import sys, traceback
+import sys, os, json, traceback
 from ipyTools import *
 
 class Metagenome(object):
-    def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None):
+    def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None, cache=None, mfile=None):
         self._auth = auth
-        metagenome = self._get_metagenome(mgid, metadata)
+        metagenome = None
+        if mfile and os.path.isfile(mfile):
+            # try load from file if given
+            try:
+                mhdl = open(mfile, 'rU')
+                metagenome = json.load(mhdl)
+                mhdl.close()
+            except:
+                pass
+        if metagenome is None:
+            # load from api
+            metagenome = self._get_metagenome(mgid, metadata)
+            if cache and metagenome and os.path.isdir(cache):
+                # cache it if dir given and not loaded from file
+                mhdl = open(cache+'/'+metagenome['id']+'.json', 'rU')
+                json.dump(metagenome, mhdl)
+                mhdl.close()
         if metagenome is not None:
             for key, val in metagenome.iteritems():
                 setattr(self, key, val)
