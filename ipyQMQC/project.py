@@ -18,9 +18,7 @@ class Project(Collection):
         # try load from cached
         if self.cache and os.path.isdir(self.cache) and os.path.isfile(self.cache+'/'+pid+'.json'):
             try:
-                phdl = open(self.cache+'/'+pid+'.json', 'rU')
-                project = json.load(phdl)
-                phdl.close()
+                project = json.load(open(self.cache+'/'+pid+'.json', 'rU'))
             except:
                 pass
         # load from api

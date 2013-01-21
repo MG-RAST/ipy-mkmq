@@ -10,9 +10,7 @@ class Metagenome(object):
         if mfile and os.path.isfile(mfile):
             # try load from file if given
             try:
-                mhdl = open(mfile, 'rU')
-                metagenome = json.load(mhdl)
-                mhdl.close()
+                metagenome = json.load(open(mfile, 'rU'))
             except:
                 pass
         if metagenome is None:
