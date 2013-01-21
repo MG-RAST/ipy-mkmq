@@ -45,7 +45,9 @@ class Collection(object):
     
     def sub_mgs(self, category=None, field=None, value=None):
         sub_mgs = set()
-        all_fields = self.metadata_fields()
+        all_fields = []
+        for f in self.metadata_fields(table=False).itervalues():
+            all_fields.extend(list(f))
         if not (category and (category in Ipy.MD_CATS)):
             sys.stderr.write("category must be one of: %s\n"%", ".join(Ipy.MD_CATS))
             return self.mgids()
@@ -61,7 +63,7 @@ class Collection(object):
                     if x != -1:
                         sub_mgs.add(mid)
         return list(sub_mgs)
-        
+
     def metadata_fields(self, table=True):
         tdata = []
         mdata = dict([(x, set()) for x in Ipy.MD_CATS])
