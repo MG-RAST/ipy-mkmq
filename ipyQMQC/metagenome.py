@@ -42,7 +42,7 @@ class Metagenome(object):
                 (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
                 def_name = text[:text.find('=')].strip()
             except:
-                def_name = None
+                pass
         self.defined_name = def_name
         
     def _get_metagenome(self, mgid, metadata):

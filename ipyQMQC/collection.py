@@ -10,8 +10,11 @@ class Collection(object):
         self._stats = stats
         # hack to get variable name
         if def_name == None:
-            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
-            def_name = text[:text.find('=')].strip()
+            try:
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
+            except:
+                pass
         self.defined_name = def_name
         # get metagenomes
         self._mgids = mgids

@@ -9,6 +9,14 @@ class Project(Collection):
         # set project
         self.cache = Ipy.NB_DIR+'/'+pid if cache else None
         project = None
+        # hack to get variable name
+        if def_name == None:
+            try:
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
+            except:
+                pass
+        self.defined_name = def_name        
         # reset cache if asked
         if reset_cache and os.path.isdir(self.cache):
             shutil.rmtree(self.cache)
@@ -39,7 +47,7 @@ class Project(Collection):
         for key, val in project.iteritems():
             setattr(self, key, val)
         # call collection init - from cache if given
-        Collection.__init__(self, self.mgids(), metadata=metadata, stats=stats, auth=auth, def_name=def_name, cache=self.cache)
+        Collection.__init__(self, self.mgids(), metadata=metadata, stats=stats, auth=auth, def_name=self.defined_name, cache=self.cache)
     
     def _get_project(self, pid, metadata, auth):
         verb = 'full' if metadata else 'verbose'
