@@ -28,7 +28,7 @@ class Project(Collection):
             if project and self.cache and os.path.isdir(self.cache):
                 # cache it if dir given and not loaded from file
                 try:
-                    json.dump(project, open(cache+'/'+pid+'.json', 'rU'))
+                    json.dump(project, open(self.cache+'/'+pid+'.json', 'w'))
                     sys.stdout.write("project '%s' saved to cache %s\n"%(self.defined_name, pid))
                 except:
                     pass
