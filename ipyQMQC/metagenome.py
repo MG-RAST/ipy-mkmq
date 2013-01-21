@@ -11,6 +11,7 @@ class Metagenome(object):
             # try load from file if given
             try:
                 metagenome = json.load(open(mfile, 'rU'))
+                sys.stdout.write("metagenome %s loaded from cache (%s)\n"%(mgid, cache))
             except:
                 pass
         if metagenome is None:
@@ -18,9 +19,11 @@ class Metagenome(object):
             metagenome = self._get_metagenome(mgid, metadata)
             if cache and metagenome and os.path.isdir(cache):
                 # cache it if dir given and not loaded from file
-                mhdl = open(cache+'/'+metagenome['id']+'.json', 'rU')
-                json.dump(metagenome, mhdl)
-                mhdl.close()
+                try:
+                    json.dump(metagenome, open(cache+'/'+mgid+'.json', 'rU'))
+                    sys.stdout.write("metagenome %s saved to cache (%s)\n"%(mgid, cache))
+                except:
+                    pass
         if metagenome is not None:
             for key, val in metagenome.iteritems():
                 setattr(self, key, val)

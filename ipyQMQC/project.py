@@ -19,6 +19,7 @@ class Project(Collection):
         if self.cache and os.path.isdir(self.cache) and os.path.isfile(self.cache+'/'+pid+'.json'):
             try:
                 project = json.load(open(self.cache+'/'+pid+'.json', 'rU'))
+                sys.stdout.write("project '%s' loaded from cache %s\n"%(self.defined_name, pid))
             except:
                 pass
         # load from api
@@ -26,9 +27,11 @@ class Project(Collection):
             project = self._get_project(pid, metadata, auth)
             if project and self.cache and os.path.isdir(self.cache):
                 # cache it if dir given and not loaded from file
-                phdl = open(cache+'/'+project['id']+'.json', 'rU')
-                json.dump(project, phdl)
-                phdl.close()
+                try:
+                    json.dump(project, open(cache+'/'+pid+'.json', 'rU'))
+                    sys.stdout.write("project '%s' saved to cache %s\n"%(self.defined_name, pid))
+                except:
+                    pass
         if project is None:
             self.id = pid
             self.name = None
