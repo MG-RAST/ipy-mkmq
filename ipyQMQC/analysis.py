@@ -9,14 +9,22 @@ from collections import defaultdict
 from datetime import datetime
 
 class AnalysisSet(object):
-    def __init__(self, ids=[], auth=None, cache=None, def_name=None, reset_cache=False):
+    def __init__(self, ids=[], auth=None, method='WGS', all_values=False, cache=None, def_name=None, reset_cache=False):
         if cache is None:
             cache = random_str()
+        self.method = method
         self.cache = cache
         self._path = Ipy.NB_DIR+'/'+cache
         self._auth = auth
         self.all_mgs = ids
         self.display_mgs = self.all_mgs
+        tax_source = ''
+        if self.method == 'WGS':
+            tax_source = 'M5NR'
+        elif self.method == 'Amplicon':
+            tax_source = 'M5RNA'
+        else:
+            sys.stderr.write("Error: invalid method (%s), use one of 'WGS' or 'Amplicon'"%self.method)
         # hack to get variable name
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
@@ -27,14 +35,22 @@ class AnalysisSet(object):
         # get data
         for tax in Ipy.TAX_SET:
             values = {}
-            for val in Ipy.VALUES:
-                values[val] = self._get_analysis(ids, 'organism', tax, val, 'M5NR')
+            if all_values:
+                for val in Ipy.VALUES:
+                    values[val] = self._get_analysis(ids, 'organism', tax, val, tax_source)
+            else:
+                values['abundance'] = self._get_analysis(ids, 'organism', tax, 'abundance', tax_source)
             setattr(self, tax, values)
-        for ont in Ipy.ONT_SET:
-            values = {}
-            for val in Ipy.VALUES:
-                values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
-            setattr(self, ont, values)
+                
+        if self.method == 'WGS':
+            for ont in Ipy.ONT_SET:
+                values = {}
+                if all_values:
+                    for val in Ipy.VALUES:
+                        values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
+                else:
+                    values['abundance'] = self._get_analysis(ids, 'function', tax, 'abundance', 'Subsystems')
+                setattr(self, ont, values)
 
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
@@ -74,12 +90,19 @@ class AnalysisSet(object):
         if not os.path.isdir(self._path):
             self.cache_time = self._set_cache()
         # dump individual files
-        for key in Ipy.TAX_SET+Ipy.ONT_SET:
+        for key in Ipy.TAX_SET:
             item = getattr(self, key)
             for analysis in item.itervalues():
                 fname = self._path+'/'+hashlib.md5(analysis.id).hexdigest()+'.biom'
                 if force or (not os.path.isfile(fname)):
                     analysis.dump(fname=fname, fformat='biom')
+        if self.method == 'WGS':
+            for key in Ipy.ONT_SET:
+                item = getattr(self, key)
+                for analysis in item.itervalues():
+                    fname = self._path+'/'+hashlib.md5(analysis.id).hexdigest()+'.biom'
+                    if force or (not os.path.isfile(fname)):
+                        analysis.dump(fname=fname, fformat='biom')
         if force:
             self.cache_time = self._timestamp_cache()
 
