@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, shutil
+import os, shutil, traceback
 from collection import Collection
 from ipyTools import *
 
