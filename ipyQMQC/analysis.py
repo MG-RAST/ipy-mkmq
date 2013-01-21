@@ -49,7 +49,7 @@ class AnalysisSet(object):
                     for val in Ipy.VALUES:
                         values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
                 else:
-                    values['abundance'] = self._get_analysis(ids, 'function', tax, 'abundance', 'Subsystems')
+                    values['abundance'] = self._get_analysis(ids, 'function', ont, 'abundance', 'Subsystems')
                 setattr(self, ont, values)
 
     def set_display_mgs(self, ids=[]):
