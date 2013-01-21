@@ -72,7 +72,7 @@ class Collection(object):
                 if cat not in mg.metadata:
                     continue
                 for key in mg.metadata[cat]['data'].iterkeys():
-                    data[cat].add(key)
+                    mdata[cat].add(key)
         if not table:
             return mdata
         for cat in mdata.iterkeys():
@@ -80,7 +80,7 @@ class Collection(object):
                 tdata.append([cat, field])
         keyArgs = { 'width': 400,
                     'height': 600,
-                    'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
+                    'target': 'metadata_fields_'+random_str(),
                     'data': {'data': tdata, 'header': ['category', 'field']},
                     'rows_per_page': 20 }
         if Ipy.DEBUG:
@@ -90,13 +90,14 @@ class Collection(object):
         except:
             sys.stderr.write("Error producing metadata table\n")
     
-    def show_metadata(self):
+    def show_metadata(self, mgids=None):
         header = []
         tdata  = []
         mdata  = dict([(x, {}) for x in Ipy.MD_CATS])
-        for mid, mg in self.metagenomes.iteritems():
-            if hasattr(mg, 'metadata'):
-                header.append(mg.id)
+        submgs = mgids if mgids and (len(mgids) > 0) else self.mgids()
+        for mid in submgs:
+            if (mid in self.metagenomes) and hasattr(self.metagenomes[mid], 'metadata'):
+                header.append(mid)
         if len(header) == 0:
             sys.stderr.write("No metadata to display\n")
         for i, mid in enumerate(header):
@@ -110,7 +111,7 @@ class Collection(object):
                 tdata.append( [cat, field] + mdata[cat][field] )
         keyArgs = { 'width': 700,
                     'height': 600,
-                    'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
+                    'target': "metadata_table_"+random_str(),
                     'data': {'data': tdata, 'header': ['category', 'field'] + header},
                     'rows_per_page': 20 }
         if Ipy.DEBUG:
