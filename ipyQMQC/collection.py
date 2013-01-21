@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json, sys, traceback
+from collections import defaultdict
 from metagenome import Metagenome
 from ipyTools import *
 
@@ -61,8 +62,9 @@ class Collection(object):
                         sub_mgs.add(mid)
         return list(sub_mgs)
         
-    def metadata_fields(self):
-        fields = set()
+    def metadata_fields(self, table=True):
+        tdata = []
+        mdata = dict([(x, set()) for x in Ipy.MD_CATS])
         for mg in self.metagenomes.itervalues():
             if not hasattr(mg, 'metadata'):
                 continue
@@ -70,8 +72,23 @@ class Collection(object):
                 if cat not in mg.metadata:
                     continue
                 for key in mg.metadata[cat]['data'].iterkeys():
-                    fields.add(key)
-        return list(fields)
+                    data[cat].add(key)
+        if not table:
+            return mdata
+        for cat in mdata.iterkeys():
+            for field in sorted(mdata[cat]):
+                tdata.append([cat, field])
+        keyArgs = { 'width': 400,
+                    'height': 600,
+                    'target': '_'.join(self.mgids())+"_metadata_"+random_str(),
+                    'data': {'data': tdata, 'header': ['category', 'field']},
+                    'rows_per_page': 20 }
+        if Ipy.DEBUG:
+            print keyArgs
+        try:
+            Ipy.RETINA.table(**keyArgs)
+        except:
+            sys.stderr.write("Error producing metadata table\n")
     
     def show_metadata(self):
         header = []
