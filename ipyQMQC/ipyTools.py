@@ -218,7 +218,7 @@ def sub_biom(b, text):
     hier = ''
     if b['type'].startswith('Taxon'):
         hier = 'taxonomy'
-    elif bbiom['type'].startswith('Function'):
+    elif b['type'].startswith('Function'):
         hier = 'ontology'
     matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
     for r, row in enumerate(b['rows']):
