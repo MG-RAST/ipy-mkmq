@@ -135,8 +135,11 @@ class AnalysisSet(object):
             return thisAnalysis
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
-        children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
-        if children:
+        children = []
+        if parent and (len(parent) > 0):
+            for p in parent:
+                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+        if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
                     'width': width,
@@ -148,14 +151,19 @@ class AnalysisSet(object):
                     'subset': children }
         if child_level(level, htype=annot):
             click_opts = (self.defined_name, child_level(level, htype=annot), annot, normalize, width, height, title, 'True' if legend else 'False')
-            keyArgs['onclick'] = "'%s.plot_annotation(level=\"%s\", parent=\"'+params['label']+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+            keyArgs['onclick'] = "'%s.barchart(level=\"%s\", parent=[\"'+params['label']+'\"], annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
         if Ipy.DEBUG:
             print annot, level, child_level(level, htype=annot), keyArgs
         to_plot = getattr(self, level)
         to_plot['abundance'].barchart(**keyArgs)
         
     def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
-        children = get_hierarchy(htype=annot, level=level, parent=parent) if parent is not None else None
+        children = []
+        if parent and (len(parent) > 0):
+            for p in parent:
+                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+        if children and (len(children) > 0):
+            children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
                     'width': width,
                     'height': height,
@@ -163,6 +171,9 @@ class AnalysisSet(object):
                     'clust': clust,
                     'submg': self.display_mgs,
                     'subset': children }
+        if child_level(level, htype=annot):
+            click_opts = (self.defined_name, child_level(level, htype=annot), annot, normalize, width, height, dist, clust)
+            keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\")'"%click_opts
         if Ipy.DEBUG:
             print annot, level, keyArgs
         to_plot = getattr(self, level)
@@ -225,6 +236,23 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
 
+    def find_annotation(self, text):
+        if not self.biom:
+            return []
+        str_re = re.compile(text)
+        annot = set()
+        hier = ''
+        if self.biom['type'] == 'Taxon':
+            hier = 'taxonomy'
+        elif self.biom['type'] == 'Function':
+            hier = 'ontology'
+        for r in self.biom['rows']:
+            if str_re.search(r['id']):
+                annot.add(r['id'])
+            elif r['metadata'] and hier and (hier in r['metadata']) and str_re.search(r['metadata'][hier][-1]):
+                annot.add(r['metadata'][hier][-1])
+        return list(annot)
+
     def sub_matrix(self, normalize=0, cols=None, rows=None):
         all_annot = self.annotations()
         all_mgids = self.ids()
@@ -267,15 +295,13 @@ class Analysis(object):
         return good_rows, mgids, matrix
 
     def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None):
-        if not fname:
-            fname = hashlib.md5(self.id).hexdigest()+'.biom' if fformat == 'biom' else hashlib.md5(self.id).hexdigest()+'.tab'
+        output = ""
         if not self.biom:
             sys.stderr.write("Error dumping %s, no data\n"%self.id)
             return
-        fhdl = open(fname, 'w')
         if fformat == 'biom':
             # biom dump
-            json.dump(self.biom, fhdl)
+            output = json.dumps(self.biom)
         else:
             # tab deleminted dump / option for sub-dump
             all_annot = self.annotations()
@@ -283,24 +309,26 @@ class Analysis(object):
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
             annot  = rows if rows and (len(rows) > 0) else all_annot
             mgids  = cols if cols and (len(cols) > 0) else all_mgids
-            fhdl.write("\t%s\n"%"\t".join(mgids))
+            output = "\t%s\n"%"\t".join(mgids)
             for a in annot:
                 try:
                     r = all_annot.index(a)
                 except:
                     sys.stderr.write("Error: '%s' is not in annotations of %s"%(a, self.id))
-                    return
-                fhdl.write(a)
+                    return None
+                output += a
                 for m in mgids:
                     try:
                         c = all_mgids.index(m)
                     except:
                         sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(m, self.id))
-                        return
-                    fhdl.write("\t"+str(matrix[r][c]))
-                fhdl.write("\n")
-        fhdl.close()
-        return fname
+                        return None
+                    output += "\t"+str(matrix[r][c])
+                output += "\n"
+        if fname:
+            open(fname, 'w').write(output)
+        else:
+            return output
 
     def ids(self):
         if not self.biom:
@@ -521,19 +549,21 @@ class Analysis(object):
         return fname
 
     def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
-        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        all_ids = self.ids()
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
             return
         if (not submg) or (len(submg) == 0):
             # default is all
-            submg = self.ids()
+            submg = all_ids
         colors = google_palette(len(submg))
         labels = []
         data   = []
         # set retina data
         for i, m in enumerate(submg):
-            data.append({'name': m, 'data': [], 'fill': colors[i]})
+            if m in all_ids:
+                data.append({'name': m, 'data': [], 'fill': colors[i]})
         # populate data from matrix
         for r, row in enumerate(matrix):
             # only use subset rows if subset given
@@ -541,11 +571,12 @@ class Analysis(object):
             if subset and (len(subset) > 0):
                 if (rdata['id'] not in subset) or (('ontology' in rdata['metadata']) and (rdata['metadata']['ontology'][-1] not in subset)):
                     continue
-            labels.append(rdata['id'])
-            for c, col in enumerate(self.biom['columns']):
-                # only use submg cols
-                if col['id'] in submg:
-                    data[c]['data'].append(toNum(row[c]))
+            rname = rdata['metadata']['ontology'][-1] if 'ontology' in rdata['metadata'] else rdata['id']
+            labels.append(rname)
+            # only use submg cols
+            for i, m in enumerate(submg):
+                c = all_ids.index(m)
+                data[i]['data'].append(toNum(row[c]))
         height  = height if height else len(labels)*len(submg)*7.5
         lheight = min(height, len(submg)*35)
         lwidth  = len(max(labels, key=len)) * 7.2
