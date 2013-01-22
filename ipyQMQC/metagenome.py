@@ -4,6 +4,20 @@ import sys, os, json, traceback
 from ipyTools import *
 
 class Metagenome(object):
+    """Class representation of Metagenome object:
+        "id"       : [ 'string', 'unique object identifier' ],
+        "name"     : [ 'string', 'human readable identifier' ],
+        "library"  : [ 'reference library', 'reference to the related library object' ],
+        "sample"   : [ 'reference sample',  'reference to the related sample object' ],
+        "project"  : [ 'reference project', 'reference to the project object' ],
+        "metadata" : [ 'hash',    'key value pairs describing metadata' ],
+        "created"  : [ 'date',    'time the object was first created' ],
+        "version"  : [ 'integer', 'version of the object' ],
+        "url"      : [ 'uri',     'resource location of this object instance' ],
+        "status"   : [ 'cv', [ ['public', 'object is public'],
+        					   ['private', 'object is private'] ] ],
+        "sequence_type" => [ 'string', 'sequencing type' ]
+    """
     def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None, cache=None, mfile=None):
         self._auth = auth
         metagenome = None

@@ -9,6 +9,11 @@ from collections import defaultdict
 from datetime import datetime
 
 class AnalysisSet(object):
+    """Class for working with a set of Analysis objects:
+        - Creates an Analysis object for each taxonimic level and functional level
+        - allows barchart and heatmap navigation through hierarchies (drilldowns)
+        - caches data locally for fast re-analysis
+    """
     def __init__(self, ids=[], auth=None, method='WGS', all_values=False, cache=None, def_name=None, reset_cache=False):
         if cache is None:
             cache = random_str()
@@ -181,6 +186,38 @@ class AnalysisSet(object):
         
 
 class Analysis(object):
+    """Class representation of Matrix object:
+        self.biom (BIOM format):
+            "id"                   : [ 'string', 'unique object identifier' ],
+            "format"               : [ 'string', 'format specification name' ],
+            "format_url"           : [ 'string', 'url to the format specification' ],
+            "type"                 : [ 'string', 'type of the data in the return table (taxon, function or gene)' ],
+            "generated_by"         : [ 'string', 'identifier of the data generator' ],
+            "date"                 : [ 'date',   'time the output data was generated' ],
+            "matrix_type"          : [ 'string', 'type of the data encoding matrix (dense or sparse)' ],
+            "matrix_element_type"  : [ 'string', 'data type of the elements in the return matrix' ],
+            "matrix_element_value" : [ 'string', 'result_type of the elements in the return matrix' ],
+            "shape"                : [ 'list', ['integer', 'list of the dimension sizes of the return matrix'] ],
+            "rows"                 : [ 'list', ['object', [{'id'       => ['string', 'unique annotation text'],
+                                                            'metadata' => ['hash', 'key value pairs describing metadata']}, "rows object"]] ],
+            "columns"              : [ 'list', ['object', [{'id'       => ['string', 'unique metagenome identifier'],
+            	                                            'metadata' => ['hash', 'key value pairs describing metadata']}, "columns object"]] ],
+            "data"                 : [ 'list', ['list', ['float', 'the matrix values']] ]
+        self.id       : BIOM id
+        self.numIDs   : BIOM column count
+        self.numAnnot : BIOM row count
+        self.Dmatrix  : dense matrix of BIOM data
+        self.Rmatrix  : R-format dense matrix
+        self.NDmatrix : normalized dense matrix
+        self.NRmatrix : normalized R-format dense matrix
+        
+        Visualizations:
+            self.dump()     : produce file or string of BIOM or tab-deliminated matrix
+            self.boxplot()  : boxplot display
+            self.barchart() : horizontal barchart of metagenomes / annotations
+            self.pco()      : pco plot of metagenomes
+            self.heatmap()  : dendogram of metagenomes / annotations
+    """
     def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None):
         self._auth = auth
         if (biom is None) and (bfile is None):
@@ -202,9 +239,9 @@ class Analysis(object):
         self.id = self.biom['id'] if self.biom else ""
         self.result_type = self.biom['matrix_element_value'] if self.biom else ""
         self.numIDs = self.biom['shape'][1] if self.biom else 0
-        self.numAnnotations = self.biom['shape'][0] if self.biom else 0
+        self.numAnnot = self.biom['shape'][0] if self.biom else 0
         self.Dmatrix  = self._dense_matrix()  # count dense matrix
-        self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnotations, self.numIDs) # R count matrix object
+        self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnot, self.numIDs) # R count matrix object
         self.NDmatrix = None  # normalized dense matrix
         self.NRmatrix = None  # R normalized matrix object
         if self.result_type == 'abundance':
@@ -615,7 +652,7 @@ class Analysis(object):
         try:
             # can matr do it ?
             self.NRmatrix = ro.r.normalize(self.Rmatrix)
-            self.NDmatrix = rMatrix_to_pyMatrix(self.NRmatrix, self.numAnnotations, self.numIDs)
+            self.NDmatrix = rMatrix_to_pyMatrix(self.NRmatrix, self.numAnnot, self.numIDs)
         except:
             try:
                 # run our own R code
@@ -625,7 +662,7 @@ class Analysis(object):
                 rcmd = 'source("%s")\nMGRAST_preprocessing(file_in="%s", file_out="%s", produce_fig="FALSE")\n'%(Ipy.LIB_DIR+'/preprocessing.r', raw_file, norm_file)
                 ro.r(rcmd)
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
-                self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnotations, self.numIDs, normalize=1)
+                self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnot, self.numIDs, normalize=1)
             except:
                 sys.stderr.write("Error normalizing matrix (%s)\n"%self.id)
 
@@ -635,4 +672,4 @@ class Analysis(object):
         if self.biom['matrix_type'] == 'dense':
             return self.biom['data']
         else:
-            return sparse_to_dense(self.biom['data'], self.numAnnotations, self.numIDs)
+            return sparse_to_dense(self.biom['data'], self.numAnnot, self.numIDs)

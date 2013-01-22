@@ -5,6 +5,22 @@ from collection import Collection
 from ipyTools import *
 
 class Project(Collection):
+    """Class representation of Project object:
+         "id"             : [ 'string', 'unique object identifier' ],
+         "name"           : [ 'string', 'human readable identifier' ],
+         "libraries"      : [ 'list',  ['reference library', 'a list of references to the related library objects'] ],
+         "samples"        : [ 'list',  ['reference sample', 'a list of references to the related sample objects'] ],
+         "analyzed"       : [ 'list',  ['reference metagenome', 'a list of references to the related metagenome objects'] ],
+         "description"    : [ 'string', 'a short, comprehensive description of the project' ],
+         "funding_source" : [ 'string', 'the official name of the source of funding of this project' ],
+         "pi"             : [ 'string', 'the first and last name of the principal investigator of the project' ],
+         "metadata"       : [ 'hash',   'key value pairs describing metadata' ],
+         "created"        : [ 'date',   'time the object was first created' ],
+         "version"        : [ 'integer','version of the object' ],
+         "url"            : [ 'uri',    'resource location of this object instance' ],
+         "status"         : [ 'cv',     [ ['public', 'object is public'],
+        						           ['private', 'object is private'] ] ]
+    """
     def __init__(self, pid, metadata=True, stats=True, auth=None, def_name=None, cache=False, reset_cache=False):
         # set project
         self.cache = Ipy.NB_DIR+'/'+pid if cache else None

@@ -5,6 +5,7 @@ import json
 import ipyTools
 
 class Retina(object):
+    """For creating javascript visualizations through the Retina library"""
     def __init__(self, action='none', debug=False):
         self.action = action
         self.debug  = debug
