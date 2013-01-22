@@ -294,7 +294,7 @@ class Analysis(object):
                 good_rows.append(all_annot[i])
         return good_rows, mgids, matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None):
+    def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None, metadata=False):
         output = ""
         if not self.biom:
             sys.stderr.write("Error dumping %s, no data\n"%self.id)
@@ -304,7 +304,7 @@ class Analysis(object):
             output = json.dumps(self.biom)
         else:
             # tab deleminted dump / option for sub-dump
-            all_annot = self.annotations()
+            all_annot = self.annotations(metadata=metadata)
             all_mgids = self.ids()
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
             annot  = rows if rows and (len(rows) > 0) else all_annot
@@ -512,7 +512,7 @@ class Analysis(object):
         matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
-        self.dump(fname=matrix_file, fformat='tab', normalize=normalize, rows=subset, cols=submg)
+        self.dump(fname=matrix_file, fformat='tab', normalize=normalize, rows=subset, cols=submg, metadata=True)
         rcmd = 'source("%s")\nMGRAST_dendrograms(file_in="%s", file_out_column="%s", file_out_row="%s", dist_method="%s", clust_method="%s", produce_figures="FALSE")\n'%(Ipy.LIB_DIR+'/dendrogram.r', matrix_file, col_file, row_file, dist, clust)
         ro.r(rcmd)
         cord, cdist = ordered_distance_from_file(col_file)
