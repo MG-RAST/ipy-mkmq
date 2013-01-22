@@ -340,10 +340,19 @@ class Analysis(object):
             return None
         return map(lambda x: x['name'], self.biom['columns'])
     
-    def annotations(self):
+    def annotations(self, metadata=False):
         if not self.biom:
             return None
-        return map(lambda x: x['id'], self.biom['rows'])
+        if not metadata:
+            return map(lambda x: x['id'], self.biom['rows'])
+        else:
+            ann = []
+            for r in self.biom['rows']:
+                if ('metadata' in r) and ('ontology' in r['metadata']):
+                    ann.append(r['metadata']['ontology'][-1])
+                else:
+                    ann.append(r['id'])
+            return ann
     
     def table_type(self):
         if self.biom and ('type' in self.biom):
@@ -492,7 +501,7 @@ class Analysis(object):
     
     def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None):
         # default is all
-        all_annot = self.annotations()
+        all_annot = self.annotations(metadata=True)
         if (not submg) or (len(submg) == 0):
             submg = self.ids()
         if (not subset) or (len(subset) == 0):
@@ -542,7 +551,7 @@ class Analysis(object):
                     'cexCol': 0.95,
                     'margins': ro.r.c(8,1) }
         if Ipy.DEBUG:
-            print fname, keyArgs
+            print fname
         ro.r.svg(fname)
         ro.r.heatmap(matrix, **keyArgs)
         ro.r("dev.off()")
