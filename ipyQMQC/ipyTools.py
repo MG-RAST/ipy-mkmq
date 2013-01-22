@@ -201,7 +201,7 @@ def random_str(size=8):
     return ''.join(random.choice(chars) for x in range(size))
 
 def sub_biom(b, text):
-    str_re = re.compile(text)
+    str_re = re.compile(text, re.IGNORECASE)
     sBiom = { "generated_by": b['generated_by'],
                "matrix_type": 'dense',
                "date": strftime("%Y-%m-%dT%H:%M:%S", localtime()),
@@ -216,9 +216,9 @@ def sub_biom(b, text):
                "type": b['type'],
                "shape": [] }
     hier = ''
-    if b['type'] == 'Taxon':
+    if b['type'].startswith('Taxon'):
         hier = 'taxonomy'
-    elif b['type'] == 'Function':
+    elif bbiom['type'].startswith('Function'):
         hier = 'ontology'
     matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
     for r, row in enumerate(b['rows']):

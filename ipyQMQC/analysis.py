@@ -239,12 +239,12 @@ class Analysis(object):
     def find_annotation(self, text):
         if not self.biom:
             return []
-        str_re = re.compile(text)
+        str_re = re.compile(text, re.IGNORECASE)
         annot = set()
         hier = ''
-        if self.biom['type'] == 'Taxon':
+        if self.biom['type'].startswith('Taxon'):
             hier = 'taxonomy'
-        elif self.biom['type'] == 'Function':
+        elif self.biom['type'].startswith('Function'):
             hier = 'ontology'
         for r in self.biom['rows']:
             if str_re.search(r['id']):
