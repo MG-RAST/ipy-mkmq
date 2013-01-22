@@ -244,7 +244,7 @@ def merge_biom(b1, b2):
                    "type": b1['type'],
                    "shape": [] }
         cols, rows = merge_matrix_info(b1['columns'], b2['columns'], b1['rows'], b2['rows'])
-        merge_func = merge_sparse if b1['type'] == 'sparse' else merge_dense
+        merge_func = merge_sparse if b1['matrix_type'] == 'sparse' else merge_dense
         mCol, mRow, mData = merge_func([b1['data'], b2['data']], cols, rows)
         mBiom['columns']  = mCol
         mBiom['rows']     = mRow
@@ -259,17 +259,17 @@ def merge_matrix_info(c1, c2, r1, r2):
     ## merge columns, skip duplicate
     cm = {}
     for i, c in enumerate(c1):
-        cm[ c[id] ] = [0, i, c]
+        cm[ c['id'] ] = [0, i, c]
     for i, c in enumerate(c2):
-        if c[id] in cm:
+        if c['id'] in cm:
             continue
-        cm[ c[id] ] = [1, i, c]
+        cm[ c['id'] ] = [1, i, c]
     ## merge rows
     rm = defaultdict(list)
     for i, r in enumerate(r1):
-        rm[ r[id] ].append( [0, i, r] )
+        rm[ r['id'] ].append( [0, i, r] )
     for i, r in enumerate(r2):
-        rm[ r[id] ].append( [1, i, r] )
+        rm[ r['id'] ].append( [1, i, r] )
     return cm.values(), rm.values()
 
 def merge_sparse(data, cols, rows):
