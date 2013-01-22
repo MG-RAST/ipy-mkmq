@@ -283,7 +283,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def heatmap(self, width=700, height=600, target="", data=None, tree_height=50, tree_width=50, legend_height=250, legend_width=250, row_text_size=15, col_text_size=15, min_cell_height=19):
+    def heatmap(self, width=700, height=600, target="", data=None, tree_height=50, tree_width=50, legend_height=250, legend_width=250, row_text_size=15, col_text_size=15, min_cell_height=19, onclick=None):
         """Heatmap Renderer
 
           Displays a heatmap.
@@ -338,19 +338,38 @@ class Retina(object):
         if not target:
             target = 'div_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
-        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        rows = '[""]'
         if data is None:
             data = "Retina.RendererInstances.paragraph[0].exampleData()"
         else:
+            rows = json.dumps(data['rows'])
             data = json.dumps(data)
             
+        hname = 'heatmap_'+ipyTools.random_str()
         opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, tree_height: %d, tree_width: %d, legend_height: %d, legend_width: %d, row_text_size: %d, col_text_size: %d, min_cell_height: %d"%(width, height, target, data, tree_height, tree_width, legend_height, legend_width, row_text_size, col_text_size, min_cell_height)
         src = """
             (function(){
                 Retina.add_renderer({ name: 'heatmap', resource: '""" + self.renderer_resource + """', filename: 'renderer.heatmap.js' });
-                Retina.load_renderer('heatmap').then( function () { Retina.Renderer.create('heatmap', {""" + opt + """} ).render(); } );
+                Retina.load_renderer('heatmap').then( function () {
+                    window."""+hname+""" = Retina.Renderer.create('heatmap', {""" + opt + """} );
+                    window."""+hname+""".render();
+                });
             })();
         """
+        if onclick:
+            click_func = """
+            var sel_rows  = window."""+hname+""".selectedRows();
+            var row_names = """+rows+""";
+            var sel_names = [];
+            for (var i=0; i<row_names.length; i++) {
+                if (sel_rows[i]) {
+                    sel_names.push(row_names[i]);
+                }
+            }
+            ipy.write_cell(ipy.add_cell(),\""""+onclick+""""\");"""
+        if onclick:
+            html += "<button type='button' onclick='"+click_func+"'>sub-select rows</button>"
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if self.debug:
             print src
         else:
