@@ -104,6 +104,8 @@ def google_palette(num):
     return num_colors
 
 def obj_from_url(url):
+    if Ipy.DEBUG:
+        sys.stdout.write(url+"\n")
     try:
         req = urllib2.Request(url, headers={'Accept': 'application/json'})
         res = urllib2.urlopen(req)
@@ -213,9 +215,14 @@ def sub_biom(b, text):
                "id": b['id']+'_sub_'+text,
                "type": b['type'],
                "shape": [] }
+    hier = ''
+    if b['type'] == 'Taxon':
+        hier = 'taxonomy'
+    elif b['type'] == 'Function':
+        hier = 'ontology'
     matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
     for r, row in enumerate(b['rows']):
-        if str_re.search(row['id']) or (row['metadata'] and (str_re.search(row['metadata']['ontology'][-1]) or str_re.search(row['metadata']['taxonomy'][-1]))):
+        if str_re.search(row['id']) or (row['metadata'] and hier and (hier in row['metadata']) and str_re.search(row['metadata'][hier][-1])):
             sBiom['data'].append(matrix[r])
             sBiom['rows'].append(row)
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
