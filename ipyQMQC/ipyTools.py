@@ -220,11 +220,18 @@ def sub_biom(b, text):
         hier = 'taxonomy'
     elif b['type'].startswith('Function'):
         hier = 'ontology'
+    seen = set()
     matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
     for r, row in enumerate(b['rows']):
-        if str_re.search(row['id']) or (row['metadata'] and hier and (hier in row['metadata']) and str_re.search(row['metadata'][hier][-1])):
+        name = None
+        if row['metadata'] and hier and (hier in row['metadata']) and str_re.search(row['metadata'][hier][-1]):
+            name = row['metadata'][hier][-1]
+        elif str_re.search(row['id']):
+            name = row['id']
+        if (name is not None) and (name not in seen):
             sBiom['data'].append(matrix[r])
             sBiom['rows'].append(row)
+            seen.add(name)
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
     return sBiom
 
