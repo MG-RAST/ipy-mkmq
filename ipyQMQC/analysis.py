@@ -536,7 +536,7 @@ class Analysis(object):
         else:
             return self._matr_heatmap(normalize=normalize, title=title)
     
-    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None):
+    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None, onclick=None):
         # default is all
         all_annot = self.annotations(metadata=True)
         if (not submg) or (len(submg) == 0):
@@ -568,7 +568,8 @@ class Analysis(object):
                     'height': height,
                     'target': 'div_heatmap_'+random_str(),
                     'tree_width': 200,
-                    'legend_width': int(lwidth) }
+                    'legend_width': int(lwidth),
+                    'onclick': onclick }
         if Ipy.DEBUG:
             print keyArgs
         try:
