@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import shutil, hashlib
-import math, urllib, sys, os, traceback
+import math, urllib, sys, os, hashlib, traceback
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
@@ -14,15 +13,12 @@ class AnalysisSet(object):
         - allows barchart and heatmap navigation through hierarchies (drilldowns)
         - caches data locally for fast re-analysis
     """
-    def __init__(self, ids=[], auth=None, method='WGS', all_values=False, cache=None, def_name=None, reset_cache=False):
-        if cache is None:
-            cache = random_str()
-        self.method = method
-        self.cache = cache
-        self._path = Ipy.NB_DIR+'/'+cache
-        self._auth = auth
+    def __init__(self, ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, cache=None, def_name=None):
+        self.method  = method
+        self._auth   = auth
         self.all_mgs = ids
         self.display_mgs = self.all_mgs
+        self.function_source = function_source
         tax_source = ''
         if self.method == 'WGS':
             tax_source = 'M5NR'
@@ -35,93 +31,64 @@ class AnalysisSet(object):
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
-        # set cache
-        self.cache_time = self._set_cache(reset_cache)
-        # get data
-        for tax in Ipy.TAX_SET:
-            values = {}
-            if all_values:
-                for val in Ipy.VALUES:
-                    values[val] = self._get_analysis(ids, 'organism', tax, val, tax_source)
-            else:
-                values['abundance'] = self._get_analysis(ids, 'organism', tax, 'abundance', tax_source)
-            setattr(self, tax, values)
-                
-        if self.method == 'WGS':
-            for ont in Ipy.ONT_SET:
-                values = {}
-                if all_values:
-                    for val in Ipy.VALUES:
-                        values[val] = self._get_analysis(ids, 'function', ont, val, 'Subsystems')
-                else:
-                    values['abundance'] = self._get_analysis(ids, 'function', ont, 'abundance', 'Subsystems')
-                setattr(self, ont, values)
-
+        # check for dir of biom files
+        if cache and os.path.isdir(Ipy.NB_DIR+'/'+cache):
+            biom_dir = Ipy.NB_DIR+'/'+cache
+            sys.stdout.write("analysis-set '%s' loading from dir %s\n"%(self.defined_name, biom_dir))
+            self._get_analysis_set(tax_source=tax_source, all_values=all_values, biom_dir=biom_dir)
+        else:
+            sys.stdout.write("analysis-set '%s' loading through api\n"%self.defined_name)
+            self._get_analysis_set(tax_source=tax_source, all_values=all_values)
+    
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
             sys.stdout.write("setting %s.display_mgs to all metagenomes in set\n"%self.defined_name)
             self.display_mgs = self.all_mgs
         else:
             self.display_mgs = ids
-
-    def _set_cache(self, reset=False):
-        # force re-cache
-        if reset and os.path.isdir(self._path):
-            shutil.rmtree(self._path)
-        # test if exists
-        if os.path.isdir(self._path) and os.path.isfile(self._path+'/CACHE_TIME'):
-            thdl  = open(self._path+'/CACHE_TIME', 'rU')
-            ctime = thdl.read().strip()
-            thdl.close()
-            sys.stdout.write("analysis-set '%s' loaded from cache %s (%s)\n"%(self.defined_name, self.cache, ctime))
-            return ctime
-        # set dir and time
-        os.mkdir(self._path)
-        ctime = self._timestamp_cache()
-        sys.stdout.write("analysis-set '%s' saved to cache %s (%s)\n"%(self.defined_name, self.cache, ctime))
-        return ctime
-
-    def _timestamp_cache(self, ctime=None):
-        if os.path.isdir(self._path):
-            ctime = ctime if ctime else str(datetime.now())
-            thdl  = open(self._path+'/CACHE_TIME', 'w')
-            thdl.write(ctime+"\n")
-            thdl.close()
-            return ctime
-        else:
-            return None
-
-    def dump(self, force=False):
-        if not os.path.isdir(self._path):
-            self.cache_time = self._set_cache()
-        # dump individual files
-        for key in Ipy.TAX_SET:
-            item = getattr(self, key)
-            for analysis in item.itervalues():
-                fname = self._path+'/'+hashlib.md5(analysis.id).hexdigest()+'.biom'
-                if force or (not os.path.isfile(fname)):
-                    analysis.dump(fname=fname, fformat='biom')
+    
+    def _get_analysis_set(self, tax_source='M5NR', all_values=False, biom_dir=None):
+        # get data
+        for tax in Ipy.TAX_SET:
+            values = {}
+            if all_values:
+                for val in Ipy.VALUES:
+                    values[val] = self._get_analysis(self.all_mgs, 'organism', tax, val, tax_source, biom_dir)
+            else:
+                values['abundance'] = self._get_analysis(self.all_mgs, 'organism', tax, 'abundance', tax_source, biom_dir)
+            setattr(self, tax, values)
         if self.method == 'WGS':
-            for key in Ipy.ONT_SET:
-                item = getattr(self, key)
-                for analysis in item.itervalues():
-                    fname = self._path+'/'+hashlib.md5(analysis.id).hexdigest()+'.biom'
-                    if force or (not os.path.isfile(fname)):
-                        analysis.dump(fname=fname, fformat='biom')
-        if force:
-            self.cache_time = self._timestamp_cache()
+            for ont in Ipy.ONT_SET:
+                values = {}
+                if all_values:
+                    for val in Ipy.VALUES:
+                        values[val] = self._get_analysis(self.all_mgs, 'function', ont, val, self.function_source, biom_dir)
+                else:
+                    values['abundance'] = self._get_analysis(self.all_mgs, 'function', ont, 'abundance', self.function_source, biom_dir)
+                setattr(self, ont, values)
 
-    def _get_analysis(self, ids, annotation, level, result_type, source):
+    def _get_analysis(self, ids, annotation, level, result_type, source, biom_dir):
         # this needs to be created same way as matrix api builds it
         matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, result_type])
         matrix_id += "_%d_%d_%d"%(Ipy.MATRIX['e_val'], Ipy.MATRIX['ident'], Ipy.MATRIX['alen'])
-        # load from client cache if exists
         matrix_md5 = hashlib.md5(matrix_id).hexdigest()
-        biom_file  = self._path+'/'+matrix_md5+'.biom'
-        if os.path.isfile(biom_file):
-            if Ipy.DEBUG:
-                sys.stdout.write("loading %s.biom (%s) from cache %s ... \n"%(matrix_md5, matrix_id, self.cache))
-            return Analysis(bfile=biom_file, auth=self._auth)
+        sub_def_name = self.defined_name+'.'+level+"['"+result_type+"']"
+        # load from biom_dir
+        if biom_dir:
+            md5_file = biom_dir+'/'+matrix_md5+'.biom'
+            id_file  = biom_dir+'/'+matrix_id+'.biom'
+            if os.path.isfile(md5_file):
+                if Ipy.DEBUG:
+                    sys.stdout.write("loading %s.biom (%s) from dir %s ... \n"%(matrix_md5, matrix_id, biom_dir))
+                return Analysis(bfile=md5_file, auth=self._auth, def_name=sub_def_name)
+            elif os.path.isfile(id_file):
+                if Ipy.DEBUG:
+                    sys.stdout.write("loading %s.biom from dir %s ... \n"%(matrix_id, biom_dir))
+                return Analysis(bfile=id_file, auth=self._auth, def_name=sub_def_name)
+            else:
+                sys.stderr.write("no biom file for %s in dir %s\n"%(matrix_id, biom_dir))
+                return None
+        # load through api
         else:
             if Ipy.DEBUG:
                 sys.stdout.write("loading %s through api ... \n"%matrix_id)
@@ -131,15 +98,12 @@ class AnalysisSet(object):
             keyArgs['level'] = level
             keyArgs['result_type'] = result_type
             keyArgs['source'] = source
+            keyArgs['def_name'] = sub_def_name
             if self._auth:
                 keyArgs['auth'] = self._auth
-            thisAnalysis = Analysis(**keyArgs)
-            thisAnalysis.dump(fname=biom_file, fformat='biom')
-            if Ipy.DEBUG:
-                sys.stdout.write("caching %s.biom (%s) to %s ... \n"%(matrix_md5, matrix_id, self.cache))
-            return thisAnalysis
+            return Analysis(**keyArgs)
     
-    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1):
+    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=True, show_data=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -152,17 +116,21 @@ class AnalysisSet(object):
                     'x_rotate': '0',
                     'title': title,
                     'legend': legend,
-                    'submg': self.display_mgs,
-                    'subset': children }
-        if child_level(level, htype=annot):
-            click_opts = (self.defined_name, child_level(level, htype=annot), annot, normalize, width, height, title, 'True' if legend else 'False')
-            keyArgs['onclick'] = "'%s.barchart(level=\"%s\", parent=[\"'+params['label']+'\"], annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s)'"%click_opts
+                    'rows': self.display_mgs,
+                    'cols': children,
+                    'col_name': col_name,
+                    'row_full': row_full,
+                    'show_data': show_data }
+        next_level = child_level(level, htype=annot)
+        if next_level:
+            click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            keyArgs['onclick'] = "'%s.barchart(level=\"%s\", parent=[\"'+params['label']+'\"], annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s, col_name=%s, row_full=%s, show_data=%s)'"%click_opts
         if Ipy.DEBUG:
-            print annot, level, child_level(level, htype=annot), keyArgs
+            print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
         to_plot['abundance'].barchart(**keyArgs)
         
-    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward'):
+    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=True, show_data=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -174,16 +142,25 @@ class AnalysisSet(object):
                     'height': height,
                     'dist': dist,
                     'clust': clust,
-                    'submg': self.display_mgs,
-                    'subset': children }
-        if child_level(level, htype=annot):
-            click_opts = (self.defined_name, child_level(level, htype=annot), annot, normalize, width, height, dist, clust)
-            keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\")'"%click_opts
+                    'rows': self.display_mgs,
+                    'cols': children,
+                    'col_name': col_name,
+                    'row_full': row_full,
+                    'show_data': show_data }
+        next_level = child_level(level, htype=annot)
+        if next_level:
+            click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\", col_name=%s, row_full=%s, show_data=%s)'"%click_opts
         if Ipy.DEBUG:
-            print annot, level, keyArgs
+            print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
-        to_plot['abundance']._retina_heatmap(**keyArgs)
+        to_plot['abundance'].heatmap(**keyArgs)
         
+    def _bool(self, aBool):
+        if aBool:
+            return 'True'
+        else:
+            return 'False'
 
 class Analysis(object):
     """Class representation of Matrix object:
@@ -218,8 +195,13 @@ class Analysis(object):
             self.pco()      : pco plot of metagenomes
             self.heatmap()  : dendogram of metagenomes / annotations
     """
-    def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None):
+    def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None, def_name=None):
         self._auth = auth
+        # hack to get variable name
+        if def_name == None:
+            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+            def_name = text[:text.find('=')].strip()
+        self.defined_name = def_name
         if (biom is None) and (bfile is None):
             self.biom = self._get_matrix(ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source)
         elif biom and isinstance(biom, dict):
@@ -234,9 +216,10 @@ class Analysis(object):
         else:
             self.biom = None
         self._init_matrix()
-    
+
     def _init_matrix(self):
         self.id = self.biom['id'] if self.biom else ""
+        self.hierarchy = self._get_type(self.biom)
         self.result_type = self.biom['matrix_element_value'] if self.biom else ""
         self.numIDs = self.biom['shape'][1] if self.biom else 0
         self.numAnnot = self.biom['shape'][0] if self.biom else 0
@@ -273,21 +256,24 @@ class Analysis(object):
             params.append(('auth', self._auth))
         return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
 
-    def find_annotation(self, text):
+    def _get_type(self, biom):
+        hier = ''
+        if biom and biom['type'].startswith('Taxon'):
+            hier = 'taxonomy'
+        elif biom and biom['type'].startswith('Function'):
+            hier = 'ontology'
+        return hier
+
+    def find_annotation(self, text, show_id=True):
         if not self.biom:
             return []
         str_re = re.compile(text, re.IGNORECASE)
-        annot = set()
-        hier = ''
-        if self.biom['type'].startswith('Taxon'):
-            hier = 'taxonomy'
-        elif self.biom['type'].startswith('Function'):
-            hier = 'ontology'
+        annot = set()        
         for r in self.biom['rows']:
-            if str_re.search(r['id']):
+            if r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']) and str_re.search(r['metadata'][self.hierarchy][-1]):
+                annot.add( r['id'] if show_id else r['metadata'][self.hierarchy][-1] )
+            elif str_re.search(r['id']):
                 annot.add(r['id'])
-            elif r['metadata'] and hier and (hier in r['metadata']) and str_re.search(r['metadata'][hier][-1]):
-                annot.add(r['metadata'][hier][-1])
         return list(annot)
 
     def sub_matrix(self, normalize=0, cols=None, rows=None):
@@ -331,7 +317,22 @@ class Analysis(object):
                 good_rows.append(all_annot[i])
         return good_rows, mgids, matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None, metadata=False):
+    def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None, col_name=False, row_full=False):
+        """Function for outputing the analysis object to flatfile or text string
+            Inputs:
+                fname:     name of file to output too, if undefined returns string
+                fformat:   format of output, options are 'biom' or 'tab', default is 'biom'
+                normalize: boolean - if true output normalized abundance values, default is false
+                rows:      if list of row ids is passed will only output matrix of those rows, else output all rows
+                cols:      if list of column ids is passed will only output matrix of those columns, else output all columns
+                metadata:  boolean - for 'tab' output, print last metadata of hierarchy for rows instaed of row id, default false
+                col_name:  boolean - for 'tab' output, print column name instead of column id, default is false
+            Output available:
+                1. biom file
+                2. biom string
+                3. tab-deliminated file
+                4. tab-deliminated string
+        """
         output = ""
         if not self.biom:
             sys.stderr.write("Error dumping %s, no data\n"%self.id)
@@ -341,26 +342,45 @@ class Analysis(object):
             output = json.dumps(self.biom)
         else:
             # tab deleminted dump / option for sub-dump
-            all_annot = self.annotations(metadata=metadata)
+            all_annot = self.annotations()
             all_mgids = self.ids()
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-            annot  = rows if rows and (len(rows) > 0) else all_annot
-            mgids  = cols if cols and (len(cols) > 0) else all_mgids
-            output = "\t%s\n"%"\t".join(mgids)
-            for a in annot:
+            # default is all ids
+            if (not cols) or (len(cols) == 0):
+                cols = self.ids()
+            if (not rows) or (len(rows) == 0):
+                rows = all_annot
+            # force rows to be row ids
+            else:
+                rows = self.force_row_ids(rows)
+            # set header - write id or name
+            output = ''
+            for c in cols:
                 try:
-                    r = all_annot.index(a)
+                    j = all_mgids.index(c)
                 except:
-                    sys.stderr.write("Error: '%s' is not in annotations of %s"%(a, self.id))
+                    sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(c, self.id))
                     return None
-                output += a
-                for m in mgids:
+                output += "\t" + c if not col_name else self.biom['columns'][j]['name']
+            output += "\n"
+            # print matrix
+            for r in rows:
+                try:
+                    i = all_annot.index(r)
+                except:
+                    sys.stderr.write("Error: '%s' is not in annotations of %s"%(r, self.id))
+                    return None
+                if row_full and self.hierarchy and self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
+                    output += ";".join(self.biom['rows'][i]['metadata'][self.hierarchy])
+                else:
+                    output += r
+                for c in cols:
                     try:
-                        c = all_mgids.index(m)
+                        j = all_mgids.index(c)
                     except:
-                        sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(m, self.id))
+                        sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(c, self.id))
                         return None
-                    output += "\t"+str(matrix[r][c])
+                    output += "\t"+str(matrix[i][j])
                 output += "\n"
         if fname:
             open(fname, 'w').write(output)
@@ -371,32 +391,39 @@ class Analysis(object):
         if not self.biom:
             return None
         return map(lambda x: x['id'], self.biom['columns'])
-    
+
     def names(self):
         if not self.biom:
             return None
         return map(lambda x: x['name'], self.biom['columns'])
-    
+
     def annotations(self, metadata=False):
+        """returns a list of annotations (row ids)
+        if metadata=True then returns a list of lists (metadata hierarchies) for row"""
         if not self.biom:
+            sys.stderr.write("BIOM object does not exist\n")
             return None
         if not metadata:
             return map(lambda x: x['id'], self.biom['rows'])
         else:
             ann = []
             for r in self.biom['rows']:
-                if ('metadata' in r) and ('ontology' in r['metadata']):
-                    ann.append(r['metadata']['ontology'][-1])
+                if r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']):
+                    ann.append(r['metadata'][self.hierarchy])
                 else:
-                    ann.append(r['id'])
+                    ann.append([r['id']])
             return ann
-    
-    def table_type(self):
-        if self.biom and ('type' in self.biom):
-            return self.biom['type'].split(' ')[0].lower()
-        else:
-            return None
-    
+
+    def force_row_ids(self, rows):
+        """returns input list with last hierarchal metadata name replaced with id"""
+        ann = []
+        if not self.hierarchy:
+            return rows
+        rmap = dict([ (y['metadata'][self.hierarchy][-1], y['id']) for y in filter(lambda x: x['metadata'] and (self.hierarchy in x['metadata']), self.biom['rows']) ])
+        for i, r in enumerate(rows):
+            ann.append( rmap[r] if r in rmap else r )
+        return ann
+
     def get_id_data(self, aid):
         if not self.Dmatrix:
             return None
@@ -406,7 +433,7 @@ class Analysis(object):
         except (ValueError, AttributeError):
             return None
         return slice_column(self.Dmatrix, index)
-    
+
     def get_id_object(self, aid):
         if not self.biom:
             return None
@@ -422,7 +449,7 @@ class Analysis(object):
             return self.biom['columns'][index]
     
     def alpha_diversity(self):
-        if self.table_type != 'taxon':
+        if self.hierarchy != 'taxonomy':
             return None
         if self.alpha_diversity is None:
             alphaDiv = {}
@@ -440,9 +467,9 @@ class Analysis(object):
                 alphaDiv[aID] = 2**h1
             self.alpha_diversity = alphaDiv
         return self.alpha_diversity
-    
+
     def rarefaction(self):
-        if self.table_type != 'taxon':
+        if self.hierarchy != 'taxonomy':
             return None
         if self.rarefaction is None:
             rareFact = defaultdict(list)
@@ -468,7 +495,7 @@ class Analysis(object):
                     rareFact[aID].append([i, lnum-curr])
             self.rarefaction = rareFact
         return self.rarefaction
-    
+
     def _nCr2ln(self, n, r):
         c = 1
         if r > n:
@@ -482,18 +509,18 @@ class Analysis(object):
         else:
             c = -1000
         return c
-    
+
     def _gammaln(self, x):
         if x > 0:
             s = math.log(x)
             return math.log(2 * math.pi) / 2 + x * s + s / 2 - x
         else:
             return 0
-    
-    def boxplot(self, normalize=1, title=''):
+
+    def boxplot(self, normalize=1, title='', col_name=True):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
-        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        labels = self.names() if col_name else self.ids()
         if not matrix:
             return None
         keyArgs = { 'names': ro.StrVector(labels),
@@ -511,11 +538,11 @@ class Analysis(object):
         ro.r.boxplot(matrix, **keyArgs)
         ro.r("dev.off()")
         return fname
-    
-    def pco(self, normalize=1, dist='bray-curtis', title=''):
+
+    def pco(self, normalize=1, dist='bray-curtis', title='', col_name=True):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
-        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        labels = self.names() if col_name else self.ids()
         if not matrix:
             return None
         keyArgs = { 'labels': ro.StrVector(labels),
@@ -529,40 +556,43 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, source='retina'):
+    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
         if source == 'retina':
-            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height)
+            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, onclick=onclick)
             return
         else:
-            return self._matr_heatmap(normalize=normalize, title=title)
-    
-    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, submg=None, subset=None, onclick=None):
+            return self._matr_heatmap(normalize=normalize, title=title, col_name=col_name)
+
+    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
         # default is all
-        all_annot = self.annotations(metadata=True)
-        if (not submg) or (len(submg) == 0):
-            submg = self.ids()
-        if (not subset) or (len(subset) == 0):
-            subset = all_annot
+        if (not cols) or (len(cols) == 0):
+            cols = self.ids()
+        if (not rows) or (len(rows) == 0):
+            rows = self.annotations()
+        # force rows to be row ids
         else:
-            subset = filter(lambda x: x in all_annot, subset)
+            rows = self.force_row_ids(rows)
         # run our own R code
         matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
-        self.dump(fname=matrix_file, fformat='tab', normalize=normalize, rows=subset, cols=submg, metadata=True)
+        dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
+        if show_data:
+            print dump_str
+        open(matrix_file, 'r').write(dump_str)
         rcmd = 'source("%s")\nMGRAST_dendrograms(file_in="%s", file_out_column="%s", file_out_row="%s", dist_method="%s", clust_method="%s", produce_figures="FALSE")\n'%(Ipy.LIB_DIR+'/dendrogram.r', matrix_file, col_file, row_file, dist, clust)
         ro.r(rcmd)
         cord, cdist = ordered_distance_from_file(col_file)
         rord, rdist = ordered_distance_from_file(row_file)
         sub_matrix  = matrix_from_file(matrix_file)
-        data = { 'columns': submg,
-                 'rows': subset,
+        data = { 'columns': cols,
+                 'rows': rows,
                  'colindex': cord,
                  'rowindex': rord,
                  'coldend': cdist,
                  'rowdend': rdist,
                  'data': sub_matrix }
-        lwidth  = len(max(subset, key=len)) * 7.2
+        lwidth  = len(max(rows, key=len)) * 7.2
         keyArgs = { 'data': data,
                     'width': int(width+lwidth),
                     'height': height,
@@ -577,10 +607,10 @@ class Analysis(object):
         except:
             sys.stderr.write("Error producing heatmap\n")
 
-    def _matr_heatmap(self, normalize=1, title=''):
+    def _matr_heatmap(self, normalize=1, title='', col_name=True):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
         fname  = Ipy.IMG_DIR+'/heatmap_'+random_str()+'.svg'
-        labels = map(lambda x: x['id']+"\n"+x['name'], self.biom['columns'])
+        labels = self.names() if col_name else self.ids()
         if not matrix:
             return None
         keyArgs = { 'labCol': ro.StrVector(labels),
@@ -595,37 +625,50 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, subset=None, submg=None, onclick=None):
+    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
         matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-        all_ids = self.ids()
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
             return
-        if (not submg) or (len(submg) == 0):
-            # default is all
-            submg = all_ids
-        colors = google_palette(len(submg))
+        # default is all
+        all_ids = self.ids()
+        if (not cols) or (len(cols) == 0):
+            cols = all_ids
+        if (not rows) or (len(rows) == 0):
+            rows = self.annotations()
+        # force rows to be row ids
+        else:
+            rows = self.force_row_ids(rows)
+        colors = google_palette(len(cols))
         labels = []
         data   = []
+        # show data
+        if show_data:
+            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
         # set retina data
-        for i, m in enumerate(submg):
-            if m in all_ids:
-                data.append({'name': m, 'data': [], 'fill': colors[i]})
+        for i, m in enumerate(cols):
+            try:
+                j = all_ids.index(m)
+                data.append({'name': m if not col_name else self.biom['columns'][j]['name'], 'data': [], 'fill': colors[i]})
+            except:
+                pass
         # populate data from matrix
         for r, row in enumerate(matrix):
-            # only use subset rows if subset given
+            # only use sub rows
             rdata = self.biom['rows'][r]
-            if subset and (len(subset) > 0):
-                if (rdata['id'] not in subset) or (('ontology' in rdata['metadata']) and (rdata['metadata']['ontology'][-1] not in subset)):
-                    continue
-            rname = rdata['metadata']['ontology'][-1] if 'ontology' in rdata['metadata'] else rdata['id']
-            labels.append(rname)
-            # only use submg cols
-            for i, m in enumerate(submg):
-                c = all_ids.index(m)
-                data[i]['data'].append(toNum(row[c]))
-        height  = height if height else len(labels)*len(submg)*7.5
-        lheight = min(height, len(submg)*35)
+            if rdata['id'] in rows:
+                if row_full and self.hierarchy and rdata['metadata'] and (self.hierarchy in rdata['metadata']):
+                    labels.append(";".join(rdata['metadata'][self.hierarchy]))
+                else:
+                    labels.append(rdata['id'])
+            else:
+                continue
+            # only use sub cols
+            for i, m in enumerate(cols):
+                j = all_ids.index(m)
+                data[i]['data'].append( toNum(row[j]) )
+        height  = height if height else len(labels)*len(cols)*7.5
+        lheight = min(height, len(cols)*35)
         lwidth  = len(max(labels, key=len)) * 7.2
         cwidth  = 0.85 if legend else 0.99
         keyArgs = { 'btype': 'row',
@@ -643,7 +686,7 @@ class Analysis(object):
         if normalize and self.NDmatrix:
             keyArgs['y_labeled_tick_interval'] = 0.1
         if Ipy.DEBUG:
-            print submg, subset, keyArgs
+            print cols, rows, keyArgs
         try:
             Ipy.RETINA.graph(**keyArgs)
         except:
