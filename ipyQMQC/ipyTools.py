@@ -2,11 +2,9 @@
 
 from time import localtime, strftime
 from collections import defaultdict
-import os, sys, urllib, urllib2, json
+import os, sys, urllib, urllib2, json, pickle
 import string, random, re
 import rpy2.robjects as ro
-import IPython.core.display
-import IPython.utils.path
 import retina, flotplot
 
 # class for ipy lib env
@@ -18,6 +16,7 @@ class Ipy(object):
     NB_DIR  = None
     LIB_DIR = None
     TMP_DIR = None
+    CCH_DIR = None
     IMG_DIR = None
     VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
@@ -67,10 +66,6 @@ class Ipy(object):
                 "#743411" ]
 
 def init_ipy(debug=False, nb_dir=None, api_url=None):
-    # set graphing tools
-    Ipy.FL_PLOT = flotplot.FlotPlot()
-    Ipy.RETINA  = retina.Retina()
-    Ipy.DEBUG   = debug
     # set pathing
     if nb_dir and os.path.isdir(nb_dir):
         Ipy.NB_DIR = nb_dir
@@ -78,6 +73,7 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
         Ipy.NB_DIR = os.getcwd()
     Ipy.LIB_DIR = Ipy.NB_DIR+'/lib'
     Ipy.TMP_DIR = Ipy.NB_DIR+'/tmp'
+    Ipy.CCH_DIR = Ipy.NB_DIR+'/cache'
     Ipy.IMG_DIR = Ipy.NB_DIR+'/images'
     for d in (Ipy.LIB_DIR, Ipy.TMP_DIR, Ipy.IMG_DIR):
         if not os.path.isdir(d):
@@ -85,6 +81,10 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     # set api
     if api_url is not None:
         Ipy.API_URL = api_url
+    # set graphing tools
+    Ipy.FL_PLOT = flotplot.FlotPlot()
+    Ipy.RETINA  = retina.Retina()
+    Ipy.DEBUG   = debug
     # load matR and extras
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
@@ -93,6 +93,24 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     if Ipy.DEBUG:
         for k in Ipy.__dict__.keys():
             print k, getattr(Ipy, k)
+
+def save_object(obj, name):
+    """save some object to python pickle file"""
+    fpath = Ipy.CCH_DIR+'/'+name+'.pkl'
+    try:
+        pickle.dump(obj, open(fpath, 'w'))
+    except:
+        sys.stderr.write("Error: unable to save '%s' to %s \n"%(obj.defined_name, fpath))
+    return fpath
+
+def load_object(name):
+    """load object from python pickle file"""
+    fpath = Ipy.CCH_DIR+'/'+name+'.pkl'
+    if os.path.isfile(fpath):
+        return pickle.load(open(fpath, 'r'))
+    else:
+        sys.stderr.write("can not create from pickeled object, %s does not exist\n"%fpath)
+        return None
 
 def google_palette(num):
     if not num:
