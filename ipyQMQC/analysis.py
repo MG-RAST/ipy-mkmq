@@ -116,8 +116,8 @@ class AnalysisSet(object):
                     'x_rotate': '0',
                     'title': title,
                     'legend': legend,
-                    'rows': self.display_mgs,
-                    'cols': children,
+                    'rows': children,
+                    'cols': self.display_mgs,
                     'col_name': col_name,
                     'row_full': row_full,
                     'show_data': show_data }
@@ -142,8 +142,8 @@ class AnalysisSet(object):
                     'height': height,
                     'dist': dist,
                     'clust': clust,
-                    'rows': self.display_mgs,
-                    'cols': children,
+                    'rows': children,
+                    'cols': self.display_mgs,
                     'col_name': col_name,
                     'row_full': row_full,
                     'show_data': show_data }
