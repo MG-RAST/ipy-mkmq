@@ -579,7 +579,7 @@ class Analysis(object):
         dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
         if show_data:
             print dump_str
-        open(matrix_file, 'r').write(dump_str)
+        open(matrix_file, 'w').write(dump_str)
         rcmd = 'source("%s")\nMGRAST_dendrograms(file_in="%s", file_out_column="%s", file_out_row="%s", dist_method="%s", clust_method="%s", produce_figures="FALSE")\n'%(Ipy.LIB_DIR+'/dendrogram.r', matrix_file, col_file, row_file, dist, clust)
         ro.r(rcmd)
         cord, cdist = ordered_distance_from_file(col_file)
