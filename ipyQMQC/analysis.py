@@ -371,7 +371,7 @@ class Analysis(object):
                     sys.stderr.write("Error: '%s' is not in annotations of %s"%(r, self.id))
                     return None
                 if row_full and self.hierarchy and self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
-                    output += ";".join(self.biom['rows'][i]['metadata'][self.hierarchy])
+                    output += ";".join( map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy]) )
                 else:
                     output += r
                 for c in cols:
