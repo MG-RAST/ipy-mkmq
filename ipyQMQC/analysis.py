@@ -103,7 +103,7 @@ class AnalysisSet(object):
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
     
-    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=True, show_data=False):
+    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -130,7 +130,7 @@ class AnalysisSet(object):
         to_plot = getattr(self, level)
         to_plot['abundance'].barchart(**keyArgs)
         
-    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=True, show_data=False):
+    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -361,7 +361,7 @@ class Analysis(object):
                 except:
                     sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(c, self.id))
                     return None
-                output += "\t" + c if not col_name else self.biom['columns'][j]['name']
+                output += "\t" + str(c if not col_name else self.biom['columns'][j]['name'])
             output += "\n"
             # print matrix
             for r in rows:
@@ -423,16 +423,6 @@ class Analysis(object):
         for i, r in enumerate(rows):
             ann.append( rmap[r] if r in rmap else r )
         return ann
-
-    def get_id_data(self, aid):
-        if not self.Dmatrix:
-            return None
-        try:
-            items = self.ids()
-            index = items.index(aid)
-        except (ValueError, AttributeError):
-            return None
-        return slice_column(self.Dmatrix, index)
 
     def get_id_object(self, aid):
         if not self.biom:
@@ -556,14 +546,14 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
+    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
         if source == 'retina':
             self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, onclick=onclick)
             return
         else:
             return self._matr_heatmap(normalize=normalize, title=title, col_name=col_name)
 
-    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
+    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -625,7 +615,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=True, show_data=False, onclick=None):
+    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
         matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
