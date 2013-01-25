@@ -567,6 +567,9 @@ class Analysis(object):
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
         dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
+        dump_set = dump_str.split("\n")
+        cols = dump_set[0].split("\t")
+        rows = map(lambda x: x.split("\t")[0], dump_set[1:])
         if show_data:
             print dump_str
         open(matrix_file, 'w').write(dump_str)
