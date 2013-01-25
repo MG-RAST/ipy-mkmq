@@ -1,11 +1,11 @@
 from setuptools import setup
-import ipyQMQC
+import ipyMKMQ
 
 setup(
-    name='ipyQMQC',
-    version=ipyQMQC.__version__,
-    description=ipyQMQC.__description__,
-    author=ipyQMQC.__author__,
-    url='https://github.com/teharrison/ipy-qmqc',
-    packages=['ipyQMQC'],
+    name='ipyMKMQ',
+    version=ipyMKMQ.__version__,
+    description=ipyMKMQ.__description__,
+    author=ipyMKMQ.__author__,
+    url='https://github.com/MG-RAST/ipy-mkmq',
+    packages=['ipyMKMQ'],
     )
