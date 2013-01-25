@@ -117,9 +117,10 @@ class Retina(object):
         label  - the label of the bar
         item   - the svg element that was clicked
         index  - the zero based index of this bar within its series
-        series_index - the zero based index of this series"""
+        series_index - the zero based index of this series
+        """
         if not target:
-            target = 'div_'+ipyTools.random_str()
+            target = 'div_graph_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if len(x_labels) == 0:
@@ -154,10 +155,77 @@ class Retina(object):
             print src
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
-    
-    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='left'):
+
+    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='left', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
+    	"""  Plot Renderer
+
+      Displays a two dimensional plot.
+
+      Options
+
+      title (STRING)
+          Title string written at the top of the plot
+
+      title_color (CSS Color Value)
+          Color of the title text. Default is black.
+
+      default_line_color (CSS Color Value)
+          Determines the color of lines if not specified for an individual line. Default is black.
+
+      default_line_width (INT)
+          Number of pixels lines should be wide if not specified for an individual line. Default is 1.
+
+      width (INT)
+          The width of the graph in pixel (including legend).
+
+      height (INT)
+          The height of the graph in pixel (including legend).
+
+      show_dots (BOOLEAN)
+          display circles at the data points (for connected mode only)
+
+      connected (BOOLEAN)
+          connect the dots. This will disable the shape attribute of the series.
+
+      data (OBJECT)
+          series (OBJECT)
+            name (STRING) - name of the series
+    	color (CSS Color value) - color of the series
+    	shape [ 'cicrle', 'triangle', 'square' ] - shape of the points (connected==false only)
+          points (ARRAY of OBJECT)
+            x (FLOAT) - x coordinate
+    	y (FLOAT) - y coordinate
+
+      show_legend (BOOLEAN)
+          Turns the display of the legend on / off. Default ist true.
+
+      legend_position (STRING)
+          Can be one of
+            left
+            right
+            top
+            bottom
+
+      x_min (FLOAT)
+          minimum x value
+
+      y_min (FLOAT)
+          minimum y value
+
+      x_max (FLOAT)
+          maximim x value
+
+      y_max (FLOAT)
+          maximum y value
+
+      x_title (STRING)
+          title of the x axis
+
+      y_title (STRING)
+          title of the y axis
+    	"""
         if not target:
-            target = 'div_'+ipyTools.random_str()
+            target = 'div_plot_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
@@ -166,7 +234,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %d, x_max: %d, y_min: %d, y_max: %d, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
         src = """
 			(function(){
 				Retina.add_renderer({"name": "plot", "resource": '""" + self.renderer_resource + """', "filename": "renderer.plot.js" });
@@ -180,7 +248,7 @@ class Retina(object):
     
     def paragraph(self, width="span12", target="", data=None, title_color='black', header_color='black', text_color='black', raw=False):
         if not target:
-            target = 'div_'+ipyTools.random_str()
+            target = 'div_para_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
@@ -200,7 +268,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def table(self, width=700, height=600, target="", data=None, rows_per_page=20, sort_autodetect=True, filter_autodetect=True):
+    def table(self, width=None, height=None, target="", data=None, rows_per_page=20, sortcol=0, sortdir="asc", sorttype={}, sort_autodetect=True, filter_autodetect=True, filter_autodetect_select_max=10, issorted=False, offset=0, invisible_columns={}, disable_sort={}, filtertypes={}, hide_options=False, editable={}):
         """Table Renderer
 
           Displays a browsable, filterable table with clickable cells / rows.
@@ -262,17 +330,25 @@ class Retina(object):
                 clicked_row - array of contents of the cells of the clicked row
                 clicked_cell - content of the clicked cell
                 clicked_row_index - zero based index of the clicked row
-                clicked_cell_index - zero based index of the clicked cell"""
+                clicked_cell_index - zero based index of the clicked cell
+        """
         if not target:
-            target = 'div_'+ipyTools.random_str()
+            target = 'div_table_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
             data = "Retina.RendererInstances.table[0].exampleData()"
         else:
             data = json.dumps(data)
-            
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, rows_per_page: %d, sort_autodetect: %s, filter_autodetect: %s"%(width, height, target, data, rows_per_page, self._bool(sort_autodetect), self._bool(filter_autodetect))
+        
+        invisible_columns = json.dumps(invisible_columns)
+        disable_sort = json.dumps(disable_sort)
+        sorttype = json.dumps(sorttype)
+        editable = json.dumps(editable)
+        width  = "null" if width is None else str(width)
+        height = "null" if height is None else str(height)
+        
+        opt = "target: document.getElementById('%s'), width: %s, height: %s, rows_per_page: %s, sortcol: %s, sorted: %s, offset: %s, invisible_columns: %s, disable_sort: %s, sortdir: '%s', sorttype: %s, filter_autodetect: %s, filter_autodetect_select_max: %s, sort_autodetect: %s, filter: %s, hide_options: %s, editable: %s, data: %s"%(target, width, height, rows_per_page, sortcol, self._bool(issorted), offset, invisible_columns, disable_sort, sortdir, sorttype, self._bool(filter_autodetect), filter_autodetect_select_max, self._bool(sort_autodetect), filtertypes, self._bool(hide_options), editable, data)
         src = """
             (function(){
                 Retina.add_renderer({ name: 'table', resource: '""" + self.renderer_resource + """', filename: 'renderer.table.js' });
@@ -283,8 +359,8 @@ class Retina(object):
             print src
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
-    
-    def heatmap(self, width=700, height=600, target="", data=None, tree_height=50, tree_width=50, legend_height=250, legend_width=250, row_text_size=15, col_text_size=15, min_cell_height=19, onclick=None):
+
+    def heatmap(self, width=700, height=600, target="", data=None, tree_height=50, tree_width=50, legend_height=250, legend_width=250, row_text_size=15, col_text_size=15, min_cell_height=19, selectedRows=[], onclick=None):
         """Heatmap Renderer
 
           Displays a heatmap.
@@ -335,9 +411,10 @@ class Retina(object):
              rowdend
                 distance matrix for the rows
              data (array of array of float)
-                normalized value matrix"""
+                normalized value matrix
+        """
         if not target:
-            target = 'div_'+ipyTools.random_str()
+            target = 'div_heatmap_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         rows = '[""]'
         if data is None:
@@ -345,9 +422,10 @@ class Retina(object):
         else:
             rows = json.dumps(data['rows'])
             data = json.dumps(data)
-            
+        
+        selectedRows = json.dumps(selectedRows)
         hname = 'heatmap_'+ipyTools.random_str()
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, tree_height: %d, tree_width: %d, legend_height: %d, legend_width: %d, row_text_size: %d, col_text_size: %d, min_cell_height: %d"%(width, height, target, data, tree_height, tree_width, legend_height, legend_width, row_text_size, col_text_size, min_cell_height)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, selectedRows: %s, tree_height: %d, tree_width: %d, legend_height: %d, legend_width: %d, row_text_size: %d, col_text_size: %d, min_cell_height: %d"%(width, height, target, data, selectedRows, tree_height, tree_width, legend_height, legend_width, row_text_size, col_text_size, min_cell_height)
         src = """
             (function(){
                 Retina.add_renderer({ name: 'heatmap', resource: '""" + self.renderer_resource + """', filename: 'renderer.heatmap.js' });
@@ -372,10 +450,51 @@ class Retina(object):
             html += "<button type='button' onclick='"+click_func+"'>sub-select rows</button>"
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if self.debug:
+            print html, src
+        else:
+            IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+
+    def deviationplot(self, target="", width=400, height=80, data=None):
+        if not target:
+            target = 'div_devplot_'+ipyTools.random_str()
+	    html = "<div id='%s'></div>"%(target)
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        if data is None:
+            data = "Retina.RendererInstances.deviationplot[0].exampleData()"
+        else:
+            data = json.dumps(data)
+        
+	    opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
+	    src = """
+              (function(){
+                  Retina.add_renderer({ name: 'deviationplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.deviationplot.js' });
+                  Retina.load_renderer('deviationplot').then( function () { Retina.Renderer.create('deviationplot', {""" + opt + """} ).render(); } );
+              })();
+        """
+        if self.debug:
             print src
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+
+    def boxplot(self, target="target", width=300, height=300, data=None):
+        html = "<div id='%s'></div>"%(target)
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        if data is None:
+            data = "Retina.RendererInstances.boxplot[0].exampleData()"
+        else:
+            data = json.dumps(data)
         
+        opt = "target: document.getElementById('%s'), width: %s, height: %s, data: %s"%(target, width, height, data)
+        src = """
+              (function(){
+                  Retina.add_renderer({ name: 'boxplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.boxplot.js' });
+                  Retina.load_renderer('boxplot').then( function () { Retina.Renderer.create('boxplot', {""" + opt + """} ).render(); } );
+              })();
+        """
+        if self.debug:
+            print src
+        else:
+            IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     def _bool(self, aBool):
         if aBool:
             return 'true'
