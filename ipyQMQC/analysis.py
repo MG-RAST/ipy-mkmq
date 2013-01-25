@@ -651,7 +651,7 @@ class Analysis(object):
             rdata = self.biom['rows'][r]
             if rdata['id'] in rows:
                 if row_full and self.hierarchy and rdata['metadata'] and (self.hierarchy in rdata['metadata']):
-                    labels.append(";".join(rdata['metadata'][self.hierarchy]))
+                    labels.append(";".join( map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy]) ))
                 else:
                     labels.append(rdata['id'])
             else:
