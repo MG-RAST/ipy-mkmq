@@ -397,13 +397,13 @@ class Analysis(object):
             return None
         return map(lambda x: x['name'], self.biom['columns'])
 
-    def annotations(self, metadata=False):
+    def annotations(self, show_id=True):
         """returns a list of annotations (row ids)
-        if metadata=True then returns a list of lists (metadata hierarchies) for row"""
+        if show_id=False then returns a list of lists (metadata hierarchies) for row"""
         if not self.biom:
             sys.stderr.write("BIOM object does not exist\n")
             return None
-        if not metadata:
+        if show_id:
             return map(lambda x: x['id'], self.biom['rows'])
         else:
             ann = []
@@ -567,8 +567,8 @@ class Analysis(object):
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
         dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
-        dump_set = dump_str.split("\n")
-        cols = dump_set[0].split("\t")
+        dump_set = dump_str.strip().split("\n")
+        cols = dump_set[0].strip().split("\t")
         rows = map(lambda x: x.split("\t")[0], dump_set[1:])
         if show_data:
             print dump_str
