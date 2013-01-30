@@ -251,7 +251,7 @@ def sub_biom(b, text):
             sBiom['rows'].append(row)
             seen.add(name)
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
-    return sBiom
+    return biom_remove_empty(sBiom)
 
 def merge_biom(b1, b2):
     if b1 and b2 and (b1['type'] == b2['type']) and (b1['matrix_type'] == b2['matrix_type']) and (b1['matrix_element_type'] == b2['matrix_element_type']) and (b1['matrix_element_value'] == b2['matrix_element_value']):
@@ -275,7 +275,7 @@ def merge_biom(b1, b2):
         mBiom['rows']     = mRow
         mBiom['data']     = mData
         mBiom['shape']    = [ len(mRow), len(mCol) ]
-        return mBiom
+        return biom_remove_empty(mBiom)
     else:
         sys.stderr.write("The inputed biom objects are not compatable for merging\n")
         return None
@@ -299,7 +299,7 @@ def merge_matrix_info(c1, c2, r1, r2):
 
 def merge_sparse(data, cols, rows):
     for i in range(len(data)):
-        data[i] = sparse_to_dense(data[i], len(cols), len(rows))
+        data[i] = sparse_to_dense(data[i], len(rows), len(cols))
     return merge_dense(data, cols, rows)
     
 def merge_dense(data, cols, rows):
@@ -312,6 +312,42 @@ def merge_dense(data, cols, rows):
                 if r[0] == c[0]:
                     mm[i][j] += data[ r[0] ][ r[1] ][ c[1] ]
     return cm, rm, mm
+
+def biom_remove_empty(b):
+    vRows = []
+    vCols = []
+    if b['matrix_type'] == 'sparse':
+        b['data'] = sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
+        b['matrix_type'] = 'dense'
+    for r in enumerate(b['rows']):
+        row = b['data'][r]
+        if sum(row) > 0:
+            vRows.append(r)
+    for c in enumerate(b['columns']):
+        col = map(lambda x: x[c], b['data'])
+        if sum(col) > 0:
+            vCols.append(c)
+    if len(vRows) < len(b['rows']):
+        sub_rows = []
+        sub_data = []
+        for r in vRows:
+            sub_rows.append(b['rows'][r])
+            sub_data.append(b['data'][r])
+        b['rows'] = sub_rows
+        b['data'] = sub_data
+    if len(vRows) < len(b['columns']):
+        sub_cols = []
+        sub_data = []
+        for c in vCols:
+            sub_cols.append(b['columns'][c])
+        for r in b['data']:
+            sub_row = []
+            for c in vCols:
+                sub_row.append(b['data'][r][c])
+            sub_data.append(sub_row)
+        b['rows'] = sub_rows
+        b['data'] = sub_data
+    return b
 
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
     if htype == 'organism':
