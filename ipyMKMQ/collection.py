@@ -8,7 +8,10 @@ from ipyTools import *
 class Collection(object):
     """Class representation of Collection object:
         metagenomes : [ 'hash', 'key = metagenome_id, value = metagenome.Metagenome() object']
-    """
+        _mgids : [ 'list', 'inputted metagenome ids' ]
+        
+        Metagenome object:
+        """+Metagenome.__doc__
     def __init__(self, mgids, metadata=True, stats=True, auth=None, def_name=None, cache=None):
         self._auth  = auth
         self._stats = stats
@@ -45,6 +48,21 @@ class Collection(object):
     
     def mgids(self):
         return self._mgids
+    
+    def get_stat(self, mgid=None, stat=None):
+        if not (mgid and stat and (mgid in self._mgids)):
+            return []
+        if not self._stats:
+            self._set_statistics()
+        if stat not in self.metagenomes[mgid].stats['sequence_stats']:
+            return []
+        stat_list = [ toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) ]
+        for m in self._mgids:
+            if m == mgid:
+                continue
+            if stat in self.metagenomes[m].stats['sequence_stats']:
+                stat_list.append( toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) )
+        return stat_list
     
     def sub_mgs(self, category=None, field=None, value=None):
         sub_mgs = set()
