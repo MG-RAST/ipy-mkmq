@@ -16,7 +16,34 @@ class Metagenome(object):
         "url"      : [ 'uri',     'resource location of this object instance' ],
         "status"   : [ 'cv', [ ['public', 'object is public'],
         					   ['private', 'object is private'] ] ],
-        "sequence_type" => [ 'string', 'sequencing type' ]
+        "sequence_type" : [ 'string', 'sequencing type' ]
+        "stats"      : "id" : [ 'string', 'unique metagenome id' ],
+                       "length_histogram" : { "upload" : [ 'list', 'length distribution of uploaded sequences' ],
+                                              "post_qc" : [ 'list', 'length distribution of post-qc sequences' ] },
+                       "gc_histogram" : { "upload" : [ 'list', 'gc % distribution of uploaded sequences' ],
+                                          "post_qc" : [ 'list', 'gc % distribution of post-qc sequences' ] },
+                       "qc" : { "kmer" : { "6_mer"  : {"columns" : ['list', 'names of columns'], "data" : ['list', 'kmer 6 counts']},
+                                           "15_mer" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'kmer 15 counts']} },
+                                "drisee" : { "counts" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee count profile']},
+                                             "percents" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee percent profile']},
+                                             "summary" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee summary stats']} },
+                                "bp_profile" : { "counts" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'nucleotide count profile']},
+                                                 "percents" : {"columns" : ['list', 'names of columns'], "data" : ['list', 'nucleotide percent profile']} }
+                               },
+                       "sequence_stats" : [ 'hash', 'statistics on sequence files of all pipeline stages' ],
+                       "taxonomy" : { "species" : [ 'list', 'species counts' ],
+                                      "genus" : [ 'list', 'genus counts' ],
+                                      "family" : [ 'list', 'family counts' ],
+                                      "order" : [ 'list', 'order counts' ],
+                                      "class" : [ 'list', 'class counts' ],
+                                      "phylum" : [ 'list', 'phylum counts' ],
+                                      "domain" : [ 'list', 'domain counts' ] },
+                       "ontology" : { "COG" : [ 'list', 'COG counts' ],
+                                      "KO" : [ 'list', 'KO counts' ],
+		                              "NOG" : [ 'list', 'NOG counts' ],
+		                              "Subsystems" : [ 'list', 'Subsystem counts' ] },
+                       "source" : [ 'hash', 'evalue and % identity counts per source' ],
+	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
     """
     def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None, cache=None, mfile=None):
         self._auth = auth
