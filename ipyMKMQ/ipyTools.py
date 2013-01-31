@@ -319,14 +319,14 @@ def biom_remove_empty(b):
     if b['matrix_type'] == 'sparse':
         b['data'] = sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
         b['matrix_type'] = 'dense'
-    for r in enumerate(b['rows']):
-        row = b['data'][r]
+    for i, r in enumerate(b['rows']):
+        row = b['data'][i]
         if sum(row) > 0:
-            vRows.append(r)
-    for c in enumerate(b['columns']):
-        col = map(lambda x: x[c], b['data'])
+            vRows.append(i)
+    for j, c in enumerate(b['columns']):
+        col = map(lambda x: x[j], b['data'])
         if sum(col) > 0:
-            vCols.append(c)
+            vCols.append(j)
     if len(vRows) < len(b['rows']):
         sub_rows = []
         sub_data = []
