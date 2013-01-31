@@ -246,7 +246,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def paragraph(self, width="span12", target="", data=None, title_color='black', header_color='black', text_color='black', raw=False):
+    def paragraph(self, width='940', target="", data=None, title_color='black', header_color='black', text_color='black', raw=False):
         if not target:
             target = 'div_para_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
@@ -476,7 +476,9 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def boxplot(self, target="target", width=300, height=300, data=None):
+    def boxplot(self, target="", width=300, height=300, data=None):
+        if not target:
+            target = 'div_boxplot_'+ipyTools.random_str()
         html = "<div id='%s'></div>"%(target)
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if data is None:
@@ -484,7 +486,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "target: document.getElementById('%s'), width: %s, height: %s, data: %s"%(target, width, height, data)
+        opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
         src = """
               (function(){
                   Retina.add_renderer({ name: 'boxplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.boxplot.js' });
@@ -495,6 +497,7 @@ class Retina(object):
             print src
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+    
     def _bool(self, aBool):
         if aBool:
             return 'true'
