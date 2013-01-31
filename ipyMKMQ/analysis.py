@@ -103,7 +103,7 @@ class AnalysisSet(object):
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
     
-    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False):
+    def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False, arg_list=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -120,7 +120,8 @@ class AnalysisSet(object):
                     'cols': self.display_mgs,
                     'col_name': col_name,
                     'row_full': row_full,
-                    'show_data': show_data }
+                    'show_data': show_data,
+                    'arg_list' : arg_list }
         next_level = child_level(level, htype=annot)
         if next_level:
             click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
@@ -130,7 +131,7 @@ class AnalysisSet(object):
         to_plot = getattr(self, level)
         to_plot['abundance'].barchart(**keyArgs)
         
-    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False):
+    def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False, arg_list=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -146,7 +147,8 @@ class AnalysisSet(object):
                     'cols': self.display_mgs,
                     'col_name': col_name,
                     'row_full': row_full,
-                    'show_data': show_data }
+                    'show_data': show_data,
+                    'arg_list' : arg_list }
         next_level = child_level(level, htype=annot)
         if next_level:
             click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
@@ -280,7 +282,7 @@ class Analysis(object):
         all_annot = self.annotations()
         all_mgids = self.ids()
         matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-        # validate rows
+        # validate rows / get indexes
         aIndex = []
         if rows and (len(rows) > 0):
             aIndex = range(len(all_annot))
@@ -291,7 +293,7 @@ class Analysis(object):
                 except (ValueError, AttributeError):
                     continue
                 aIndex.append(a)
-        # validate cols
+        # validate cols / get indexes
         mgids  = []
         mIndex = []
         if cols and (len(cols) > 0):
@@ -307,15 +309,12 @@ class Analysis(object):
                 mIndex.append(m)
         # build matrix
         sub_matrix = []
-        good_rows = []
         for i in aIndex:
             rdata = []
             for j in mIndex:
                 rdata.append(matrix[i][j])
-            if sum(rdata) > 0:
-                sub_matrix.append(rdata)
-                good_rows.append(all_annot[i])
-        return good_rows, mgids, matrix
+            sub_matrix.append(rdata)
+        return sub_matrix
 
     def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None, col_name=False, row_full=False):
         """Function for outputing the analysis object to flatfile or text string
@@ -507,27 +506,54 @@ class Analysis(object):
         else:
             return 0
 
-    def boxplot(self, normalize=1, title='', col_name=True):
-        matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
-        fname  = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
-        labels = self.names() if col_name else self.ids()
-        if not matrix:
-            return None
-        keyArgs = { 'names': ro.StrVector(labels),
-                    'main': title,
-                    'show.names': True,
-                    'las': 2,
-                    'outpch': 21,
-                    'outcex': 0.5,
-                    'cex.lab': 0.8,
-                    'boxwex': 0.6,
-                    'cex.axis': 0.7 }
-        if Ipy.DEBUG:
-            print fname, keyArgs
-        ro.r.svg(fname)
-        ro.r.boxplot(matrix, **keyArgs)
-        ro.r("dev.off()")
-        return fname
+    def boxplot(self, normalize=1, title='', width=300, height=300, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
+        # default is all
+        if (not cols) or (len(cols) == 0):
+            cols = self.ids()
+        if (not rows) or (len(rows) == 0):
+            rows = self.annotations()
+        # force rows to be row ids
+        else:
+            rows = self.force_row_ids(rows)
+        data = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        if show_data:
+            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name)
+        if source == 'retina':
+            keyArgs = { 'data': data,
+                        'width': width,
+                        'height': height,
+                        'target': 'div_boxplot_'+random_str() }
+            if Ipy.DEBUG:
+                print cols, rows, keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.graph(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing chart\n")
+                return None
+        else:
+            fname = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
+            if col_name:
+                labels = map(lambda y: y['name'], filter(lambda x: x['id'] in cols, self.biom['columns']))
+            else:
+                labels = cols
+            keyArgs = { 'names': ro.StrVector(labels),
+                        'main': title,
+                        'show.names': True,
+                        'las': 2,
+                        'outpch': 21,
+                        'outcex': 0.5,
+                        'cex.lab': 0.8,
+                        'boxwex': 0.6,
+                        'cex.axis': 0.7 }
+            if Ipy.DEBUG:
+                print fname, keyArgs
+            ro.r.svg(fname)
+            ro.r.boxplot(data, **keyArgs)
+            ro.r("dev.off()")
+            return fname
 
     def pco(self, normalize=1, dist='bray-curtis', title='', col_name=True):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
@@ -546,14 +572,14 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
+    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         if source == 'retina':
-            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, onclick=onclick)
+            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
             return
         else:
             return self._matr_heatmap(normalize=normalize, title=title, col_name=col_name)
 
-    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
+    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -595,10 +621,14 @@ class Analysis(object):
                     'onclick': onclick }
         if Ipy.DEBUG:
             print keyArgs
-        try:
-            Ipy.RETINA.heatmap(**keyArgs)
-        except:
-            sys.stderr.write("Error producing heatmap\n")
+        if arg_list:
+            return keyArgs
+        else:
+            try:
+                Ipy.RETINA.heatmap(**keyArgs)
+            except:
+                sys.stderr.write("Error producing heatmap\n")
+            return None
 
     def _matr_heatmap(self, normalize=1, title='', col_name=True):
         matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
@@ -618,7 +648,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, onclick=None):
+    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
@@ -680,12 +710,19 @@ class Analysis(object):
             keyArgs['y_labeled_tick_interval'] = 0.1
         if Ipy.DEBUG:
             print cols, rows, keyArgs
-        try:
-            Ipy.RETINA.graph(**keyArgs)
-        except:
-            sys.stderr.write("Error producing chart\n")
+        if arg_list:
+            return keyArgs
+        else:
+            try:
+                Ipy.RETINA.graph(**keyArgs)
+            except:
+                sys.stderr.write("Error producing chart\n")
+            return None
 
     def _normalize_matrix(self):
+        # skip single metagenome matrix
+        if self.numIDs == 1:
+            return
         try:
             # can matr do it ?
             self.NRmatrix = ro.r.normalize(self.Rmatrix)
