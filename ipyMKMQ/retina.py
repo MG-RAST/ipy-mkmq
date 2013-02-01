@@ -418,7 +418,7 @@ class Retina(object):
         html = "<div id='%s'></div>"%(target)
         rows = '[""]'
         if data is None:
-            data = "Retina.RendererInstances.paragraph[0].exampleData()"
+            data = "Retina.RendererInstances.heatmap[0].exampleData()"
         else:
             rows = json.dumps(data['rows'])
             data = json.dumps(data)
@@ -464,8 +464,8 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-	    opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
-	    src = """
+	opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
+	src = """
               (function(){
                   Retina.add_renderer({ name: 'deviationplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.deviationplot.js' });
                   Retina.load_renderer('deviationplot').then( function () { Retina.Renderer.create('deviationplot', {""" + opt + """} ).render(); } );
