@@ -253,6 +253,10 @@ def sub_biom(b, text):
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
     return biom_remove_empty(sBiom)
 
+def merge_cols(b, merge_set):
+    """input: biom object, merge_set -> [ merge_name_1 : [list of row ids], merge_name_2 : [list of row ids], ... ]"""
+    return None
+
 def merge_biom(b1, b2):
     if b1 and b2 and (b1['type'] == b2['type']) and (b1['matrix_type'] == b2['matrix_type']) and (b1['matrix_element_type'] == b2['matrix_element_type']) and (b1['matrix_element_value'] == b2['matrix_element_value']):
         mBiom = { "generated_by": b1['generated_by'],
