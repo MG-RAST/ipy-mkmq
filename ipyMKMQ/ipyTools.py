@@ -340,10 +340,10 @@ def biom_remove_empty(b):
         sub_data = []
         for c in vCols:
             sub_cols.append(b['columns'][c])
-        for r in b['data']:
+        for row in b['data']:
             sub_row = []
             for c in vCols:
-                sub_row.append(b['data'][r][c])
+                sub_row.append(row[c])
             sub_data.append(sub_row)
         b['rows'] = sub_rows
         b['data'] = sub_data
