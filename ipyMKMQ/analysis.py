@@ -102,6 +102,28 @@ class AnalysisSet(object):
             if self._auth:
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
+
+    def boxblot(self, annot='organism', level='domain', parent=None, width=300, height=300, title="", normalize=1, col_name=True, show_data=False, arg_list=False):
+        children = []
+        if parent and (len(parent) > 0):
+            for p in parent:
+                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+        if children and (len(children) > 0):
+            children = filter(lambda x: x, children)
+        keyArgs = { 'normalize': normalize,
+                    'width': width,
+                    'height': height,
+                    'title': title,
+                    'rows': children,
+                    'cols': self.display_mgs,
+                    'col_name': col_name,
+                    'show_data': show_data,
+                    'arg_list' : arg_list,
+                    'source': 'retina' }
+        if Ipy.DEBUG:
+            print annot, level, keyArgs
+        to_plot = getattr(self, level)
+        to_plot['abundance'].boxplot(**keyArgs)
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False, arg_list=False):
         children = []
