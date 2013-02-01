@@ -118,12 +118,12 @@ class AnalysisSet(object):
                     'cols': self.display_mgs,
                     'col_name': col_name,
                     'show_data': show_data,
-                    'arg_list' : arg_list,
+                    'arg_list': arg_list,
                     'source': 'retina' }
         if Ipy.DEBUG:
             print annot, level, keyArgs
         to_plot = getattr(self, level)
-        to_plot['abundance'].boxplot(**keyArgs)
+        return to_plot['abundance'].boxplot(**keyArgs)
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False, arg_list=False):
         children = []
@@ -143,7 +143,7 @@ class AnalysisSet(object):
                     'col_name': col_name,
                     'row_full': row_full,
                     'show_data': show_data,
-                    'arg_list' : arg_list }
+                    'arg_list': arg_list }
         next_level = child_level(level, htype=annot)
         if next_level:
             click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
@@ -151,7 +151,7 @@ class AnalysisSet(object):
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
-        to_plot['abundance'].barchart(**keyArgs)
+        return to_plot['abundance'].barchart(**keyArgs)
         
     def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False, arg_list=False):
         children = []
@@ -170,7 +170,8 @@ class AnalysisSet(object):
                     'col_name': col_name,
                     'row_full': row_full,
                     'show_data': show_data,
-                    'arg_list' : arg_list }
+                    'arg_list': arg_list,
+                    'source': 'retina' }
         next_level = child_level(level, htype=annot)
         if next_level:
             click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
@@ -178,7 +179,7 @@ class AnalysisSet(object):
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
-        to_plot['abundance'].heatmap(**keyArgs)
+        return to_plot['abundance'].heatmap(**keyArgs)
         
     def _bool(self, aBool):
         if aBool:
@@ -596,8 +597,7 @@ class Analysis(object):
 
     def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         if source == 'retina':
-            self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
-            return
+            return self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
         else:
             return self._matr_heatmap(normalize=normalize, title=title, col_name=col_name)
 
@@ -674,7 +674,7 @@ class Analysis(object):
         matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
         if not matrix:
             sys.stderr.write("Error producing chart: empty matrix\n")
-            return
+            return None
         # default is all
         all_ids = self.ids()
         if (not cols) or (len(cols) == 0):
