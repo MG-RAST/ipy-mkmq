@@ -44,6 +44,7 @@ class FlotPlot(object):
     pixelsx = 600
     pixelsy = 300
     legendloc = "ne"
+    haslegend = True
 
     def _read_data(self, data, data1, label):
         #This function takes the python data and encodes it into JSON data
@@ -97,10 +98,11 @@ class FlotPlot(object):
         if data is not None and len(data) > 0:      
             d, label = self._read_data(data,data1,label)
             nplotstxt = str(self.nplots) 
+            legendstr = 'legend: { position:"' + self.legendloc + '"},' if self.haslegend else ""
             src = d + """
             var options = {
-            selection: { mode: "xy" },
-            legend: { position:\"""" + self.legendloc + """\"},
+              selection: { mode: "xy" },
+              """+legendstr+"""
             };
             
             var plot""" + nplotstxt + """ = $.plot($("#placeholder""" + nplotstxt + """"), [ """ + label + """],options);

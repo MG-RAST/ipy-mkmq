@@ -10,7 +10,6 @@ class Retina(object):
         self.action = action
         self.debug  = debug
         self.rjs    = ipyTools.Ipy.RETINA_URL+'js/'
-        self.rcss   = [ ipyTools.Ipy.RETINA_URL+'css/bootstrap.min.css' ]
         self.rlibs  = [ self.rjs+'bootstrap.min.js',
                         self.rjs+'retina.js',
                         self.rjs+'stm.js',
@@ -21,7 +20,7 @@ class Retina(object):
 				Retina.init( { library_resource: '"""+self.rjs+"""'});
 			})();
 		"""
-        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs, css=self.rcss))
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
     def graph(self, width=800, height=400, btype="column", target="", data=None, title="", x_labels=[], x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
         """Graph Renderer
@@ -188,13 +187,13 @@ class Retina(object):
           connect the dots. This will disable the shape attribute of the series.
 
       data (OBJECT)
-          series (OBJECT)
-            name (STRING) - name of the series
-    	color (CSS Color value) - color of the series
-    	shape [ 'cicrle', 'triangle', 'square' ] - shape of the points (connected==false only)
-          points (ARRAY of OBJECT)
-            x (FLOAT) - x coordinate
-    	y (FLOAT) - y coordinate
+          'series' (ARRAY of OBJECT)
+              'name' (STRING) - name of the series
+    	      'color' (CSS Color value) - color of the series
+    	      'shape' [ 'cicrle', 'triangle', 'square' ] - shape of the points (connected==false only)
+          'points' (ARRAY of OBJECT)
+              'x' (FLOAT) - x coordinate
+    	      'y' (FLOAT) - y coordinate
 
       show_legend (BOOLEAN)
           Turns the display of the legend on / off. Default ist true.
