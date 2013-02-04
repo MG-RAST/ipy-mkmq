@@ -305,9 +305,9 @@ class Rarefaction(object):
             colors = google_palette(len(self.points.keys()))
             for i, m in enumerate(self.points.keys()):
                 series.append( {'name': "%s (%0.2f)"%(m, float(self.alpha[m])), 'color': colors[i]} )
-                points.append( map(lambda z: {'x': z[0], 'y': z[1]}, self.points[m]) )
-                x_all.extend( map(lambda z: z[0], self.points[m]) )
-                y_all.extend( map(lambda z: z[1], self.points[m]) )
+                points.append( map(lambda z: {'x': toNum(z[0]), 'y': toNum(z[1])}, self.points[m]) )
+                x_all.extend( map(lambda z: toNum(z[0]), self.points[m]) )
+                y_all.extend( map(lambda z: toNum(z[1]), self.points[m]) )
             keyArgs = { 'width': width,
                         'height': height,
                         'title': tt,

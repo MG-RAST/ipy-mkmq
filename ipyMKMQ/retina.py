@@ -155,7 +155,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='left', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
+    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
     	"""  Plot Renderer
 
       Displays a two dimensional plot.
