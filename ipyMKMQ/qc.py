@@ -61,7 +61,7 @@ class Drisee(object):
         if source == 'retina':
             series = []
             colors = google_palette(len(labels))
-            for i, l in labels:
+            for i, l in enumerate(labels):
                 series.append({'name': l, 'color': colors[i]})
             pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
             pT = map(lambda y: {'x': y[0], 'y': y[2]}, self.percent['data'])
@@ -131,7 +131,7 @@ class NucleoProfile(object):
         if source == 'retina':
             series = []
             colors = google_palette(len(labels))
-            for i, l in labels:
+            for i, l in enumerate(labels):
                 series.append({'name': l, 'color': colors[i]})
             pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
             pT = map(lambda y: {'x': y[0], 'y': y[2]}, self.percent['data'])
@@ -285,8 +285,8 @@ class Rarefaction(object):
         if source == 'retina':
             series = []
             points = []
-            colors = google_palette(len(self.points))
-            for i, m in self.points.keys():
+            colors = google_palette(len(self.points.keys()))
+            for i, m in enumerate(self.points.keys()):
                 series.append( {'name': "%s (%0.2f)"%(m, self.alpha[m]), 'color': colors[i]} )
                 points.append( map(lambda z: {'x': z[0], 'y': z[1]}, self.points[m]) )
             keyArgs = { 'width': width,
