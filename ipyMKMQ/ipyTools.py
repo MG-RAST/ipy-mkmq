@@ -2,7 +2,7 @@
 
 from time import localtime, strftime
 from collections import defaultdict
-import os, sys, urllib, urllib2, json, pickle
+import os, sys, urllib, urllib2, json, pickle, copy
 import string, random, re
 import rpy2.robjects as ro
 import retina, flotplot
@@ -254,8 +254,44 @@ def sub_biom(b, text):
     return biom_remove_empty(sBiom)
 
 def merge_cols(b, merge_set):
-    """input: biom object, merge_set -> [ merge_name_1 : [list of row ids], merge_name_2 : [list of row ids], ... ]"""
-    return None
+    """input: biom object, merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }"""
+    if not (merge_set and (len(merge_set) > 0)):
+        sys.stderr.write("No merge set inputted\n")
+        return None
+    new_data = []
+    new_cols = []
+    seen = []
+    # create new col set / test for duplicate merge ids
+    for name, ids in merge_set.iteritems():
+        if [i for i in ids if i in seen]:
+            sys.stderr.write("Can not merge same column in more than 1 group\n")
+            return None
+        seen.extend(ids)
+        new_cols.append({'id': name, 'name': name, 'metadata': {'components': ids}})
+    # add singlets
+    for c in b['columns']:
+        if c['id'] not in seen:
+            new_cols.append(c)
+    # merge cols in data
+    for row in b['data']:
+        row_map = dict([(x['id'], 0) for x in new_cols])
+        new_row = []
+        for c, col in enumerate(b['columns']):
+            if col['id'] in new_cols:
+                row_map[col['id']] = row[c]
+            else:
+                for name, ids in merge_set.iteritems():
+                    if col['id'] in ids:
+                        row_map[name] += row[c]
+                        break
+        # re-order row
+        for col in new_cols:
+            new_row.append( row_map[col['id']] )
+        new_data.append(new_row)
+    new_b = copy.deepcopy(b)
+    new_b['columns'] = new_cols
+    new_b['data'] = new_data
+    return new_b
 
 def merge_biom(b1, b2):
     if b1 and b2 and (b1['type'] == b2['type']) and (b1['matrix_type'] == b2['matrix_type']) and (b1['matrix_element_type'] == b2['matrix_element_type']) and (b1['matrix_element_value'] == b2['matrix_element_value']):
