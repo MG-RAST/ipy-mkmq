@@ -18,6 +18,7 @@ class QC(object):
         self.drisee   = Drisee(mgObj=self.metagenome)
         self.kmer     = Kmer(mgObj=self.metagenome)
         self.bp_histo = NucleoProfile(mgObj=self.metagenome)
+        self.rarefaction = Rarefaction(mgObjs=[self.metagenome])
 
 class Drisee(object):
     def __init__(self, mgObj=None, mgData=None):
@@ -59,7 +60,7 @@ class Drisee(object):
         labels = self.percent['columns'][1:]
         if source == 'retina':
             series = []
-            colors = google_palette(labels)
+            colors = google_palette(len(labels))
             for i, l in labels:
                 series.append({'name': l, 'color': colors[i]})
             pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
@@ -72,7 +73,7 @@ class Drisee(object):
             data = {'series': series, 'points': [pA, pT, pC, pG, pN, pX, pTot]}
             keyArgs = { 'width': width,
                         'height': height,
-                        'title': title,
+                        'title': 'drisee plot' if not title else title,
                         'x_title': x_title,
                         'y_title': y_title,
                         'target': 'div_plot_'+random_str(),
@@ -129,7 +130,7 @@ class NucleoProfile(object):
         labels = self.percent['columns'][1:]
         if source == 'retina':
             series = []
-            colors = google_palette(labels)
+            colors = google_palette(len(labels))
             for i, l in labels:
                 series.append({'name': l, 'color': colors[i]})
             pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
@@ -140,7 +141,7 @@ class NucleoProfile(object):
             data = {'series': series, 'points': [pA, pT, pC, pG, pN]}
             keyArgs = { 'width': width,
                         'height': height,
-                        'title': title,
+                        'title': 'nucleotide profile' if not title else title,
                         'x_title': x_title,
                         'y_title': y_title,
                         'target': 'div_plot_'+random_str(),
@@ -256,9 +257,9 @@ class Kmer(object):
         
 
 class Rarefaction(object):
-    def __init__(self, mgObj=None, points=None, alpha=None):
-        if mgObj:
-            self.points, self.alpha = self._get_rarefaction(mgObj)
+    def __init__(self, mgObjs=None, points=None, alpha=None):
+        if mgObjs and (len(mgObjs) > 0):
+            self.points, self.alpha = self._get_rarefaction(mgObjs)
         elif points and (len(points) > 0):
             self.points = points
             self.alpha  = alpha if alpha else None
@@ -266,27 +267,36 @@ class Rarefaction(object):
             self.points = None
             self.alpha  = None
 
-    def _get_rarefaction(self, mgObj):
+    def _get_rarefaction(self, mgObjs):
         try:
-            return mgObj.stats['rarefaction'], mgObj.stats['sequence_stats']['alpha_diversity_shannon']
+            points = {}
+            alpha  = {}
+            for m in mgObjs:
+                points[m.id] = m.stats['rarefaction']
+                alpha[m.id]  = m.stats['sequence_stats']['alpha_diversity_shannon']
+            return points, alpha
         except:
             return None, None
     
-    def plot(self, width=600, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+    def plot(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.points:
             return None
         tt = 'rarefaction curve' if not title else title
         if source == 'retina':
-            points = map(lambda z: {'x': z[0], 'y': z[1]}, self.points)
-            data = {'series': [{'name': title}], 'points': [points]}
+            series = []
+            points = []
+            colors = google_palette(len(self.points))
+            for i, m in self.points.keys():
+                series.append( {'name': "%s (%0.2f)"%(m, self.alpha[m]), 'color': colors[i]} )
+                points.append( map(lambda z: {'x': z[0], 'y': z[1]}, self.points[m]) )
             keyArgs = { 'width': width,
                         'height': height,
                         'title': tt,
                         'x_title': x_title,
                         'y_title': y_title,
                         'target': 'div_plot_'+random_str(),
-                        'show_legend': False,
-                        'data': data }
+                        'show_legend': legend,
+                        'data': {'series': series, 'points': points} }
             if Ipy.DEBUG:
                 print keyArgs
             if arg_list:
@@ -302,6 +312,7 @@ class Rarefaction(object):
             y = map(lambda z: z[1], self.points)
             Ipy.FL_PLOT.pixelsx = width
             Ipy.FL_PLOT.pixelsy = height
+            Ipy.FL_PLOT.haslegend = legend
             Ipy.FL_PLOT.legendloc = 'se'
             try:
                 Ipy.FL_PLOT.plot_figure(x,y,label=tt)
