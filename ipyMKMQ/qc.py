@@ -54,10 +54,11 @@ class Drisee(object):
         fhdl.close()
         return filename
 
-    def plot(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.percent:
             return None
         labels = self.percent['columns'][1:]
+        x = map(lambda y: y[0], self.percent['data'])
         if source == 'retina':
             series = []
             colors = google_palette(len(labels))
@@ -76,6 +77,10 @@ class Drisee(object):
                         'title': 'drisee plot' if not title else title,
                         'x_title': x_title,
                         'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': 0,
+                        'y_max': 100,
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
                         'data': data }
@@ -90,7 +95,6 @@ class Drisee(object):
                     sys.stderr.write("Error producing drisee plot\n")
             return None
         else:
-            x  = map(lambda y: y[0], self.percent['data'])
             yA = map(lambda y: y[1], self.percent['data'])
             yT = map(lambda y: y[2], self.percent['data'])
             yC = map(lambda y: y[3], self.percent['data'])
@@ -124,10 +128,11 @@ class NucleoProfile(object):
         except:
             return None
 
-    def plot(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.percent:
             return None
         labels = self.percent['columns'][1:]
+        x = map(lambda y: y[0], self.percent['data'])
         if source == 'retina':
             series = []
             colors = google_palette(len(labels))
@@ -144,6 +149,10 @@ class NucleoProfile(object):
                         'title': 'nucleotide profile' if not title else title,
                         'x_title': x_title,
                         'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': 0,
+                        'y_max': 100,
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
                         'data': data }
@@ -158,7 +167,6 @@ class NucleoProfile(object):
                     sys.stderr.write("Error producing nucleotide profile\n")
             return None
         else:
-            x  = map(lambda y: y[0], self.percent['data'])
             yA = map(lambda y: y[1], self.percent['data'])
             yT = map(lambda y: y[2], self.percent['data'])
             yC = map(lambda y: y[3], self.percent['data'])
@@ -192,7 +200,7 @@ class Kmer(object):
             except:
                 return None
 
-    def plot_abundance(self, width=600, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+    def plot_abundance(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
         points = map(lambda z: {'x': math.log(z[3], 10), 'y': math.log(z[0], 10)}, self.profile['data'])
@@ -201,7 +209,7 @@ class Kmer(object):
         yt = 'kmer coverage' if not y_title else y_title
         return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
 
-    def plot_ranked(self, width=600, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+    def plot_ranked(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
         points = map(lambda z: {'x': math.log(z[3], 10), 'y': 1 - (1.0 * z[5])}, self.profile['data'])
@@ -210,7 +218,7 @@ class Kmer(object):
         yt = 'fraction of observed kmers' if not y_title else y_title
         return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
 
-    def plot_spectrum(self, width=600, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+    def plot_spectrum(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
         points = map(lambda z: {'x': math.log(z[0], 10), 'y': math.log(z[1], 10)}, self.profile['data'])
@@ -219,9 +227,11 @@ class Kmer(object):
         yt = 'number of kmers' if not y_title else y_title
         return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
         
-    def _plot(self, points=None, width=600, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+    def _plot(self, points=None, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not points:
             return None
+        x = map(lambda z: z['x'], points)
+        y = map(lambda z: z['y'], points)
         if source == 'retina':
             data = {'series': [{'name': title}], 'points': [points]}
             keyArgs = { 'width': width,
@@ -229,6 +239,10 @@ class Kmer(object):
                         'title': title,
                         'x_title': x_title,
                         'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': min(y),
+                        'y_max': max(y),
                         'target': 'div_plot_'+random_str(),
                         'show_legend': False,
                         'data': data }
@@ -243,8 +257,6 @@ class Kmer(object):
                     sys.stderr.write("Error producing kmer profile\n")
             return None
         else:
-            x = map(lambda z: z['x'], points)
-            y = map(lambda z: z['y'], points)
             Ipy.FL_PLOT.pixelsx = width
             Ipy.FL_PLOT.pixelsy = height
             Ipy.FL_PLOT.haslegend = True if title else False
@@ -278,22 +290,30 @@ class Rarefaction(object):
         except:
             return None, None
     
-    def plot(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.points:
             return None
         tt = 'rarefaction curve' if not title else title
         if source == 'retina':
             series = []
             points = []
+            x_all  = []
+            y_all  = []
             colors = google_palette(len(self.points.keys()))
             for i, m in enumerate(self.points.keys()):
-                series.append( {'name': "%s (%0.2f)"%(m, self.alpha[m]), 'color': colors[i]} )
+                series.append( {'name': "%s (%0.2f)"%(m, float(self.alpha[m])), 'color': colors[i]} )
                 points.append( map(lambda z: {'x': z[0], 'y': z[1]}, self.points[m]) )
+                x_all.extend( map(lambda z: z[0], self.points[m]) )
+                y_all.extend( map(lambda z: z[1], self.points[m]) )
             keyArgs = { 'width': width,
                         'height': height,
                         'title': tt,
                         'x_title': x_title,
                         'y_title': y_title,
+                        'x_min': min(x_all),
+                        'x_max': max(x_all),
+                        'y_min': min(y_all),
+                        'y_max': max(y_all),
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
                         'data': {'series': series, 'points': points} }
