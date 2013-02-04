@@ -233,7 +233,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %d, x_max: %d, y_min: %d, y_max: %d, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
         src = """
 			(function(){
 				Retina.add_renderer({"name": "plot", "resource": '""" + self.renderer_resource + """', "filename": "renderer.plot.js" });

@@ -83,6 +83,7 @@ class Drisee(object):
                         'y_max': 100,
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
+                        'show_dots': False,
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
@@ -155,6 +156,7 @@ class NucleoProfile(object):
                         'y_max': 100,
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
+                        'show_dots': False,
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
@@ -245,6 +247,7 @@ class Kmer(object):
                         'y_max': max(y),
                         'target': 'div_plot_'+random_str(),
                         'show_legend': False,
+                        'show_dots': False,
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
@@ -316,6 +319,7 @@ class Rarefaction(object):
                         'y_max': max(y_all),
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
+                        'show_dots': False,
                         'data': {'series': series, 'points': points} }
             if Ipy.DEBUG:
                 print keyArgs
