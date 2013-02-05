@@ -10,8 +10,8 @@ from datetime import datetime
 def get_analysis_set(ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, def_name=None):
     """Wrapper for AnalysisSet object creation, checks if cache (created through unique option set) exists first and returns that.
     
-        AnalysisSet object:
-    """+AnalysisSet.__doc__
+    see: help(AnalysisSet)
+    """
     if not ids:
         sys.stderr.write("No ids inputted\n")
         return
@@ -36,9 +36,9 @@ class AnalysisSet(object):
     """Class for working with a set of Analysis objects:
         - Creates an Analysis object for each taxonimic level and functional level
         - allows boxplot, barchart, and heatmap navigation through hierarchies (drilldowns)
-        
-        Analysis object:
-    """+Analysis.__doc__
+    
+    see: help(Analysis)
+    """
     def __init__(self, ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, cache=None, def_name=None):
         self.method  = method
         self._auth   = auth

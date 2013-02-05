@@ -9,9 +9,9 @@ class Collection(object):
     """Class representation of Collection object:
         metagenomes : [ 'hash', 'key = metagenome_id, value = metagenome.Metagenome() object']
         _mgids : [ 'list', 'inputted metagenome ids' ]
-        
-        Metagenome object:
-        """+Metagenome.__doc__
+    
+    see: help(Metagenome)
+    """
     def __init__(self, mgids, metadata=True, stats=True, auth=None, def_name=None, cache=None):
         self._auth  = auth
         self._stats = stats
