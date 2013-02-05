@@ -10,7 +10,6 @@ class Retina(object):
         self.action = action
         self.debug  = debug
         self.rjs    = ipyTools.Ipy.RETINA_URL+'js/'
-        self.rcss   = [ ipyTools.Ipy.RETINA_URL+'css/bootstrap.min.css' ]
         self.rlibs  = [ self.rjs+'bootstrap.min.js',
                         self.rjs+'retina.js',
                         self.rjs+'stm.js',
@@ -21,7 +20,7 @@ class Retina(object):
 				Retina.init( { library_resource: '"""+self.rjs+"""'});
 			})();
 		"""
-        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs, css=self.rcss))
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
     def graph(self, width=800, height=400, btype="column", target="", data=None, title="", x_labels=[], x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
         """Graph Renderer
@@ -156,7 +155,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='left', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
+    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
     	"""  Plot Renderer
 
       Displays a two dimensional plot.
@@ -188,13 +187,13 @@ class Retina(object):
           connect the dots. This will disable the shape attribute of the series.
 
       data (OBJECT)
-          series (OBJECT)
-            name (STRING) - name of the series
-    	color (CSS Color value) - color of the series
-    	shape [ 'cicrle', 'triangle', 'square' ] - shape of the points (connected==false only)
-          points (ARRAY of OBJECT)
-            x (FLOAT) - x coordinate
-    	y (FLOAT) - y coordinate
+          'series' (ARRAY of OBJECT)
+              'name' (STRING) - name of the series
+    	      'color' (CSS Color value) - color of the series
+    	      'shape' [ 'cicrle', 'triangle', 'square' ] - shape of the points (connected==false only)
+          'points' (ARRAY of OBJECT)
+              'x' (FLOAT) - x coordinate
+    	      'y' (FLOAT) - y coordinate
 
       show_legend (BOOLEAN)
           Turns the display of the legend on / off. Default ist true.
@@ -234,7 +233,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %d, x_max: %d, y_min: %d, y_max: %d, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
         src = """
 			(function(){
 				Retina.add_renderer({"name": "plot", "resource": '""" + self.renderer_resource + """', "filename": "renderer.plot.js" });

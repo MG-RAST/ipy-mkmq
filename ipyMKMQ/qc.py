@@ -18,6 +18,7 @@ class QC(object):
         self.drisee   = Drisee(mgObj=self.metagenome)
         self.kmer     = Kmer(mgObj=self.metagenome)
         self.bp_histo = NucleoProfile(mgObj=self.metagenome)
+        self.rarefaction = Rarefaction(mgObjs=[self.metagenome])
 
 class Drisee(object):
     def __init__(self, mgObj=None, mgData=None):
@@ -53,20 +54,64 @@ class Drisee(object):
         fhdl.close()
         return filename
 
-    def plot(self):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.percent:
             return None
-        l = self.percent['columns']
-        x  = map(lambda y: y[0], self.percent['data'])
-        yA = map(lambda y: y[1], self.percent['data'])
-        yT = map(lambda y: y[2], self.percent['data'])
-        yC = map(lambda y: y[3], self.percent['data'])
-        yG = map(lambda y: y[4], self.percent['data'])
-        yN = map(lambda y: y[5], self.percent['data'])
-        yX = map(lambda y: y[6], self.percent['data'])
-        yTot = map(lambda y: y[7], self.percent['data'])
-        Ipy.FL_PLOT.legendloc = 'nw'
-        Ipy.FL_PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=l)
+        labels = self.percent['columns'][1:]
+        x = map(lambda y: y[0], self.percent['data'])
+        if source == 'retina':
+            series = []
+            colors = google_palette(len(labels))
+            for i, l in enumerate(labels):
+                series.append({'name': l, 'color': colors[i]})
+            pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
+            pT = map(lambda y: {'x': y[0], 'y': y[2]}, self.percent['data'])
+            pC = map(lambda y: {'x': y[0], 'y': y[3]}, self.percent['data'])
+            pG = map(lambda y: {'x': y[0], 'y': y[4]}, self.percent['data'])
+            pN = map(lambda y: {'x': y[0], 'y': y[5]}, self.percent['data'])
+            pX = map(lambda y: {'x': y[0], 'y': y[6]}, self.percent['data'])
+            pTot = map(lambda y: {'x': y[0], 'y': y[7]}, self.percent['data'])
+            data = {'series': series, 'points': [pA, pT, pC, pG, pN, pX, pTot]}
+            keyArgs = { 'width': width,
+                        'height': height,
+                        'title': 'drisee plot' if not title else title,
+                        'x_title': x_title,
+                        'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': 0,
+                        'y_max': 100,
+                        'target': 'div_plot_'+random_str(),
+                        'show_legend': legend,
+                        'show_dots': False,
+                        'data': data }
+            if Ipy.DEBUG:
+                print keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.plot(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing drisee plot\n")
+            return None
+        else:
+            yA = map(lambda y: y[1], self.percent['data'])
+            yT = map(lambda y: y[2], self.percent['data'])
+            yC = map(lambda y: y[3], self.percent['data'])
+            yG = map(lambda y: y[4], self.percent['data'])
+            yN = map(lambda y: y[5], self.percent['data'])
+            yX = map(lambda y: y[6], self.percent['data'])
+            yTot = map(lambda y: y[7], self.percent['data'])
+            Ipy.FL_PLOT.pixelsx = width
+            Ipy.FL_PLOT.pixelsy = height
+            Ipy.FL_PLOT.haslegend = legend
+            Ipy.FL_PLOT.legendloc = 'nw'
+            try:
+                Ipy.FL_PLOT.plot_figure([x,x,x,x,x,x,x],[yA,yT,yC,yG,yN,yX,yTot],label=labels)
+            except:
+                sys.stderr.write("Error producing drisee plot\n")
+            return None
 
 class NucleoProfile(object):
     def __init__(self, mgObj=None, mgData=None):
@@ -84,18 +129,60 @@ class NucleoProfile(object):
         except:
             return None
 
-    def plot(self):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.percent:
             return None
-        l = self.percent['columns']
-        x  = map(lambda y: y[0], self.percent['data'])
-        yA = map(lambda y: y[1], self.percent['data'])
-        yT = map(lambda y: y[2], self.percent['data'])
-        yC = map(lambda y: y[3], self.percent['data'])
-        yG = map(lambda y: y[4], self.percent['data'])
-        yN = map(lambda y: y[5], self.percent['data'])
-        Ipy.FL_PLOT.legendloc = 'se'
-        Ipy.FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=l)
+        labels = self.percent['columns'][1:]
+        x = map(lambda y: y[0], self.percent['data'])
+        if source == 'retina':
+            series = []
+            colors = google_palette(len(labels))
+            for i, l in enumerate(labels):
+                series.append({'name': l, 'color': colors[i]})
+            pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
+            pT = map(lambda y: {'x': y[0], 'y': y[2]}, self.percent['data'])
+            pC = map(lambda y: {'x': y[0], 'y': y[3]}, self.percent['data'])
+            pG = map(lambda y: {'x': y[0], 'y': y[4]}, self.percent['data'])
+            pN = map(lambda y: {'x': y[0], 'y': y[5]}, self.percent['data'])
+            data = {'series': series, 'points': [pA, pT, pC, pG, pN]}
+            keyArgs = { 'width': width,
+                        'height': height,
+                        'title': 'nucleotide profile' if not title else title,
+                        'x_title': x_title,
+                        'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': 0,
+                        'y_max': 100,
+                        'target': 'div_plot_'+random_str(),
+                        'show_legend': legend,
+                        'show_dots': False,
+                        'data': data }
+            if Ipy.DEBUG:
+                print keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.plot(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing nucleotide profile\n")
+            return None
+        else:
+            yA = map(lambda y: y[1], self.percent['data'])
+            yT = map(lambda y: y[2], self.percent['data'])
+            yC = map(lambda y: y[3], self.percent['data'])
+            yG = map(lambda y: y[4], self.percent['data'])
+            yN = map(lambda y: y[5], self.percent['data'])
+            Ipy.FL_PLOT.pixelsx = width
+            Ipy.FL_PLOT.pixelsy = height
+            Ipy.FL_PLOT.haslegend = legend
+            Ipy.FL_PLOT.legendloc = 'se'
+            try:
+                Ipy.FL_PLOT.plot_figure([x,x,x,x,x],[yA,yT,yC,yG,yN],label=labels)
+            except:
+                sys.stderr.write("Error producing nucleotide profile\n")
+            return None
 
 class Kmer(object):
     def __init__(self, mgObj=None, profile=None):
@@ -115,34 +202,79 @@ class Kmer(object):
             except:
                 return None
 
-    def plot_abundance(self):
+    def plot_abundance(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[3], 10), self.profile['data'])
-        y = map(lambda z: math.log(z[0], 10), self.profile['data'])
-        Ipy.FL_PLOT.legendloc = 'sw'
-        Ipy.FL_PLOT.plot_figure(x,y,label='kmer rank abundance')
+        points = map(lambda z: {'x': math.log(z[3], 10), 'y': math.log(z[0], 10)}, self.profile['data'])
+        tt = 'kmer rank abundance' if not title else title
+        xt = 'sequence size' if not x_title else x_title
+        yt = 'kmer coverage' if not y_title else y_title
+        return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
 
-    def plot_ranked(self):
+    def plot_ranked(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[3], 10), self.profile['data'])
-        y = map(lambda z: 1 - (1.0 * z[5]), self.profile['data'])
-        Ipy.FL_PLOT.legendloc = 'sw'
-        Ipy.FL_PLOT.plot_figure(x,y,label='ranked kmer consumed')
+        points = map(lambda z: {'x': math.log(z[3], 10), 'y': 1 - (1.0 * z[5])}, self.profile['data'])
+        tt = 'ranked kmer consumed' if not title else title
+        xt = 'sequence size' if not x_title else x_title
+        yt = 'fraction of observed kmers' if not y_title else y_title
+        return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
 
-    def plot_spectrum(self):
+    def plot_spectrum(self, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
         if not (self.profile and ('data' in self.profile)):
             return None
-        x = map(lambda z: math.log(z[0], 10), self.profile['data'])
-        y = map(lambda z: math.log(z[1], 10), self.profile['data'])
-        Ipy.FL_PLOT.legendloc = 'sw'
-        Ipy.FL_PLOT.plot_figure(x,y,label='kmer spectrum')
+        points = map(lambda z: {'x': math.log(z[0], 10), 'y': math.log(z[1], 10)}, self.profile['data'])
+        tt = 'kmer spectrum' if not title else title
+        xt = 'kmer coverage' if not x_title else x_title
+        yt = 'number of kmers' if not y_title else y_title
+        return self._plot(points=points, width=width, height=height, title=tt, x_title=xt, y_title=yt, arg_list=arg_list, source=source)
+        
+    def _plot(self, points=None, width=800, height=300, title="", x_title="", y_title="", arg_list=False, source='retina'):
+        if not points:
+            return None
+        x = map(lambda z: z['x'], points)
+        y = map(lambda z: z['y'], points)
+        if source == 'retina':
+            data = {'series': [{'name': title}], 'points': [points]}
+            keyArgs = { 'width': width,
+                        'height': height,
+                        'title': title,
+                        'x_title': x_title,
+                        'y_title': y_title,
+                        'x_min': min(x),
+                        'x_max': max(x),
+                        'y_min': min(y),
+                        'y_max': max(y),
+                        'target': 'div_plot_'+random_str(),
+                        'show_legend': False,
+                        'show_dots': False,
+                        'data': data }
+            if Ipy.DEBUG:
+                print keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.plot(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing kmer profile\n")
+            return None
+        else:
+            Ipy.FL_PLOT.pixelsx = width
+            Ipy.FL_PLOT.pixelsy = height
+            Ipy.FL_PLOT.haslegend = True if title else False
+            Ipy.FL_PLOT.legendloc = 'se'
+            try:
+                Ipy.FL_PLOT.plot_figure(x,y,label=title)
+            except:
+                sys.stderr.write("Error producing kmer profile\n")
+            return None
+        
 
 class Rarefaction(object):
-    def __init__(self, mgObj=None, points=None, alpha=None):
-        if mgObj:
-            self.points, self.alpha = self._get_rarefaction(mgObj)
+    def __init__(self, mgObjs=None, points=None, alpha=None):
+        if mgObjs and (len(mgObjs) > 0):
+            self.points, self.alpha = self._get_rarefaction(mgObjs)
         elif points and (len(points) > 0):
             self.points = points
             self.alpha  = alpha if alpha else None
@@ -150,21 +282,67 @@ class Rarefaction(object):
             self.points = None
             self.alpha  = None
 
-    def _get_rarefaction(self, mgObj):
+    def _get_rarefaction(self, mgObjs):
         try:
-            return mgObj.stats['rarefaction'], mgObj.stats['sequence_stats']['alpha_diversity_shannon']
+            points = {}
+            alpha  = {}
+            for m in mgObjs:
+                points[m.id] = m.stats['rarefaction']
+                alpha[m.id]  = m.stats['sequence_stats']['alpha_diversity_shannon']
+            return points, alpha
         except:
             return None, None
     
-    def plot(self):
+    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.points:
             return None
-        l = 'rarefaction curve'
-        if self.alpha:
-            l += ': alpha diversity = '+str(self.alpha)
-        x = map(lambda z: z[0], self.points)
-        y = map(lambda z: z[1], self.points)
-        Ipy.FL_PLOT.plot_figure(x,y,label=l)
+        tt = 'rarefaction curve' if not title else title
+        if source == 'retina':
+            series = []
+            points = []
+            x_all  = []
+            y_all  = []
+            colors = google_palette(len(self.points.keys()))
+            for i, m in enumerate(self.points.keys()):
+                series.append( {'name': "%s (%0.2f)"%(m, float(self.alpha[m])), 'color': colors[i]} )
+                points.append( map(lambda z: {'x': toNum(z[0]), 'y': toNum(z[1])}, self.points[m]) )
+                x_all.extend( map(lambda z: toNum(z[0]), self.points[m]) )
+                y_all.extend( map(lambda z: toNum(z[1]), self.points[m]) )
+            keyArgs = { 'width': width,
+                        'height': height,
+                        'title': tt,
+                        'x_title': x_title,
+                        'y_title': y_title,
+                        'x_min': min(x_all),
+                        'x_max': max(x_all),
+                        'y_min': min(y_all),
+                        'y_max': max(y_all),
+                        'target': 'div_plot_'+random_str(),
+                        'show_legend': legend,
+                        'show_dots': False,
+                        'data': {'series': series, 'points': points} }
+            if Ipy.DEBUG:
+                print keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.plot(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing rarefaction plot\n")
+            return None
+        else:
+            x = map(lambda z: z[0], self.points)
+            y = map(lambda z: z[1], self.points)
+            Ipy.FL_PLOT.pixelsx = width
+            Ipy.FL_PLOT.pixelsy = height
+            Ipy.FL_PLOT.haslegend = legend
+            Ipy.FL_PLOT.legendloc = 'se'
+            try:
+                Ipy.FL_PLOT.plot_figure(x,y,label=tt)
+            except:
+                sys.stderr.write("Error producing rarefaction plot\n")
+            return None
 
 def has_profile(profile, data):
     if data and (profile in data) and ('data' in data[profile]) and (len(data[profile]['data']) > 0):
