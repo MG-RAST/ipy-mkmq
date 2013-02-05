@@ -7,12 +7,38 @@ from ipyTools import *
 from collections import defaultdict
 from datetime import datetime
 
+def get_analysis_set(ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, def_name=None):
+    """Wrapper for AnalysisSet object creation, checks if cache (created through unique option set) exists first and returns that.
+    
+        AnalysisSet object:
+    """+AnalysisSet.__doc__
+    if not ids:
+        sys.stderr.write("No ids inputted\n")
+        return
+    cache_id  = "_".join(sorted(ids))+"_"+method+"_"+function_source
+    cache_md5 = hashlib.md5(cache_id).hexdigest()
+    cache_obj = load_object(cache_md5)
+    if cache_obj is not None:
+        print "Loading AnalysisSet for selected metagenomes from cached object"
+        return cache_obj
+    else:
+        # hack to get variable name
+        if def_name == None:
+            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+            def_name = text[:text.find('=')].strip()
+        print "Loading AnalysisSet for selected metagenomes through API.  Please wait, this may take several minutes ... "
+        new_obj = AnalysisSet(ids=ids, auth=auth, method=method, function_source=function_source, all_values=all_values, def_name=def_name)
+        save_object(new_obj, cache_md5)
+        print "Done loading through API"
+        return new_obj
+
 class AnalysisSet(object):
     """Class for working with a set of Analysis objects:
         - Creates an Analysis object for each taxonimic level and functional level
-        - allows barchart and heatmap navigation through hierarchies (drilldowns)
-        - caches data locally for fast re-analysis
-    """
+        - allows boxplot, barchart, and heatmap navigation through hierarchies (drilldowns)
+        
+        Analysis object:
+    """+Analysis.__doc__
     def __init__(self, ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, cache=None, def_name=None):
         self.method  = method
         self._auth   = auth
