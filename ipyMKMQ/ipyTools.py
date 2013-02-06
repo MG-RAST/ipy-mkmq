@@ -179,7 +179,7 @@ def matrix_to_file(fname=None, matrix=[], cols=None, rows=None):
         output += "\t".join(cols) + "\n"
     for r, row in enumerate(matrix):
         if rows:
-            output += rows[r]
+            output += rows[r] + "\t"
         output += "\t".join(map(str, row)) + "\n"
     if fname:
         fhdl = open(fname, 'w')
