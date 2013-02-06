@@ -171,6 +171,24 @@ def matrix_from_file(fname, has_col_names=True, has_row_names=True):
     fhdl.close()
     return matrix
 
+def matrix_to_file(fname=None, matrix=matrix, cols=None, rows=None):
+    output = ''
+    if cols:
+        if rows:
+            output += "\t"
+        output += "\t".join(cols) + "\n"
+    for r, row in enumerate(matrix):
+        if rows:
+            output += rows[r]
+        output += "\t".join(map(str, row)) + "\n"
+    if fname:
+        fhdl = open(fname, 'w')
+        fhdl.write(output)
+        fhdl.close()
+        return None
+    else:
+        return output
+
 def ordered_distance_from_file(fname):
     fhdl  = open(fname, 'rU')
     line1 = fhdl.readline()
@@ -369,14 +387,17 @@ def biom_remove_empty(b):
     if b['matrix_type'] == 'sparse':
         b['data'] = sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
         b['matrix_type'] = 'dense'
+    # get valid rows
     for i, r in enumerate(b['rows']):
         row = b['data'][i]
         if sum(row) > 0:
             vRows.append(i)
+    # get vaild columns
     for j, c in enumerate(b['columns']):
         col = map(lambda x: x[j], b['data'])
         if sum(col) > 0:
             vCols.append(j)
+    # clean ['rows'] and ['data'] for rows
     if len(vRows) < len(b['rows']):
         sub_rows = []
         sub_data = []
@@ -385,6 +406,7 @@ def biom_remove_empty(b):
             sub_data.append(b['data'][r])
         b['rows'] = sub_rows
         b['data'] = sub_data
+    # clean ['columns'] and ['data'] for columns
     if len(vRows) < len(b['columns']):
         sub_cols = []
         sub_data = []
@@ -398,6 +420,25 @@ def biom_remove_empty(b):
         b['columns'] = sub_cols
         b['data'] = sub_data
     return b
+
+def matrix_remove_empty(m):
+    """imput: matrix
+    return: matrix. cleaned up, all rows with 0's and columns with 0s removed"""
+    # identify valid columns
+    vCols = []
+    vMatrix = []
+    for c in range(len(matrix[0])):
+        if sum(slice_column(matrix, c)) > 0:
+            vCols.append(c)
+    # clean matrix
+    for row in matrix:
+        vRow = []
+        if sum(row) == 0:
+            continue
+        for c in vCols:
+            vRow.append(row[c])
+        vMatrix.append(vRow)
+    return vMatrix
 
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
     if htype == 'organism':
