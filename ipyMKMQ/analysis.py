@@ -466,6 +466,7 @@ class Analysis(object):
         """returns input list with last hierarchal metadata name replaced with id.
         This re-orders input in same order as biom['rows']", and drops those items not in biom['rows']
         """
+        ann = []
         if not self.hierarchy:
             # no hierarchy metadata, just return valid ids
             ann = map( lambda y: y['id'], filter(lambda x: x['id'] in rows, self.biom['rows']) )
