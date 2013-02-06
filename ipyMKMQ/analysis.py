@@ -419,7 +419,7 @@ class Analysis(object):
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
                 rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True)
-            if not martrix:
+            if not matrix:
                 sys.stderr.write("No abundance data available for the inputted columns and rows\n")
                 return None
             # col names if requested
@@ -586,7 +586,7 @@ class Analysis(object):
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
-        if not martrix:
+        if not matrix:
             sys.stderr.write("No abundance data available for the inputted columns and rows\n")
             return None
         if show_data:
@@ -638,7 +638,7 @@ class Analysis(object):
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
-        if not martrix:
+        if not matrix:
             sys.stderr.write("No abundance data available for the inputted columns and rows\n")
             return None
         if show_data:
@@ -774,7 +774,7 @@ class Analysis(object):
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
-        if not martrix:
+        if not matrix:
             sys.stderr.write("No abundance data available for the inputted columns and rows\n")
             return None
         colors = google_palette(len(cols))
