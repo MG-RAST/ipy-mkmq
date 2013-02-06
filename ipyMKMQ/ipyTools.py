@@ -137,7 +137,7 @@ def obj_from_url(url):
         sys.stderr.write("ERROR (%s): no results returned\n"%url)
         return None
     obj = json.loads(res.read())
-    if not obj:
+    if obj is None:
         sys.stderr.write("ERROR (%s): return structure not valid json format\n"%url)
         return None
     if 'ERROR' in obj:
@@ -448,7 +448,10 @@ def get_hierarchy(htype='taxonomy', level='species', parent=None):
     params = [('min_level', level)]
     if parent is not None:
         params.append(('parent_name', parent))
-    return obj_from_url(Ipy.API_URL+'m5nr/'+htype+'?'+urllib.urlencode(params, True))
+    child = obj_from_url(Ipy.API_URL+'m5nr/'+htype+'?'+urllib.urlencode(params, True))
+    if not child:
+        child = []
+    return child
 
 def get_taxonomy(level='species', parent=None):
     return get_hierarchy(htype='taxonomy', level=level, parent=parent)
