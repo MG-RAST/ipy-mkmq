@@ -327,11 +327,18 @@ class Analysis(object):
                 annot.add(r['id'])
         return list(annot)
 
-    def sub_matrix(self, normalize=0, cols=None, rows=None):
+    def sub_matrix(self, normalize=0, cols=None, rows=None, strip=True):
+        """input: list of col ids, list of row ids, strip option
+        return matrix of just those items (if they exist), if sum of row or column is empty remove it (strip option)
+        """
         all_annot = self.annotations()
         all_mgids = self.ids()
-        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        # test if really sub
+        if (not (cols and rows)) or ((len(cols) == len(all_mgids)) and (len(rows) == len(all_annot))):
+            matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+            return all_annot, all_mgids, matrix
         # validate rows / get indexes
+        rows = self.force_row_ids(rows)
         aIndex = []
         if rows and (len(rows) > 0):
             aIndex = range(len(all_annot))
@@ -356,21 +363,46 @@ class Analysis(object):
                     continue
                 mgids.append(all_mgids[m])
                 mIndex.append(m)
-        # build matrix
+        # build matrix / validate rows
+        sub_rows = []
+        sub_cols = []
+        tmp_cols = []
+        tmp_matrix = []
         sub_matrix = []
         for i in aIndex:
             rdata = []
             for j in mIndex:
-                rdata.append(matrix[i][j])
-            sub_matrix.append(rdata)
-        return sub_matrix
+                rdata.append(self.Dmatrix[i][j])
+            if (sum(rdata) == 0) and strip:
+                continue
+            sub_rows.append(all_annot[i])
+            tmp_matrix.append(rdata)
+        # validate columns
+        for j in mIndex:
+            if (sum(slice_column(tmp_matrix, j)) == 0) and strip:
+                continue
+            sub_cols.append(all_mgids[j])
+            tmp_cols.append(j)
+        for r in tmp_matrix:
+            tmp_row = []
+            for c in tmp_cols:
+                tmp_row.append(r[c])
+            sub_matrix.append(tmp_row)
+        # now we normalize
+        if normalize:
+            raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
+            matrix_to_file(fname=raw_file, matrix=sub_matrix, cols=sub_cols, rows=sub_rows)
+            norm_file = self._normalize_tabbed(raw_file)
+            sub_matrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
+        return sub_rows, sub_cols, sub_matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, rows=None, cols=None, col_name=False, row_full=False):
+    def dump(self, fname=None, fformat='biom', normalize=0, matrix=None, rows=None, cols=None, col_name=False, row_full=False):
         """Function for outputing the analysis object to flatfile or text string
             Inputs:
                 fname:     name of file to output too, if undefined returns string
                 fformat:   format of output, options are 'biom' or 'tab', default is 'biom'
                 normalize: boolean - if true output normalized abundance values, default is false
+                matrix:    if passed a matrix, just dump it and given rows / cols and don't create sub_matrix and normalize
                 rows:      if list of row ids is passed will only output matrix of those rows, else output all rows
                 cols:      if list of column ids is passed will only output matrix of those columns, else output all columns
                 metadata:  boolean - for 'tab' output, print last metadata of hierarchy for rows instaed of row id, default false
@@ -389,49 +421,35 @@ class Analysis(object):
             # biom dump
             output = json.dumps(self.biom)
         else:
-            # tab deleminted dump / option for sub-dump
-            all_annot = self.annotations()
-            all_mgids = self.ids()
-            matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-            # default is all ids
-            if (not cols) or (len(cols) == 0):
-                cols = self.ids()
-            if (not rows) or (len(rows) == 0):
-                rows = all_annot
-            # force rows to be row ids
-            else:
-                rows = self.force_row_ids(rows)
-            # set header - write id or name
-            output = ''
-            for c in cols:
-                try:
-                    j = all_mgids.index(c)
-                except:
-                    sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(c, self.id))
-                    return None
-                output += "\t" + str(c if not col_name else self.biom['columns'][j]['name'])
-            output += "\n"
-            # print matrix
-            for r in rows:
-                try:
-                    i = all_annot.index(r)
-                except:
-                    sys.stderr.write("Error: '%s' is not in annotations of %s"%(r, self.id))
-                    return None
-                if row_full and self.hierarchy and self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
-                    output += ";".join( map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy]) )
-                else:
-                    output += r
+            # get sub parts if not passed matrix, rows, cols:
+            # this will validate that rows and cols are in biom and are ids, and that matrix has no all 0 slices
+            # will also re-normalize if creating sub-matrix
+            if not (matrix and rows and cols):
+                rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True)
+            # col names if requested
+            if col_name:
+                all_mgids = self.ids()
+                new_cols  = []
                 for c in cols:
-                    try:
-                        j = all_mgids.index(c)
-                    except:
-                        sys.stderr.write("Error: '%s' is not in metagenomes of %s"%(c, self.id))
-                        return None
-                    output += "\t"+str(matrix[i][j])
-                output += "\n"
+                    i = all_mgids.index(c)
+                    new_cols.append(self.biom['columns'][i]['name'])
+                cols = new_cols
+            # row path if requested
+            if row_full and self.hierarchy:
+                all_annot = self.annotations()
+                new_rows  = []
+                for r in rows:
+                    i = all_annot.index(r)
+                    if self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
+                        new_rows.append( ";".join(map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy])) )
+                    else:
+                        new_rows.append(r)
+                rows = new_rows
+            # print matrix
+            output = matrix_to_file(matrix=matrix, cols=cols, rows=rows)
         if fname:
             open(fname, 'w').write(output)
+            return None
         else:
             return output
 
@@ -473,9 +491,9 @@ class Analysis(object):
         else:
             # return only valid ids, input may be id or last heirarchal item
             for r in self.biom['rows']:
-                if r['metadata'] and (self.hierarchy in r['metadata']) and (r['metadata'][self.hierarchy][-1] in rows):
+                if r['id'] in rows:
                     ann.append(r['id'])
-                elif r['id'] in rows:
+                elif r['metadata'] and (self.hierarchy in r['metadata']) and (r['metadata'][self.hierarchy][-1] in rows):
                     ann.append(r['id'])
         return ann
 
@@ -571,11 +589,11 @@ class Analysis(object):
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
-        data = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
         if show_data:
-            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name)
+            print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
         if source == 'retina':
-            keyArgs = { 'data': data,
+            keyArgs = { 'data': matrix,
                         'width': width,
                         'height': height,
                         'target': 'div_boxplot_'+random_str() }
@@ -607,7 +625,7 @@ class Analysis(object):
             if Ipy.DEBUG:
                 print fname, keyArgs
             ro.r.svg(fname)
-            ro.r.boxplot(data, **keyArgs)
+            ro.r.boxplot(matrix, **keyArgs)
             ro.r("dev.off()")
             return fname
 
@@ -620,9 +638,9 @@ class Analysis(object):
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
-        matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
         if show_data:
-            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name)
+            print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
         if source == 'retina':
             data = {'series': [], 'points': []}
             keyArgs = { 'width': width,
@@ -741,47 +759,42 @@ class Analysis(object):
         return fname
 
     def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
-        matrix  = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-        if not matrix:
-            sys.stderr.write("Error producing chart: empty matrix\n")
-            return None
         # default is all
-        all_ids = self.ids()
+        all_mgids = self.ids()
+        all_annot = self.annotations()
         if (not cols) or (len(cols) == 0):
-            cols = all_ids
+            cols = all_mgids
         if (not rows) or (len(rows) == 0):
-            rows = self.annotations()
+            rows = all_annot
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
+        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
         colors = google_palette(len(cols))
         labels = []
-        data   = []
+        data = []
         # show data
         if show_data:
-            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
+            print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
         # set retina data
-        for i, m in enumerate(cols):
+        for i, c in enumerate(cols):
             try:
-                j = all_ids.index(m)
-                data.append({'name': m if not col_name else self.biom['columns'][j]['name'], 'data': [], 'fill': colors[i]})
+                j = all_mgids.index(c)
+                name = c if not col_name else self.biom['columns'][j]['name']
             except:
-                pass
-        # populate data from matrix
-        for r, row in enumerate(matrix):
-            # only use sub rows
-            rdata = self.biom['rows'][r]
-            if rdata['id'] in rows:
-                if row_full and self.hierarchy and rdata['metadata'] and (self.hierarchy in rdata['metadata']):
-                    labels.append(";".join( map(lambda x: 'none' if x is None else x, rdata['metadata'][self.hierarchy]) ))
+                name = c
+            data.append({'name': name, 'data': slice_column(matrix, i), 'fill': colors[i]})
+        # set labels
+        if row_full and self.hierarchy:
+            for r in rows:
+                i = all_annot.index(r)
+                if self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
+                    labels.append( ";".join(map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy])) )
                 else:
-                    labels.append(rdata['id'])
-            else:
-                continue
-            # only use sub cols
-            for i, m in enumerate(cols):
-                j = all_ids.index(m)
-                data[i]['data'].append( toNum(row[j]) )
+                    labels.append(r)
+        else:
+            labels = rows
+        # get retina parameters
         height  = height if height else len(labels)*len(cols)*7.5
         lheight = min(height, len(cols)*35)
         lwidth  = len(max(labels, key=len)) * 7.2
@@ -822,15 +835,21 @@ class Analysis(object):
         except:
             try:
                 # run our own R code
-                raw_file  = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
-                norm_file = Ipy.TMP_DIR+'/norm.'+random_str()+'.tab'
-                self.dump(fname=raw_file, fformat='tab', normalize=0)
-                rcmd = 'source("%s")\nMGRAST_preprocessing(file_in="%s", file_out="%s", produce_fig="FALSE")\n'%(Ipy.LIB_DIR+'/preprocessing.r', raw_file, norm_file)
-                ro.r(rcmd)
+                raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
+                matrix_to_file(fname=raw_file, matrix=self.Dmatrix, cols=self.ids(), rows=self.annotations())
+                norm_file = self._normalize_tabbed(raw_file)
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
                 self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnot, self.numIDs, normalize=1)
             except:
                 sys.stderr.write("Error normalizing matrix (%s)\n"%self.id)
+
+    def _normalize_tabbed(self, rfile):
+        """input: raw tabbed matrix file (with column and row headers)
+        return: normalized tabbed matrix file (with column and row headers)"""
+        nfile = Ipy.TMP_DIR+'/norm.'+random_str()+'.tab'
+        rcmd = 'source("%s")\nMGRAST_preprocessing(file_in="%s", file_out="%s", produce_fig="FALSE")\n'%(Ipy.LIB_DIR+'/preprocessing.r', rfile, nfile)
+        ro.r(rcmd)
+        return nfile
 
     def _dense_matrix(self):
         if not self.biom:
