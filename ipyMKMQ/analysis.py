@@ -334,35 +334,28 @@ class Analysis(object):
         all_annot = self.annotations()
         all_mgids = self.ids()
         # test if really sub
-        if (not (cols and rows)) or ((len(cols) == len(all_mgids)) and (len(rows) == len(all_annot))):
+        if not cols:
+            cols = all_mgids
+        if not rows:
+            rows = all_annot
+        if (len(cols) == len(all_mgids)) and (len(rows) == len(all_annot)):
             matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
             return all_annot, all_mgids, matrix
         # validate rows / get indexes
         rows = self.force_row_ids(rows)
         aIndex = []
-        if rows and (len(rows) > 0):
-            aIndex = range(len(all_annot))
-        else:
-            for r in rows:
-                try:
-                    a = all_annot.index(r)
-                except (ValueError, AttributeError):
-                    continue
-                aIndex.append(a)
+        for r in rows:
+            try:
+                aIndex.append( all_annot.index(r) )
+            except (ValueError, AttributeError):
+                pass
         # validate cols / get indexes
-        mgids  = []
         mIndex = []
-        if cols and (len(cols) > 0):
-            mgids  = all_mgids
-            mIndex = range(len(all_mgids))
-        else:
-            for c in cols:
-                try:
-                    m = all_mgids.index(c)
-                except (ValueError, AttributeError):
-                    continue
-                mgids.append(all_mgids[m])
-                mIndex.append(m)
+        for c in cols:
+            try:
+                mIndex.append( all_mgids.index(c) )
+            except (ValueError, AttributeError):
+                pass
         # build matrix / validate rows
         sub_rows = []
         sub_cols = []
@@ -378,18 +371,18 @@ class Analysis(object):
             sub_rows.append(all_annot[i])
             tmp_matrix.append(rdata)
         # validate columns
-        for j in mIndex:
-            if (sum(slice_column(tmp_matrix, j)) == 0) and strip:
+        for i, c in enumerate(mIndex):
+            if (sum(slice_column(tmp_matrix, i)) == 0) and strip:
                 continue
-            sub_cols.append(all_mgids[j])
-            tmp_cols.append(j)
+            sub_cols.append(all_mgids[c])
+            tmp_cols.append(i)
         for r in tmp_matrix:
-            tmp_row = []
+            rdata = []
             for c in tmp_cols:
-                tmp_row.append(r[c])
-            sub_matrix.append(tmp_row)
+                rdata.append(r[c])
+            sub_matrix.append(rdata)
         # now we normalize
-        if normalize:
+        if normalize and sub_matrix:
             raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
             matrix_to_file(fname=raw_file, matrix=sub_matrix, cols=sub_cols, rows=sub_rows)
             norm_file = self._normalize_tabbed(raw_file)
@@ -426,6 +419,9 @@ class Analysis(object):
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
                 rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True)
+            if not martrix:
+                sys.stderr.write("No abundance data available for the inputted columns and rows\n")
+                return None
             # col names if requested
             if col_name:
                 all_mgids = self.ids()
@@ -590,6 +586,9 @@ class Analysis(object):
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        if not martrix:
+            sys.stderr.write("No abundance data available for the inputted columns and rows\n")
+            return None
         if show_data:
             print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
         if source == 'retina':
@@ -639,6 +638,9 @@ class Analysis(object):
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        if not martrix:
+            sys.stderr.write("No abundance data available for the inputted columns and rows\n")
+            return None
         if show_data:
             print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
         if source == 'retina':
@@ -703,6 +705,8 @@ class Analysis(object):
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
         dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
+        if not dump_str:
+            return None
         dump_set = dump_str.strip().split("\n")
         cols = dump_set[0].strip().split("\t")
         rows = map(lambda x: x.split("\t")[0], dump_set[1:])
@@ -762,14 +766,17 @@ class Analysis(object):
         # default is all
         all_mgids = self.ids()
         all_annot = self.annotations()
-        if (not cols) or (len(cols) == 0):
+        if not cols:
             cols = all_mgids
-        if (not rows) or (len(rows) == 0):
+        if not rows:
             rows = all_annot
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        if not martrix:
+            sys.stderr.write("No abundance data available for the inputted columns and rows\n")
+            return None
         colors = google_palette(len(cols))
         labels = []
         data = []
