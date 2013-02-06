@@ -463,13 +463,19 @@ class Analysis(object):
             return ann
 
     def force_row_ids(self, rows):
-        """returns input list with last hierarchal metadata name replaced with id"""
-        ann = []
+        """returns input list with last hierarchal metadata name replaced with id.
+        This re-orders input in same order as biom['rows']", and drops those items not in biom['rows']
+        """
         if not self.hierarchy:
-            return rows
-        rmap = dict([ (y['metadata'][self.hierarchy][-1], y['id']) for y in filter(lambda x: x['metadata'] and (self.hierarchy in x['metadata']), self.biom['rows']) ])
-        for i, r in enumerate(rows):
-            ann.append( rmap[r] if r in rmap else r )
+            # no hierarchy metadata, just return valid ids
+            ann = map( lambda y: y['id'], filter(lambda x: x['id'] in rows, self.biom['rows']) )
+        else:
+            # return only valid ids, input may be id or last heirarchal item
+            for r in self.biom['rows']:
+                if r['metadata'] and (self.hierarchy in r['metadata']) and (r['metadata'][self.hierarchy][-1] in rows):
+                    ann.append(r['id'])
+                elif r['id'] in rows:
+                    ann.append(r['id'])
         return ann
 
     def get_id_object(self, aid):
@@ -578,9 +584,9 @@ class Analysis(object):
                 return keyArgs
             else:
                 try:
-                    Ipy.RETINA.graph(**keyArgs)
+                    Ipy.RETINA.boxplot(**keyArgs)
                 except:
-                    sys.stderr.write("Error producing chart\n")
+                    sys.stderr.write("Error producing boxplot\n")
                 return None
         else:
             fname = Ipy.IMG_DIR+'/boxplot_'+random_str()+'.svg'
@@ -604,24 +610,61 @@ class Analysis(object):
             ro.r("dev.off()")
             return fname
 
-    def pco(self, normalize=1, dist='bray-curtis', title='', col_name=True):
-        matrix = self.NRmatrix if normalize and self.NRmatrix else self.Rmatrix
-        fname  = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
-        labels = self.names() if col_name else self.ids()
-        if not matrix:
-            return None
-        keyArgs = { 'labels': ro.StrVector(labels),
-                    'main': title,
-                    'method': dist,
-                    'comp': ro.r.c(1,2,3) }
-        if Ipy.DEBUG:
-            print fname, keyArgs
-        ro.r.svg(fname)
-        ro.r.pco(matrix, **keyArgs)
-        ro.r("dev.off()")
-        return fname
+    def pco(self, normalize=1, title='', dist='bray-curtis', width=700, height=600, legend=True, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
+        # default is all
+        if (not cols) or (len(cols) == 0):
+            cols = self.ids()
+        if (not rows) or (len(rows) == 0):
+            rows = self.annotations()
+        # force rows to be row ids
+        else:
+            rows = self.force_row_ids(rows)
+        matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        if show_data:
+            print self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name)
+        if source == 'retina':
+            data = {'series': [], 'points': []}
+            keyArgs = { 'width': width,
+                        'height': height,
+                        'title': title,
+                        'x_title': '',
+                        'y_title': '',
+                        'x_min': 0,
+                        'x_max': 100,
+                        'y_min': 0,
+                        'y_max': 100,
+                        'target': 'div_pco_'+random_str(),
+                        'show_legend': legend,
+                        'connected': False,
+                        'data': data }
+            if Ipy.DEBUG:
+                print cols, rows, keyArgs
+            if arg_list:
+                return keyArgs
+            else:
+                try:
+                    Ipy.RETINA.plot(**keyArgs)
+                except:
+                    sys.stderr.write("Error producing pco plot\n")
+                return None
+        else:
+            fname = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
+            if col_name:
+                labels = map(lambda y: y['name'], filter(lambda x: x['id'] in cols, self.biom['columns']))
+            else:
+                labels = cols
+            keyArgs = { 'labels': ro.StrVector(labels),
+                        'main': title,
+                        'method': dist,
+                        'comp': ro.r.c(1,2,3) }
+            if Ipy.DEBUG:
+                print fname, keyArgs
+            ro.r.svg(fname)
+            ro.r.pco(matrix, **keyArgs)
+            ro.r("dev.off()")
+            return fname
 
-    def heatmap(self, source='retina', normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
+    def heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None, source='retina'):
         if source == 'retina':
             return self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
         else:

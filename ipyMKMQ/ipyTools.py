@@ -222,6 +222,8 @@ def random_str(size=8):
     return ''.join(random.choice(chars) for x in range(size))
 
 def sub_biom(b, text):
+    """imput: 1. biom object, 2. text string
+    return: biom object containing only those rows that match text string"""
     str_re = re.compile(text, re.IGNORECASE)
     sBiom = { "generated_by": b['generated_by'],
                "matrix_type": 'dense',
@@ -256,8 +258,9 @@ def sub_biom(b, text):
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
     return biom_remove_empty(sBiom)
 
-def merge_cols(b, merge_set):
-    """input: biom object, merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }"""
+def merge_columns(b, merge_set):
+    """input: 1. biom object, 2. merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }
+    return: biom object. same row count, column count = names in merge_set + column_ids not in merge_set"""
     if not (merge_set and (len(merge_set) > 0)):
         sys.stderr.write("No merge set inputted\n")
         return None
@@ -297,6 +300,8 @@ def merge_cols(b, merge_set):
     return new_b
 
 def merge_biom(b1, b2):
+    """input: 2 biom objects of same 'type', 'matrix_type', 'matrix_element_type', and 'matrix_element_value'
+    return: merged biom object, duplicate columns skipped, duplicate rows added"""
     if b1 and b2 and (b1['type'] == b2['type']) and (b1['matrix_type'] == b2['matrix_type']) and (b1['matrix_element_type'] == b2['matrix_element_type']) and (b1['matrix_element_value'] == b2['matrix_element_value']):
         mBiom = { "generated_by": b1['generated_by'],
                    "matrix_type": 'dense',
@@ -311,8 +316,8 @@ def merge_biom(b1, b2):
                    "id": b1['id']+'_'+b2['id'],
                    "type": b1['type'],
                    "shape": [] }
-        cols, rows = merge_matrix_info(b1['columns'], b2['columns'], b1['rows'], b2['rows'])
-        merge_func = merge_sparse if b1['matrix_type'] == 'sparse' else merge_dense
+        cols, rows = _merge_matrix_info(b1['columns'], b2['columns'], b1['rows'], b2['rows'])
+        merge_func = _merge_sparse if b1['matrix_type'] == 'sparse' else _merge_dense
         mCol, mRow, mData = merge_func([b1['data'], b2['data']], cols, rows)
         mBiom['columns']  = mCol
         mBiom['rows']     = mRow
@@ -323,7 +328,7 @@ def merge_biom(b1, b2):
         sys.stderr.write("The inputed biom objects are not compatable for merging\n")
         return None
 
-def merge_matrix_info(c1, c2, r1, r2):
+def _merge_matrix_info(c1, c2, r1, r2):
     ## merge columns, skip duplicate
     cm = {}
     for i, c in enumerate(c1):
@@ -340,12 +345,12 @@ def merge_matrix_info(c1, c2, r1, r2):
         rm[ r['id'] ].append( [1, i, r] )
     return cm.values(), rm.values()
 
-def merge_sparse(data, cols, rows):
+def _merge_sparse(data, cols, rows):
     for i in range(len(data)):
         data[i] = sparse_to_dense(data[i], len(rows), len(cols))
-    return merge_dense(data, cols, rows)
+    return _merge_dense(data, cols, rows)
     
-def merge_dense(data, cols, rows):
+def _merge_dense(data, cols, rows):
     cm = map(lambda x: x[2], cols)
     rm = map(lambda x: x[0][2], rows)
     mm = [[0 for i in range(len(cols))] for j in range(len(rows))]
@@ -357,6 +362,8 @@ def merge_dense(data, cols, rows):
     return cm, rm, mm
 
 def biom_remove_empty(b):
+    """imput: biom object
+    return: biom object. cleaned up, all rows with 0's and columns with 0s removed"""
     vRows = []
     vCols = []
     if b['matrix_type'] == 'sparse':
