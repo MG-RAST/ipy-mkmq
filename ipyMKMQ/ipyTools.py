@@ -171,7 +171,7 @@ def matrix_from_file(fname, has_col_names=True, has_row_names=True):
     fhdl.close()
     return matrix
 
-def matrix_to_file(fname=None, matrix=matrix, cols=None, rows=None):
+def matrix_to_file(fname=None, matrix=[], cols=None, rows=None):
     output = ''
     if cols:
         if rows:
@@ -192,7 +192,7 @@ def matrix_to_file(fname=None, matrix=matrix, cols=None, rows=None):
 def ordered_distance_from_file(fname):
     fhdl  = open(fname, 'rU')
     line1 = fhdl.readline()
-    line2 = fhdl.readline()
+    fhdl.readline()
     order_dist  = map(lambda x: toNum(x), line1.strip().split(','))
     dist_matrix = []
     for line in fhdl:
@@ -427,11 +427,11 @@ def matrix_remove_empty(m):
     # identify valid columns
     vCols = []
     vMatrix = []
-    for c in range(len(matrix[0])):
-        if sum(slice_column(matrix, c)) > 0:
+    for c in range(len(m[0])):
+        if sum(slice_column(m, c)) > 0:
             vCols.append(c)
     # clean matrix
-    for row in matrix:
+    for row in m:
         vRow = []
         if sum(row) == 0:
             continue

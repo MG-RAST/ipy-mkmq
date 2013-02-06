@@ -391,7 +391,7 @@ class Analysis(object):
         # now we normalize
         if normalize:
             raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
-            matrix_to_file(fname=raw_file, matrix=sub_matrix, cols=sub_cols, rows=sub_rows):
+            matrix_to_file(fname=raw_file, matrix=sub_matrix, cols=sub_cols, rows=sub_rows)
             norm_file = self._normalize_tabbed(raw_file)
             sub_matrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
         return sub_rows, sub_cols, sub_matrix
@@ -425,7 +425,7 @@ class Analysis(object):
             # this will validate that rows and cols are in biom and are ids, and that matrix has no all 0 slices
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
-                rows, cols, matrix = self.sub_matrix(self, normalize=normalize, cols=cols, rows=rows, strip=True)
+                rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True)
             # col names if requested
             if col_name:
                 all_mgids = self.ids()
@@ -446,7 +446,7 @@ class Analysis(object):
                         new_rows.append(r)
                 rows = new_rows
             # print matrix
-            output = matrix_to_file(matrix=matrix, cols=cols, rows=rows):  
+            output = matrix_to_file(matrix=matrix, cols=cols, rows=rows)
         if fname:
             open(fname, 'w').write(output)
             return None
@@ -772,6 +772,7 @@ class Analysis(object):
         rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
         colors = google_palette(len(cols))
         labels = []
+        data = []
         # show data
         if show_data:
             print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
@@ -835,7 +836,7 @@ class Analysis(object):
             try:
                 # run our own R code
                 raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
-                matrix_to_file(fname=raw_file, matrix=self.Dmatrix, cols=self.ids(), rows=self.annotations()):
+                matrix_to_file(fname=raw_file, matrix=self.Dmatrix, cols=self.ids(), rows=self.annotations())
                 norm_file = self._normalize_tabbed(raw_file)
                 self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
                 self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnot, self.numIDs, normalize=1)
