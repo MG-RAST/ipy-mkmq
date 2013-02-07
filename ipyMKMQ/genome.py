@@ -15,8 +15,7 @@ class Genome(object):
                         "length" : [ 'integer', 'contig length' ],
                        }]
     """
-    def __init__(self, gid, metadata=True, stats=True, auth=None,
-                 def_name=None, cache=None, mfile=None):
+    def __init__(self, gid, metadata=True, stats=True, auth=None, def_name=None, cache=None, mfile=None):
         self._auth = auth
         genome = None
         if mfile and os.path.isfile(mfile):
@@ -37,9 +36,7 @@ class Genome(object):
                 try:
                     json.dump(genome, open(cache+'/'+gid+'.json', 'w'))
                     if Ipy.DEBUG:
-                        sys.stdout.write(
-                            "genome %s saved to cache (%s)\n"%(gid, cache)
-                        )
+                        sys.stdout.write("genome %s saved to cache (%s)\n"%(gid, cache))
                 except:
                     pass
         if genome is not None:
@@ -51,8 +48,7 @@ class Genome(object):
         # hack to get variable name
         if def_name == None:
             try:
-                (filename, line_number, function_name, text) =
-                    traceback.extract_stack()[-2]
+                (filename, line_number, function_name, text) = traceback.extract_stack()[-2]
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
