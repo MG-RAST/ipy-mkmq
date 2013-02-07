@@ -1,9 +1,35 @@
 #!/usr/bin/env python
 
-import json, sys, traceback
+import sys, os, hashlib, traceback
 from collections import defaultdict
 from metagenome import Metagenome
 from ipyTools import *
+from QC import Rarefaction
+
+def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None):
+    """Wrapper for Collection object creation, checks if cache (created through unique option set) exists first and returns that.
+    
+    see: help(Collection)
+    """
+    if not mgids:
+        sys.stderr.write("No ids inputted\n")
+        return
+    cache_id  = "_".join(sorted(mgids))+"_"+('1' if metadata else '0')+"_"+('1' if stats else '0')
+    cache_md5 = hashlib.md5(cache_id).hexdigest()
+    cache_obj = load_object(cache_md5)
+    if cache_obj is not None:
+        print "Loading Collection for selected metagenomes from cached object"
+        return cache_obj
+    else:
+        # hack to get variable name
+        if def_name == None:
+            (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+            def_name = text[:text.find('=')].strip()
+        print "Loading Collection for selected metagenomes through API. Please wait, this may take several minutes ..."
+        new_obj = Collection(mgids=mgids, auth=auth, metadata=metadata, stats=stats, def_name=def_name)
+        save_object(new_obj, cache_md5)
+        print "Done loading through API"
+        return new_obj
 
 class Collection(object):
     """Class representation of Collection object:
@@ -12,7 +38,7 @@ class Collection(object):
     
     see: help(Metagenome)
     """
-    def __init__(self, mgids, metadata=True, stats=True, auth=None, def_name=None, cache=None):
+    def __init__(self, mgids=[], metadata=True, stats=True, auth=None, def_name=None, cache=None):
         self._auth  = auth
         self._stats = stats
         # hack to get variable name
