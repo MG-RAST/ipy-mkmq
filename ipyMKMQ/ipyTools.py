@@ -110,9 +110,12 @@ def load_object(name):
         try:
             return pickle.load(open(fpath, 'r'))
         except:
+            if Ipy.DEBUG:
+                sys.stderr.write("Error loading pickeled object from %s\n"%fpath)
             return None
     else:
-        sys.stderr.write("can not create from pickeled object, %s does not exist\n"%fpath)
+        if Ipy.DEBUG:
+            sys.stderr.write("can not create from pickeled object, %s does not exist\n"%fpath)
         return None
 
 def google_palette(num):
