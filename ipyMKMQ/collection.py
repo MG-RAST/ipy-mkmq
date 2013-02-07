@@ -4,7 +4,7 @@ import sys, os, hashlib, traceback
 from collections import defaultdict
 from metagenome import Metagenome
 from ipyTools import *
-from QC import Rarefaction
+from qc import Rarefaction
 
 def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None):
     """Wrapper for Collection object creation, checks if cache (created through unique option set) exists first and returns that.
