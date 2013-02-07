@@ -94,7 +94,7 @@ class Drisee(object):
                     Ipy.RETINA.plot(**keyArgs)
                 except:
                     sys.stderr.write("Error producing drisee plot\n")
-            return None
+                return None
         else:
             yA = map(lambda y: y[1], self.percent['data'])
             yT = map(lambda y: y[2], self.percent['data'])
@@ -167,7 +167,7 @@ class NucleoProfile(object):
                     Ipy.RETINA.plot(**keyArgs)
                 except:
                     sys.stderr.write("Error producing nucleotide profile\n")
-            return None
+                return None
         else:
             yA = map(lambda y: y[1], self.percent['data'])
             yT = map(lambda y: y[2], self.percent['data'])
@@ -258,7 +258,7 @@ class Kmer(object):
                     Ipy.RETINA.plot(**keyArgs)
                 except:
                     sys.stderr.write("Error producing kmer profile\n")
-            return None
+                return None
         else:
             Ipy.FL_PLOT.pixelsx = width
             Ipy.FL_PLOT.pixelsy = height
@@ -330,7 +330,7 @@ class Rarefaction(object):
                     Ipy.RETINA.plot(**keyArgs)
                 except:
                     sys.stderr.write("Error producing rarefaction plot\n")
-            return None
+                return None
         else:
             x = map(lambda z: z[0], self.points)
             y = map(lambda z: z[1], self.points)

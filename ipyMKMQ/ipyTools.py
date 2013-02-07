@@ -10,6 +10,8 @@ import retina, flotplot
 # class for ipy lib env
 class Ipy(object):
     """Constants for ipy-qmqc library interface"""
+    auth = None
+    username = None
     FL_PLOT = None
     RETINA  = None
     DEBUG   = False
@@ -127,11 +129,16 @@ def google_palette(num):
         num_colors.append( Ipy.COLORS[c_index] )
     return num_colors
 
-def obj_from_url(url):
+def obj_from_url(url, auth=None):
+    header = {'Accept': 'application/json'}
+    if auth:
+        header['Auth'] = auth
+    elif Ipy.auth:
+        header['Auth'] = Ipy.auth
     if Ipy.DEBUG:
-        sys.stdout.write(url+"\n")
+        sys.stdout.write(header+"\n"+url+"\n")
     try:
-        req = urllib2.Request(url, headers={'Accept': 'application/json'})
+        req = urllib2.Request(url, headers=header)
         res = urllib2.urlopen(req)
     except urllib2.HTTPError, error:
         sys.stderr.write("ERROR (%s): %s\n"%(url, error.read()))

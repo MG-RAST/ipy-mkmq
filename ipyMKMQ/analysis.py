@@ -303,9 +303,7 @@ class Analysis(object):
             params.extend( map(lambda x: ('filter', x), filters) )
             if filter_source:
                 params.append(('filter_source', filter_source))
-        if self._auth:
-            params.append(('auth', self._auth))
-        return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True) )
+        return obj_from_url( Ipy.API_URL+'matrix/'+annotation+'?'+urllib.urlencode(params, True), self._auth )
 
     def _get_type(self, biom):
         hier = ''

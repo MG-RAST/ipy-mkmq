@@ -88,12 +88,10 @@ class Metagenome(object):
         
     def _get_metagenome(self, mgid, metadata):
         verb = 'full' if metadata else 'verbose'
-        auth = '&auth='+self._auth if self._auth else ''
-        return obj_from_url(Ipy.API_URL+'metagenome/'+mgid+'?verbosity='+verb+auth)
+        return obj_from_url(Ipy.API_URL+'metagenome/'+mgid+'?verbosity='+verb, self._auth)
 
     def _set_statistics(self):
-        auth = '&auth='+self._auth if self._auth else ''
-        self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full'+auth)
+        self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
     
     def show_metadata(self):
         mdTable = []
