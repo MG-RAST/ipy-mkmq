@@ -52,6 +52,7 @@ class Collection(object):
         # get metagenomes
         self._mgids = mgids
         self.metagenomes = self._get_metagenomes(mgids, metadata, stats, cdir=cache)
+        self.rarefaction = Rarefaction(mgObjs=self.metagenomes.values())
     
     def _get_metagenomes(self, mgids, metadata, stats, cdir=None):
         mgs = {}
@@ -176,10 +177,7 @@ class Collection(object):
                 sys.stderr.write("Error producing metadata table\n")
             return None
 
-    def plot_rarefaction(self, mgids=None, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
-        if not self.rarefaction:
-            mglist = self.metagenomes.values()
-            self.rarefaction = Rarefaction(mgObjs=mglist)
+    def plot_rarefaction(self, mgids=None, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
         return self.rarefaction.plot(mgids=mgids, width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
 
     def barchart_taxon(self, level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):

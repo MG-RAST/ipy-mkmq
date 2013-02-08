@@ -138,7 +138,8 @@ def obj_from_url(url, auth=None):
     elif Ipy.auth:
         header['Auth'] = Ipy.auth
     if Ipy.DEBUG:
-        sys.stdout.write(header+"\n"+url+"\n")
+        print json.dumps(header)
+        print url
     try:
         req = urllib2.Request(url, headers=header)
         res = urllib2.urlopen(req)
@@ -153,7 +154,7 @@ def obj_from_url(url, auth=None):
         sys.stderr.write("ERROR (%s): return structure not valid json format\n"%url)
         return None
     if 'ERROR' in obj:
-        sys.stderr.write("ERROR (%s): %s"%(url, obj['ERROR']))
+        sys.stderr.write("ERROR (%s): %s\n"%(url, obj['ERROR']))
         return None
     return obj
 
