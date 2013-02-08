@@ -23,9 +23,7 @@ class Genome(object):
             try:
                 genome = json.load(open(mfile, 'rU'))
                 if Ipy.DEBUG:
-                    sys.stdout.write(
-                        "genome %s loaded from cache (%s)\n"%(gid, cache)
-                    )
+                    sys.stdout.write("genome %s loaded from cache (%s)\n"%(gid, cache))
             except:
                 pass
         if genome is None:
@@ -56,7 +54,7 @@ class Genome(object):
         
     def _get_genome(self, gid, metadata):
         verb = 'full' if metadata else 'verbose'
-        return obj_from_url(Ipy.API_URL+'genome/'+gid)
+        return obj_from_url(Ipy.API_URL+'genome/'+gid, self._auth)
     
     def show_metadata(self):
         mdTable = []

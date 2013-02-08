@@ -75,7 +75,7 @@ class Collection(object):
     def mgids(self):
         return self._mgids
     
-    def get_stat(self, mgid=None, stat=None):
+    def get_stat(self, mgid=None, stat=None, mgid_set=[]):
         if not (mgid and stat and (mgid in self._mgids)):
             return []
         if not self._stats:
@@ -83,7 +83,9 @@ class Collection(object):
         if stat not in self.metagenomes[mgid].stats['sequence_stats']:
             return []
         stat_list = [ toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) ]
-        for m in self._mgids:
+        if not mgid_set:
+            mgid_set = self._mgids
+        for m in mgid_set:
             if m == mgid:
                 continue
             if stat in self.metagenomes[m].stats['sequence_stats']:
@@ -139,7 +141,7 @@ class Collection(object):
         except:
             sys.stderr.write("Error producing metadata table\n")
     
-    def show_metadata(self, mgids=None):
+    def show_metadata(self, mgids=None, arg_list=False):
         header = []
         tdata  = []
         mdata  = dict([(x, {}) for x in Ipy.MD_CATS])
@@ -165,16 +167,20 @@ class Collection(object):
                     'rows_per_page': 20 }
         if Ipy.DEBUG:
             print keyArgs
-        try:
-            Ipy.RETINA.table(**keyArgs)
-        except:
-            sys.stderr.write("Error producing metadata table\n")
+        if arg_list:
+            return keyArgs
+        else:
+            try:
+                Ipy.RETINA.table(**keyArgs)
+            except:
+                sys.stderr.write("Error producing metadata table\n")
+            return None
 
-    def plot_rarefaction(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
+    def plot_rarefaction(self, mgids=None, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
         if not self.rarefaction:
             mglist = self.metagenomes.values()
             self.rarefaction = Rarefaction(mgObjs=mglist)
-        return self.rarefaction.plot(width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
+        return self.rarefaction.plot(mgids=mgids, width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
 
     def barchart_taxon(self, level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None

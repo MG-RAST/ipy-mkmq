@@ -67,8 +67,7 @@ class Project(Collection):
     
     def _get_project(self, pid, metadata, auth):
         verb = 'full' if metadata else 'verbose'
-        key  = '&auth='+auth if auth else ''
-        return obj_from_url(Ipy.API_URL+'project/'+pid+'?verbosity='+verb+key)
+        return obj_from_url(Ipy.API_URL+'project/'+pid+'?verbosity='+verb, auth)
 
     def mgids(self):
         mlist = []

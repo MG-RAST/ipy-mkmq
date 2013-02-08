@@ -6,13 +6,16 @@ import os, sys, urllib, urllib2, json, pickle, copy
 import string, random, re
 import rpy2.robjects as ro
 import retina, flotplot
+import config
 
 # class for ipy lib env
 class Ipy(object):
     """Constants for ipy-qmqc library interface"""
+    auth = None
+    username = None
+    DEBUG   = False
     FL_PLOT = None
     RETINA  = None
-    DEBUG   = False
     NB_DIR  = None
     LIB_DIR = None
     TMP_DIR = None
@@ -31,8 +34,6 @@ class Ipy(object):
                 'alen': 15,
                 'filters': [],
                 'filter_source': None }
-    RETINA_URL = 'http://raw.github.com/MG-RAST/Retina/master/'
-    API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
     COLORS  = [ "#3366cc",
                 "#dc3912",
                 "#ff9900",
@@ -66,6 +67,9 @@ class Ipy(object):
                 "#743411" ]
 
 def init_ipy(debug=False, nb_dir=None, api_url=None):
+    # get config
+    for c in filter(lambda x: not x.startswith('_'), config.__dict__.keys()):
+        setattr(Ipy, c, getattr(config, c))
     # set pathing
     if nb_dir and os.path.isdir(nb_dir):
         Ipy.NB_DIR = nb_dir
@@ -91,7 +95,7 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     ro.r('suppressMessages(library(scatterplot3d))')
     # echo
     if Ipy.DEBUG:
-        for k in Ipy.__dict__.keys():
+        for k in filter(lambda x: not x.startswith('_'), Ipy.__dict__.keys()):
             print k, getattr(Ipy, k)
 
 def save_object(obj, name):
@@ -110,9 +114,12 @@ def load_object(name):
         try:
             return pickle.load(open(fpath, 'r'))
         except:
+            if Ipy.DEBUG:
+                sys.stderr.write("Error loading pickeled object from %s\n"%fpath)
             return None
     else:
-        sys.stderr.write("can not create from pickeled object, %s does not exist\n"%fpath)
+        if Ipy.DEBUG:
+            sys.stderr.write("can not create from pickeled object, %s does not exist\n"%fpath)
         return None
 
 def google_palette(num):
@@ -124,11 +131,16 @@ def google_palette(num):
         num_colors.append( Ipy.COLORS[c_index] )
     return num_colors
 
-def obj_from_url(url):
+def obj_from_url(url, auth=None):
+    header = {'Accept': 'application/json'}
+    if auth:
+        header['Auth'] = auth
+    elif Ipy.auth:
+        header['Auth'] = Ipy.auth
     if Ipy.DEBUG:
-        sys.stdout.write(url+"\n")
+        sys.stdout.write(header+"\n"+url+"\n")
     try:
-        req = urllib2.Request(url, headers={'Accept': 'application/json'})
+        req = urllib2.Request(url, headers=header)
         res = urllib2.urlopen(req)
     except urllib2.HTTPError, error:
         sys.stderr.write("ERROR (%s): %s\n"%(url, error.read()))
