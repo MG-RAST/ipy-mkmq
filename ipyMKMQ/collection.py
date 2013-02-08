@@ -90,7 +90,7 @@ class Collection(object):
             if m == mgid:
                 continue
             if stat in self.metagenomes[m].stats['sequence_stats']:
-                stat_list.append( toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) )
+                stat_list.append( toNum(self.metagenomes[m].stats['sequence_stats'][stat]) )
         return stat_list
     
     def sub_mgs(self, category=None, field=None, value=None):
