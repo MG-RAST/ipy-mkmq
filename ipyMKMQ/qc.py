@@ -349,7 +349,7 @@ class Rarefaction(object):
             return None
 
 def has_profile(profile, data):
-    if data and (profile in data) and ('data' in data[profile]) and (len(data[profile]['data']) > 0):
+    if data and (profile in data) and ('data' in data[profile]) and data[profile]['data']:
         return True
     else:
         return False
