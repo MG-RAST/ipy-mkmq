@@ -176,11 +176,11 @@ class Collection(object):
                 sys.stderr.write("Error producing metadata table\n")
             return None
 
-    def plot_rarefaction(self, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
+    def plot_rarefaction(self, mgids=None, width=600, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
         if not self.rarefaction:
             mglist = self.metagenomes.values()
             self.rarefaction = Rarefaction(mgObjs=mglist)
-        return self.rarefaction.plot(width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
+        return self.rarefaction.plot(mgids=mgids, width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
 
     def barchart_taxon(self, level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
         children = get_taxonomy(level, parent) if parent is not None else None

@@ -288,12 +288,12 @@ class Rarefaction(object):
             alpha  = {}
             for m in mgObjs:
                 points[m.id] = m.stats['rarefaction']
-                alpha[m.id]  = m.stats['sequence_stats']['alpha_diversity_shannon']
+                alpha[m.id]  = m.stats['sequence_stats']['alpha_diversity_shannon'] if 'alpha_diversity_shannon' in m.stats['sequence_stats'] else None
             return points, alpha
         except:
             return None, None
     
-    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
+    def plot(self, mgids=None, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
         if not self.points:
             return None
         tt = 'rarefaction curve' if not title else title
@@ -304,7 +304,11 @@ class Rarefaction(object):
             y_all  = []
             colors = google_palette(len(self.points.keys()))
             for i, m in enumerate(self.points.keys()):
-                series.append( {'name': "%s (%0.2f)"%(m, float(self.alpha[m])), 'color': colors[i]} )
+                # only plot for given set
+                if mgids and (m not in mgids):
+                    continue
+                a = " (%0.2f)"%float(self.alpha[m]) if self.alpha[m] else ''
+                series.append( {'name': m+a, 'color': colors[i]} )
                 points.append( map(lambda z: {'x': toNum(z[0]), 'y': toNum(z[1])}, self.points[m]) )
                 x_all.extend( map(lambda z: toNum(z[0]), self.points[m]) )
                 y_all.extend( map(lambda z: toNum(z[1]), self.points[m]) )
