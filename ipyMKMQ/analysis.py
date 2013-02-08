@@ -129,7 +129,7 @@ class AnalysisSet(object):
                 keyArgs['auth'] = self._auth
             return Analysis(**keyArgs)
 
-    def boxplot(self, annot='organism', level='domain', parent=None, width=300, height=300, title="", normalize=1, col_name=True, show_data=False, arg_list=False):
+    def boxplot(self, annot='organism', level='domain', parent=None, data=None, width=300, height=300, title="", normalize=1, col_name=True, show_data=False, arg_list=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
