@@ -6,15 +6,16 @@ import os, sys, urllib, urllib2, json, pickle, copy
 import string, random, re
 import rpy2.robjects as ro
 import retina, flotplot
+import config
 
 # class for ipy lib env
 class Ipy(object):
     """Constants for ipy-qmqc library interface"""
     auth = None
     username = None
+    DEBUG   = False
     FL_PLOT = None
     RETINA  = None
-    DEBUG   = False
     NB_DIR  = None
     LIB_DIR = None
     TMP_DIR = None
@@ -33,8 +34,6 @@ class Ipy(object):
                 'alen': 15,
                 'filters': [],
                 'filter_source': None }
-    RETINA_URL = 'http://raw.github.com/MG-RAST/Retina/master/'
-    API_URL = 'http://api.metagenomics.anl.gov/api2.cgi/'
     COLORS  = [ "#3366cc",
                 "#dc3912",
                 "#ff9900",
@@ -68,6 +67,9 @@ class Ipy(object):
                 "#743411" ]
 
 def init_ipy(debug=False, nb_dir=None, api_url=None):
+    # get config
+    for c in filter(lambda x: not x.startswith('_'), config.__dict__.keys()):
+        setattr(Ipy, c, getattr(config, c))
     # set pathing
     if nb_dir and os.path.isdir(nb_dir):
         Ipy.NB_DIR = nb_dir
@@ -93,7 +95,7 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     ro.r('suppressMessages(library(scatterplot3d))')
     # echo
     if Ipy.DEBUG:
-        for k in Ipy.__dict__.keys():
+        for k in filter(lambda x: not x.startswith('_'), Ipy.__dict__.keys()):
             print k, getattr(Ipy, k)
 
 def save_object(obj, name):
