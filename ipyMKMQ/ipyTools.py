@@ -98,12 +98,16 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     #   these are for kbase command line scripts, no .pl
     names = map(lambda x: os.path.basename(x), glob.glob(Ipy.KBASE_BIN+'/*'))
     names = filter(lambda x: (not x.endswith('.pl')) and ('-' not in x), names)
-    for n in names:
-        exec("%s = func_factory(); dir(%s)"%(n,n))
+    add_tab_completion(names)
     # echo
     if Ipy.DEBUG:
         for k in filter(lambda x: not x.startswith('_'), Ipy.__dict__.keys()):
             print k, getattr(Ipy, k)
+
+def add_tab_completion(names):
+    for n in names:
+        cmd = "%s = func_factory(); dir(%s)"%(n,n)
+        exec(cmd)
 
 def func_factory():
     """function to return empty functions for adding to python namespace"""
