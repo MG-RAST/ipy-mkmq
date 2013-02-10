@@ -325,69 +325,60 @@ class Analysis(object):
                 annot.add(r['id'])
         return list(annot)
 
-    def sub_matrix(self, normalize=0, cols=None, rows=None, strip=True):
+    def sub_matrix(self, normalize=0, cols=None, rows=None, strip=True, mark_zero=False):
         """input: list of col ids, list of row ids, strip option
-        return matrix of just those items (if they exist), if sum of row or column is empty remove it (strip option)
+        return matrix of just those items (if they exist)
+        if sum of row is empty remove it (strip option)
+        if normalize is true, perform above on raw and then replace final values with pre-normalized
         """
         all_annot = self.annotations()
         all_mgids = self.ids()
-        # test if really sub
         if not cols:
             cols = all_mgids
         if not rows:
             rows = all_annot
+        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
+        # this is not a sub-selection: return origional
         if (len(cols) == len(all_mgids)) and (len(rows) == len(all_annot)):
-            matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
             return all_annot, all_mgids, matrix
         # validate rows / get indexes
         rows = self.force_row_ids(rows)
-        aIndex = []
+        rIndex = []
         for r in rows:
             try:
-                aIndex.append( all_annot.index(r) )
+                rIndex.append( all_annot.index(r) )
             except (ValueError, AttributeError):
                 pass
         # validate cols / get indexes
-        mIndex = []
+        sub_cols = []
+        cIndex = []
         for c in cols:
             try:
-                mIndex.append( all_mgids.index(c) )
+                cIndex.append( all_mgids.index(c) )
+                sub_cols.append(c)
             except (ValueError, AttributeError):
                 pass
-        # build matrix / validate rows
+        # build matrix / remove empty rows
         sub_rows = []
-        sub_cols = []
-        tmp_cols = []
-        tmp_matrix = []
         sub_matrix = []
-        for i in aIndex:
+        for i in rIndex:
+            test = []
             rdata = []
-            for j in mIndex:
-                rdata.append(self.Dmatrix[i][j])
-            if (sum(rdata) == 0) and strip:
+            for j in cIndex:
+                test.append(self.Dmatrix[i][j])
+                if mark_zero:
+                    val = str(matrix[i][j]) + ('*' if self.Dmatrix[i][j] == 0 else '')
+                    rdata.append(val)
+                else:
+                    rdata.append(matrix[i][j])
+            # test if raw row is empty
+            if (sum(test) == 0) and strip:
                 continue
             sub_rows.append(all_annot[i])
-            tmp_matrix.append(rdata)
-        # validate columns
-        for i, c in enumerate(mIndex):
-            if (sum(slice_column(tmp_matrix, i)) == 0) and strip:
-                continue
-            sub_cols.append(all_mgids[c])
-            tmp_cols.append(i)
-        for r in tmp_matrix:
-            rdata = []
-            for c in tmp_cols:
-                rdata.append(r[c])
             sub_matrix.append(rdata)
-        # now we normalize
-        if normalize and sub_matrix:
-            raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
-            matrix_to_file(fname=raw_file, matrix=sub_matrix, cols=sub_cols, rows=sub_rows)
-            norm_file = self._normalize_tabbed(raw_file)
-            sub_matrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
         return sub_rows, sub_cols, sub_matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, matrix=None, rows=None, cols=None, col_name=False, row_full=False):
+    def dump(self, fname=None, fformat='biom', normalize=0, matrix=None, rows=None, cols=None, col_name=True, row_full=True, mark_zero=False):
         """Function for outputing the analysis object to flatfile or text string
             Inputs:
                 fname:     name of file to output too, if undefined returns string
@@ -416,7 +407,7 @@ class Analysis(object):
             # this will validate that rows and cols are in biom and are ids, and that matrix has no all 0 slices
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
-                rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True)
+                rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True, mark_zero=mark_zero)
             if not matrix:
                 sys.stderr.write("No abundance data available for the inputted columns and rows\n")
                 return None
@@ -672,14 +663,11 @@ class Analysis(object):
                 labels = map(lambda y: y['name'], filter(lambda x: x['id'] in cols, self.biom['columns']))
             else:
                 labels = cols
-            keyArgs = { 'labels': ro.StrVector(labels),
-                        'main': title,
-                        'method': dist,
-                        'comp': ro.r.c(1,2,3) }
+            keyArgs = { 'main': title }
             if Ipy.DEBUG:
                 print fname, keyArgs
             ro.r.svg(fname)
-            ro.r.pco(matrix, **keyArgs)
+            ro.r.scatterplot3d(matrix, **keyArgs)
             ro.r("dev.off()")
             return fname
 

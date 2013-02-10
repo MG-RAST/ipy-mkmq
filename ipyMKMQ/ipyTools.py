@@ -2,7 +2,7 @@
 
 from time import localtime, strftime
 from collections import defaultdict
-import os, sys, urllib, urllib2, json, pickle, copy
+import os, sys, urllib, urllib2, json, pickle, copy, glob
 import string, random, re
 import rpy2.robjects as ro
 import retina, flotplot
@@ -93,10 +93,27 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     ro.r('suppressMessages(library(matR))')
     ro.r('suppressMessages(library(gplots))')
     ro.r('suppressMessages(library(scatterplot3d))')
+    # add tab completion from a dir - bit of a hack
+    #   skip names with hyphen '-' in them, its an operator and not valid name syntax :(
+    #   these are for kbase command line scripts, no .pl
+    names = map(lambda x: os.path.basename(x), glob.glob(Ipy.KBASE_BIN+'/*'))
+    names = filter(lambda x: (not x.endswith('.pl')) and ('-' not in x), names)
+    add_tab_completion(names)
     # echo
     if Ipy.DEBUG:
         for k in filter(lambda x: not x.startswith('_'), Ipy.__dict__.keys()):
             print k, getattr(Ipy, k)
+
+def add_tab_completion(names):
+    for n in names:
+        cmd = "%s = func_factory(); dir(%s)"%(n,n)
+        exec(cmd)
+
+def func_factory():
+    """function to return empty functions for adding to python namespace"""
+    def func():
+        return None
+    return func
 
 def save_object(obj, name):
     """save some object to python pickle file"""
@@ -252,9 +269,8 @@ def random_str(size=8):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for x in range(size))
 
+"""
 def sub_biom(b, text):
-    """imput: 1. biom object, 2. text string
-    return: biom object containing only those rows that match text string"""
     str_re = re.compile(text, re.IGNORECASE)
     sBiom = { "generated_by": b['generated_by'],
                "matrix_type": 'dense',
@@ -288,6 +304,7 @@ def sub_biom(b, text):
             seen.add(name)
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
     return biom_remove_empty(sBiom)
+"""
 
 def merge_columns(b, merge_set):
     """input: 1. biom object, 2. merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }
