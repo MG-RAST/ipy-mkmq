@@ -269,9 +269,8 @@ def random_str(size=8):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for x in range(size))
 
+"""
 def sub_biom(b, text):
-    """imput: 1. biom object, 2. text string
-    return: biom object containing only those rows that match text string"""
     str_re = re.compile(text, re.IGNORECASE)
     sBiom = { "generated_by": b['generated_by'],
                "matrix_type": 'dense',
@@ -305,6 +304,7 @@ def sub_biom(b, text):
             seen.add(name)
     sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
     return biom_remove_empty(sBiom)
+"""
 
 def merge_columns(b, merge_set):
     """input: 1. biom object, 2. merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }
