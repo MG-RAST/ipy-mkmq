@@ -5,7 +5,7 @@ from collections import defaultdict
 import os, sys, urllib, urllib2, json, pickle, copy, glob
 import string, random, re
 import rpy2.robjects as ro
-import retina, flotplot
+import retina, flotplot, plant
 import config
 
 # class for ipy lib env
