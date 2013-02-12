@@ -386,7 +386,7 @@ class Analysis(object):
                 val = matrix[i][j]
                 # user inputted scaling
                 if scale and isinstance(scale, dict) and (all_mgids[j] in scale):
-                    val = (val * 1.0) / scale[all_mgids[j]]
+                    val = float(val) / scale[all_mgids[j]]
                 # output strings
                 if mark_zero:
                     val = str(val) + ('*' if self.Dmatrix[i][j] == 0 else '')
