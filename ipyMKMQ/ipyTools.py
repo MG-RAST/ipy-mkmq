@@ -231,6 +231,19 @@ def ordered_distance_from_file(fname):
     fhdl.close()
     return order_dist, dist_matrix
 
+def relative_abundance_matrix(matrix, val=0):
+    if not val:
+        val = 0
+        for row in matrix:
+            val += sum(row)
+    if val == 0:
+        sys.stderr.write("Error: sum of abundances in matrix is zero\n")
+        return []
+    new_matrix = []
+    for row in matrix:
+        new_matrix.append( map(lambda x: float(x) / val, row) )
+    return new_matrix
+
 def sparse_to_dense(sMatrix, rmax, cmax):
     dMatrix = [[0 for i in range(cmax)] for j in range(rmax)]
     for sd in sMatrix:

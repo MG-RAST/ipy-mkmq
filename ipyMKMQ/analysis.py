@@ -171,8 +171,8 @@ class AnalysisSet(object):
                     'show_data': show_data,
                     'arg_list': arg_list }
         next_level = child_level(level, htype=annot)
-        if next_level:
-            click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
+        #if next_level:
+            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
             #keyArgs['onclick'] = "'%s.barchart(level=\"%s\", parent=[\"'+params['label']+'\"], annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s, col_name=%s, row_full=%s, show_data=%s)'"%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
@@ -199,8 +199,8 @@ class AnalysisSet(object):
                     'arg_list': arg_list,
                     'source': 'retina' }
         next_level = child_level(level, htype=annot)
-        if next_level:
-            click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+        #if next_level:
+            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
             #keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\", col_name=%s, row_full=%s, show_data=%s)'"%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
@@ -236,6 +236,8 @@ class Analysis(object):
         self.numAnnot : BIOM row count
         self.Dmatrix  : dense matrix of BIOM data
         self.Rmatrix  : R-format dense matrix
+        self.SDmatrix : scaled dense matrix (abundance sum)
+        self.SRmatrix : R scaled matrix object (abundance sum)
         self.NDmatrix : normalized dense matrix
         self.NRmatrix : normalized R-format dense matrix
         
@@ -276,15 +278,19 @@ class Analysis(object):
         self.numAnnot = self.biom['shape'][0] if self.biom else 0
         self.Dmatrix  = self._dense_matrix()  # count dense matrix
         self.Rmatrix  = pyMatrix_to_rMatrix(self.Dmatrix, self.numAnnot, self.numIDs) # R count matrix object
+        self.SDmatrix = None  # scaled dense matrix (abundance sum)
+        self.SRmatrix = None  # R scaled matrix object (abundance sum)
         self.NDmatrix = None  # normalized dense matrix
         self.NRmatrix = None  # R normalized matrix object
         if self.result_type == 'abundance':
+            self._scale_matrix() # only scale abundance counts
             self._normalize_matrix() # only normalize abundance counts
         self.alpha_diversity = None
         self.rarefaction     = None
     
     def _get_matrix(self, ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source):
         params = map(lambda x: ('id', x), ids)
+        params.append(('hide_metadata', '1'))
         if not annotation:
             annotation = Ipy.MATRIX['annotation']
         if level:
@@ -313,23 +319,30 @@ class Analysis(object):
             hier = 'ontology'
         return hier
 
-    def find_annotation(self, text, show_id=True):
+    def _get_row_label(self, row, row_full=False):
+        if row_full and self.hierarchy and row['metadata'] and (self.hierarchy in row['metadata']):
+            return ";".join(map(lambda x: 'none' if x is None else x, row['metadata'][self.hierarchy]))+" ("+row['id']+")"
+        else:
+            return row['id']
+
+    def find_annotation(self, text, row_full=False):
         if not self.biom:
             return []
         str_re = re.compile(text, re.IGNORECASE)
-        annot = set()        
+        annot = []
         for r in self.biom['rows']:
-            if r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']) and str_re.search(r['metadata'][self.hierarchy][-1]):
-                annot.add( r['id'] if show_id else r['metadata'][self.hierarchy][-1] )
+            if row_full and r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']) and str_re.search(r['metadata'][self.hierarchy][-1]):
+                annot.append( self._get_row_label(r, row_full=True) )
             elif str_re.search(r['id']):
-                annot.add(r['id'])
-        return list(annot)
+                annot.append(r['id'])
+        return annot
 
-    def sub_matrix(self, normalize=0, cols=None, rows=None, strip=True, mark_zero=False):
+    def sub_matrix(self, normalize=0, scale='auto', cols=None, rows=None, row_min=1, mark_zero=False):
         """input: list of col ids, list of row ids, strip option
         return matrix of just those items (if they exist)
-        if sum of row is empty remove it (strip option)
+        if sum of row is < 'row_min', remove it
         if normalize is true, perform above on raw and then replace final values with pre-normalized
+        if normalize is false and scale
         """
         all_annot = self.annotations()
         all_mgids = self.ids()
@@ -337,10 +350,17 @@ class Analysis(object):
             cols = all_mgids
         if not rows:
             rows = all_annot
-        matrix = self.NDmatrix if normalize and self.NDmatrix else self.Dmatrix
-        # this is not a sub-selection: return origional
-        if (len(cols) == len(all_mgids)) and (len(rows) == len(all_annot)):
-            return all_annot, all_mgids, matrix
+        matrix = self.Dmatrix
+        # use normalized matrix
+        if normalize and self.NDmatrix:
+            scale  = None
+            matrix = self.NDmatrix
+        # use scaled matrix
+        elif scale and isinstance(scale, str) and (scale == 'auto'):
+            matrix = self.SDmatrix
+        sub_matrix = []
+        sub_rows = []
+        sub_cols = []
         # validate rows / get indexes
         rows = self.force_row_ids(rows)
         rIndex = []
@@ -350,7 +370,6 @@ class Analysis(object):
             except (ValueError, AttributeError):
                 pass
         # validate cols / get indexes
-        sub_cols = []
         cIndex = []
         for c in cols:
             try:
@@ -359,26 +378,27 @@ class Analysis(object):
             except (ValueError, AttributeError):
                 pass
         # build matrix / remove empty rows
-        sub_rows = []
-        sub_matrix = []
         for i in rIndex:
             test = []
             rdata = []
             for j in cIndex:
                 test.append(self.Dmatrix[i][j])
+                val = matrix[i][j]
+                # user inputted scaling
+                if scale and isinstance(scale, dict) and (all_mgids[j] in scale):
+                    val = (val * 1.0) / scale[all_mgids[j]]
+                # output strings
                 if mark_zero:
-                    val = str(matrix[i][j]) + ('*' if self.Dmatrix[i][j] == 0 else '')
-                    rdata.append(val)
-                else:
-                    rdata.append(matrix[i][j])
-            # test if raw row is empty
-            if (sum(test) == 0) and strip:
+                    val = str(val) + ('*' if self.Dmatrix[i][j] == 0 else '')
+                rdata.append(val)
+            # test if raw row is too small
+            if sum(test) < row_min:
                 continue
             sub_rows.append(all_annot[i])
             sub_matrix.append(rdata)
         return sub_rows, sub_cols, sub_matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, matrix=None, rows=None, cols=None, col_name=True, row_full=True, mark_zero=False):
+    def dump(self, fname=None, fformat='biom', normalize=0, scale='auto', matrix=None, rows=None, cols=None, col_name=True, row_full=True, mark_zero=False):
         """Function for outputing the analysis object to flatfile or text string
             Inputs:
                 fname:     name of file to output too, if undefined returns string
@@ -398,7 +418,7 @@ class Analysis(object):
         output = ""
         if not self.biom:
             sys.stderr.write("Error dumping %s, no data\n"%self.id)
-            return
+            return None
         if fformat == 'biom':
             # biom dump
             output = json.dumps(self.biom)
@@ -407,28 +427,23 @@ class Analysis(object):
             # this will validate that rows and cols are in biom and are ids, and that matrix has no all 0 slices
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
-                rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows, strip=True, mark_zero=mark_zero)
+                rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, cols=cols, rows=rows, mark_zero=mark_zero)
             if not matrix:
                 sys.stderr.write("No abundance data available for the inputted columns and rows\n")
                 return None
             # col names if requested
             if col_name:
-                all_mgids = self.ids()
-                new_cols  = []
+                new_cols = []
                 for c in cols:
-                    i = all_mgids.index(c)
-                    new_cols.append(self.biom['columns'][i]['name'])
+                    i = self.biom['columns'].index(c)
+                    new_cols.append( self.biom['columns'][i]['name'] )
                 cols = new_cols
             # row path if requested
             if row_full and self.hierarchy:
-                all_annot = self.annotations()
-                new_rows  = []
+                new_rows = []
                 for r in rows:
-                    i = all_annot.index(r)
-                    if self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
-                        new_rows.append( ";".join(map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy])) )
-                    else:
-                        new_rows.append(r)
+                    i = self.biom['rows'].index(r)
+                    new_rows.append( self._get_row_label(self.biom['rows'][i], row_full=row_full) )
                 rows = new_rows
             # print matrix
             output = matrix_to_file(matrix=matrix, cols=cols, rows=rows)
@@ -440,30 +455,23 @@ class Analysis(object):
 
     def ids(self):
         if not self.biom:
-            return None
+            return []
         return map(lambda x: x['id'], self.biom['columns'])
 
     def names(self):
         if not self.biom:
-            return None
+            return []
         return map(lambda x: x['name'], self.biom['columns'])
 
-    def annotations(self, show_id=True):
+    def annotations(self, row_full=False):
         """returns a list of annotations (row ids)
         if show_id=False then returns a list of lists (metadata hierarchies) for row"""
         if not self.biom:
-            sys.stderr.write("BIOM object does not exist\n")
-            return None
-        if show_id:
-            return map(lambda x: x['id'], self.biom['rows'])
-        else:
-            ann = []
-            for r in self.biom['rows']:
-                if r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']):
-                    ann.append(r['metadata'][self.hierarchy])
-                else:
-                    ann.append([r['id']])
-            return ann
+            return []
+        annot = []
+        for r in self.biom['rows']:
+            annot.append( self._get_row_label(r, row_full=row_full) )
+        return annot
 
     def force_row_ids(self, rows):
         """returns input list with last hierarchal metadata name replaced with id.
@@ -565,7 +573,7 @@ class Analysis(object):
         else:
             return 0
 
-    def boxplot(self, normalize=1, title='', width=300, height=300, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
+    def boxplot(self, normalize=1, scale='auto', title='', width=300, height=300, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -574,7 +582,7 @@ class Analysis(object):
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
-        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, cols=cols, rows=rows)
         if not matrix:
             sys.stderr.write("No abundance data available for the inputted columns and rows\n")
             return None
@@ -617,7 +625,7 @@ class Analysis(object):
             ro.r("dev.off()")
             return fname
 
-    def pco(self, normalize=1, title='', dist='bray-curtis', width=700, height=600, legend=True, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
+    def pco(self, normalize=1, scale='auto', title='', dist='bray-curtis', width=700, height=600, legend=True, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -626,13 +634,22 @@ class Analysis(object):
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
-        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
-        if not matrix:
-            sys.stderr.write("No abundance data available for the inputted columns and rows\n")
-            return None
-        if show_data:
-            print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
         if source == 'retina':
+            # run our own R code
+            matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
+            pco_file = Ipy.TMP_DIR+'/pco.'+random_str()+'.txt'
+            dump_str = self.dump(fformat='tab', normalize=normalize, scale=scale, rows=rows, cols=cols, col_name=col_name, row_full=False)
+            if not dump_str:
+                return None
+            dump_set = dump_str.strip().split("\n")
+            cols = dump_set[0].strip().split("\t")
+            rows = map(lambda x: x.split("\t")[0], dump_set[1:])
+            if show_data:
+                print dump_str
+            open(matrix_file, 'w').write(dump_str)
+            rcmd = 'source("%s")\nMGRAST_plot_pco(file_in="%s", file_out="%s", dist_method="%s", headers=1)\n'%(Ipy.LIB_DIR+'/plot_pco.r', matrix_file, pco_file, dist)
+            ro.r(rcmd)
+            ## get data from pco_file
             data = {'series': [], 'points': []}
             keyArgs = { 'width': width,
                         'height': height,
@@ -658,12 +675,15 @@ class Analysis(object):
                     sys.stderr.write("Error producing pco plot\n")
                 return None
         else:
+            rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, cols=cols, rows=rows)
+            if show_data:
+                print self.dump(fformat='tab', matrix=matrix, rows=rows, cols=cols, col_name=col_name)
             fname = Ipy.IMG_DIR+'/pco_'+random_str()+'.svg'
             if col_name:
                 labels = map(lambda y: y['name'], filter(lambda x: x['id'] in cols, self.biom['columns']))
             else:
                 labels = cols
-            keyArgs = { 'main': title }
+            keyArgs = { 'main': title, 'names': ro.StrVector(labels) }
             if Ipy.DEBUG:
                 print fname, keyArgs
             ro.r.svg(fname)
@@ -671,13 +691,13 @@ class Analysis(object):
             ro.r("dev.off()")
             return fname
 
-    def heatmap(self, normalize=1, title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None, source='retina'):
+    def heatmap(self, normalize=1, scale='auto', title='', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None, source='retina'):
         if source == 'retina':
-            return self._retina_heatmap(normalize=normalize, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
+            return self._retina_heatmap(normalize=normalize, scale=scale, dist=dist, clust=clust, width=width, height=height, cols=cols, rows=rows, col_name=col_name, row_full=row_full, show_data=show_data, arg_list=arg_list, onclick=onclick)
         else:
             return self._matr_heatmap(normalize=normalize, title=title, col_name=col_name)
 
-    def _retina_heatmap(self, normalize=1, dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
+    def _retina_heatmap(self, normalize=1, scale='auto', dist='bray-curtis', clust='ward', width=700, height=600, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -690,7 +710,7 @@ class Analysis(object):
         matrix_file = Ipy.TMP_DIR+'/matrix.'+random_str()+'.tab'
         col_file = Ipy.TMP_DIR+'/col_clust.'+random_str()+'.txt'
         row_file = Ipy.TMP_DIR+'/row_clust.'+random_str()+'.txt'
-        dump_str = self.dump(fformat='tab', normalize=normalize, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
+        dump_str = self.dump(fformat='tab', normalize=normalize, scale=scale, rows=rows, cols=cols, col_name=col_name, row_full=row_full)
         if not dump_str:
             return None
         dump_set = dump_str.strip().split("\n")
@@ -748,7 +768,7 @@ class Analysis(object):
         ro.r("dev.off()")
         return fname
 
-    def barchart(self, normalize=1, width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
+    def barchart(self, normalize=1, scale='auto', width=800, height=0, x_rotate='0', title="", legend=True, cols=None, rows=None, col_name=True, row_full=False, show_data=False, arg_list=False, onclick=None):
         # default is all
         all_mgids = self.ids()
         all_annot = self.annotations()
@@ -759,7 +779,7 @@ class Analysis(object):
         # force rows to be row ids
         else:
             rows = self.force_row_ids(rows)
-        rows, cols, matrix = self.sub_matrix(normalize=normalize, cols=cols, rows=rows)
+        rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, cols=cols, rows=rows)
         if not matrix:
             sys.stderr.write("No abundance data available for the inputted columns and rows\n")
             return None
@@ -780,10 +800,10 @@ class Analysis(object):
         # set labels
         if row_full and self.hierarchy:
             for r in rows:
-                i = all_annot.index(r)
-                if self.biom['rows'][i]['metadata'] and (self.hierarchy in self.biom['rows'][i]['metadata']):
-                    labels.append( ";".join(map(lambda x: 'none' if x is None else x, self.biom['rows'][i]['metadata'][self.hierarchy])) )
-                else:
+                try:
+                    i = all_annot.index(r)
+                    labels.append( self._get_row_label(self.biom['rows'][i], row_full=row_full) )
+                except:
                     labels.append(r)
         else:
             labels = rows
@@ -816,6 +836,13 @@ class Analysis(object):
             except:
                 sys.stderr.write("Error producing chart\n")
             return None
+
+    def _scale_matrix(self):
+        try:
+            self.SDmatrix = relative_abundance_matrix(self.Dmatrix)
+            self.SRmatrix = pyMatrix_to_rMatrix(self.SDmatrix, self.numAnnot, self.numIDs)
+        except:
+            sys.stderr.write("Error scaling matrix to adundance sum (%s)\n"%self.id)
 
     def _normalize_matrix(self):
         # skip single metagenome matrix
