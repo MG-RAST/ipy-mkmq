@@ -3,9 +3,9 @@
 from time import localtime, strftime
 from collections import defaultdict
 import os, sys, urllib, urllib2, json, pickle, copy, glob
-import string, random, re
+import string, random
 import rpy2.robjects as ro
-import retina, flotplot, plant
+import retina, flotplot
 import config
 
 # class for ipy lib env
@@ -230,6 +230,21 @@ def ordered_distance_from_file(fname):
         dist_matrix.append(row)        
     fhdl.close()
     return order_dist, dist_matrix
+
+def eigen_data_from_file(fname):
+    eigen_values  = []
+    eigen_vectors = {}
+    fhdl = open(fname, 'rU')
+    for line in fhdl:
+        if (not line) or line.startswith('#'):
+            continue
+        line = line.replace('"', '')
+        parts = line.strip().split('\t')
+        if line.startswith('PCO'):
+            eigen_values.append(parts[1])
+        else:
+            eigen_vectors[parts[0]] = parts[1:]
+    return eigen_values, eigen_vectors
 
 def relative_abundance_matrix(matrix):
     col_sums = []

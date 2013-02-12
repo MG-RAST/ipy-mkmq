@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import math, urllib, sys, os, hashlib, traceback
+import math, urllib, sys, os, re, hashlib, traceback
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
@@ -627,7 +627,7 @@ class Analysis(object):
             ro.r("dev.off()")
             return fname
 
-    def pco(self, normalize=1, scale='auto', title='', dist='bray-curtis', width=700, height=600, legend=True, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
+    def pco(self, normalize=1, scale='auto', title='', dist='bray-curtis', width=700, height=600, x_axis=1, y_axis=2, legend=True, cols=None, rows=None, col_name=True, show_data=False, arg_list=False, source='retina'):
         # default is all
         if (not cols) or (len(cols) == 0):
             cols = self.ids()
@@ -652,16 +652,31 @@ class Analysis(object):
             rcmd = 'source("%s")\nMGRAST_plot_pco(file_in="%s", file_out="%s", dist_method="%s", headers=1)\n'%(Ipy.LIB_DIR+'/plot_pco.r', matrix_file, pco_file, dist)
             ro.r(rcmd)
             ## get data from pco_file
-            data = {'series': [], 'points': []}
+            eigen_values, eigen_vectors = eigen_data_from_file(pco_file)
+            if (x_axis < 1) or (y_axis < 1) or (x_axis > len(eigen_values)) or (y_axis > len(eigen_values)):
+                sys.stderr.write("Error: x_axis (%d) and/or y_axis (%d) set beyond principal coordinate range (1 - %d)\n"%(x_axis, y_axis, len(eigen_values)))
+            series = []
+            points = []
+            x_all  = []
+            y_all  = []
+            colors = google_palette(len(cols))
+            for i, c in enumerate(cols):
+                series.append({'name': c, 'color': colors[i]})
+                points.append([{'x': toNum(eigen_vectors[c][x_axis-1]), 'y': toNum(eigen_vectors[c][y_axis-1])}])
+                x_all.append(toNum(eigen_vectors[c][x_axis-1]))
+                y_all.append(toNum(eigen_vectors[c][y_axis-1]))
+            x_buffer = math.fabs( (max(x_all) - min(x_all)) * 0.1 )
+            y_buffer = math.fabs( (max(y_all) - min(y_all)) * 0.1 )
+            data = {'series': series, 'points': points}
             keyArgs = { 'width': width,
                         'height': height,
                         'title': title,
-                        'x_title': '',
-                        'y_title': '',
-                        'x_min': 0,
-                        'x_max': 100,
-                        'y_min': 0,
-                        'y_max': 100,
+                        'x_title': "PCO%d r^2 %0.5f"%(x_axis, eigen_values[x_axis-1]),
+                        'y_title': "PCO%d r^2 %0.5f"%(y_axis, eigen_values[y_axis-1]),
+                        'x_min': min(x_all) - x_buffer,
+                        'x_max': max(x_all) + x_buffer,
+                        'y_min': min(y_all) - y_buffer,
+                        'y_max': max(y_all) + y_buffer,
                         'target': 'div_pco_'+random_str(),
                         'show_legend': legend,
                         'connected': False,
