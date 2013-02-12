@@ -433,18 +433,18 @@ class Analysis(object):
                 return None
             # col names if requested
             if col_name:
-                all_annot = self.annotations()
+                all_mgids = self.ids()
                 new_cols  = []
                 for c in cols:
-                    i = all_annot.index(c)
+                    i = all_mgids.index(c)
                     new_cols.append( self.biom['columns'][i]['name'] )
                 cols = new_cols
             # row path if requested
             if row_full and self.hierarchy:
-                all_mgids = self.ids()
+                all_annot = self.annotations()
                 new_rows  = []
                 for r in rows:
-                    i = all_mgids.index(r)
+                    i = all_annot.index(r)
                     new_rows.append( self._get_row_label(self.biom['rows'][i], row_full=row_full) )
                 rows = new_rows
             # print matrix
