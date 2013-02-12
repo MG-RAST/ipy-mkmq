@@ -3,9 +3,9 @@
 from time import localtime, strftime
 from collections import defaultdict
 import os, sys, urllib, urllib2, json, pickle, copy, glob
-import string, random, re
+import string, random
 import rpy2.robjects as ro
-import retina, flotplot, plant
+import retina, flotplot
 import config
 
 # class for ipy lib env
@@ -230,6 +230,21 @@ def ordered_distance_from_file(fname):
         dist_matrix.append(row)        
     fhdl.close()
     return order_dist, dist_matrix
+
+def eigen_data_from_file(fname):
+    eigen_values  = []
+    eigen_vectors = {}
+    fhdl = open(fname, 'rU')
+    for line in fhdl:
+        if (not line) or line.startswith('#'):
+            continue
+        line = line.replace('"', '')
+        parts = line.strip().split('\t')
+        if line.startswith('PCO'):
+            eigen_values.append(parts[1])
+        else:
+            eigen_vectors[parts[0]] = parts[1:]
+    return eigen_values, eigen_vectors
 
 def relative_abundance_matrix(matrix):
     col_sums = []
@@ -481,6 +496,22 @@ def matrix_remove_empty(m):
             vRow.append(row[c])
         vMatrix.append(vRow)
     return vMatrix
+
+def get_leaf_nodes(htype='taxonomy', level='domain', names=[]):
+    leaf_level = 'species' if htype == 'taxonomy' else 'function'
+    full_hierarchy = get_hierarchy(htype=htype, level=leaf_level)
+    if not names:
+        return slice_column(full_hierarchy, len(full_hierarchy[0])-1)
+    hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
+    try:
+        index = hierarchy.index(level)
+    except (ValueError, AttributeError):
+        return []
+    results = set()
+    for branch in full_hierarchy:
+        if branch[index] in names:
+            results.add(branch[-1])
+    return results
 
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
     if htype == 'organism':
