@@ -337,7 +337,7 @@ class Analysis(object):
                 annot.append( self._get_row_label(r, row_full=row_full) )
         return annot
 
-    def sub_matrix(self, normalize=0, scale='auto', cols=None, rows=None, row_min=1, mark_zero=False):
+    def sub_matrix(self, normalize=0, scale='auto', row_min=1, cols=None, rows=None, mark_zero=False):
         """input: list of col ids, list of row ids, strip option
         return matrix of just those items (if they exist)
         if sum of row is < 'row_min', remove it
@@ -398,7 +398,7 @@ class Analysis(object):
             sub_matrix.append(rdata)
         return sub_rows, sub_cols, sub_matrix
 
-    def dump(self, fname=None, fformat='biom', normalize=0, scale='auto', matrix=None, rows=None, cols=None, col_name=True, row_full=True, mark_zero=False):
+    def dump(self, fname=None, fformat='biom', normalize=0, scale='auto', row_min=1, matrix=None, rows=None, cols=None, col_name=True, row_full=True, mark_zero=False):
         """Function for outputing the analysis object to flatfile or text string
             Inputs:
                 fname:     name of file to output too, if undefined returns string
@@ -427,7 +427,7 @@ class Analysis(object):
             # this will validate that rows and cols are in biom and are ids, and that matrix has no all 0 slices
             # will also re-normalize if creating sub-matrix
             if not (matrix and rows and cols):
-                rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, cols=cols, rows=rows, mark_zero=mark_zero)
+                rows, cols, matrix = self.sub_matrix(normalize=normalize, scale=scale, row_min=row_min, cols=cols, rows=rows, mark_zero=mark_zero)
             if not matrix:
                 sys.stderr.write("No abundance data available for the inputted columns and rows\n")
                 return None
