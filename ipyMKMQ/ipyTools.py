@@ -241,9 +241,9 @@ def eigen_data_from_file(fname):
         line = line.replace('"', '')
         parts = line.strip().split('\t')
         if line.startswith('PCO'):
-            eigen_values.append(parts[1])
+            eigen_values.append( float(parts[1]) )
         else:
-            eigen_vectors[parts[0]] = parts[1:]
+            eigen_vectors[parts[0]] = map(lambda x: float(x), parts[1:])
     return eigen_values, eigen_vectors
 
 def relative_abundance_matrix(matrix):
@@ -511,7 +511,7 @@ def get_leaf_nodes(htype='taxonomy', level='domain', names=[]):
     for branch in full_hierarchy:
         if branch[index] in names:
             results.add(branch[-1])
-    return results
+    return list(results)
 
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
     if htype == 'organism':

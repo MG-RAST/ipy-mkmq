@@ -662,9 +662,9 @@ class Analysis(object):
             colors = google_palette(len(cols))
             for i, c in enumerate(cols):
                 series.append({'name': c, 'color': colors[i]})
-                points.append([{'x': toNum(eigen_vectors[c][x_axis-1]), 'y': toNum(eigen_vectors[c][y_axis-1])}])
-                x_all.append(toNum(eigen_vectors[c][x_axis-1]))
-                y_all.append(toNum(eigen_vectors[c][y_axis-1]))
+                points.append([{'x': eigen_vectors[c][x_axis-1], 'y': eigen_vectors[c][y_axis-1]}])
+                x_all.append(eigen_vectors[c][x_axis-1])
+                y_all.append(eigen_vectors[c][y_axis-1])
             x_buffer = math.fabs( (max(x_all) - min(x_all)) * 0.1 )
             y_buffer = math.fabs( (max(y_all) - min(y_all)) * 0.1 )
             data = {'series': series, 'points': points}
