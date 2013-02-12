@@ -497,6 +497,22 @@ def matrix_remove_empty(m):
         vMatrix.append(vRow)
     return vMatrix
 
+def get_leaf_nodes(htype='taxonomy', level='domain', names=[]):
+    leaf_level = 'species' if htype == 'taxonomy' else 'function'
+    full_hierarchy = get_hierarchy(htype=htype, level=leaf_level)
+    if not names:
+        return slice_column(full_hierarchy, len(full_hierarchy[0])-1)
+    hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
+    try:
+        index = hierarchy.index(level)
+    except (ValueError, AttributeError):
+        return []
+    results = set()
+    for branch in full_hierarchy:
+        if branch[index] in names:
+            results.add(branch[-1])
+    return results
+
 def get_hierarchy(htype='taxonomy', level='species', parent=None):
     if htype == 'organism':
         htype = 'taxonomy'
