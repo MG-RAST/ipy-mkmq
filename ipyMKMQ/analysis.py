@@ -325,16 +325,16 @@ class Analysis(object):
         else:
             return row['id']
 
-    def find_annotation(self, text, row_full=False):
+    def find_annotation(self, text, row_full=True):
         if not self.biom:
             return []
         str_re = re.compile(text, re.IGNORECASE)
         annot = []
         for r in self.biom['rows']:
-            if row_full and r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']) and str_re.search(r['metadata'][self.hierarchy][-1]):
-                annot.append( self._get_row_label(r, row_full=True) )
+            if r['metadata'] and self.hierarchy and (self.hierarchy in r['metadata']) and str_re.search(r['metadata'][self.hierarchy][-1]):
+                annot.append( self._get_row_label(r, row_full=row_full) )
             elif str_re.search(r['id']):
-                annot.append(r['id'])
+                annot.append( self._get_row_label(r, row_full=row_full) )
         return annot
 
     def sub_matrix(self, normalize=0, scale='auto', cols=None, rows=None, row_min=1, mark_zero=False):
