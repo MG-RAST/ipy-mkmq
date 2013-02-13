@@ -680,6 +680,7 @@ class Analysis(object):
                         'target': 'div_pco_'+random_str(),
                         'show_legend': legend,
                         'connected': False,
+                        'show_dots': True,
                         'data': data }
             if Ipy.DEBUG:
                 print cols, rows, keyArgs
