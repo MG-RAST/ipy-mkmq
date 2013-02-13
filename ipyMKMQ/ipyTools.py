@@ -497,9 +497,9 @@ def matrix_remove_empty(m):
         vMatrix.append(vRow)
     return vMatrix
 
-def get_leaf_nodes(htype='taxonomy', level='domain', names=[]):
+def get_leaf_nodes(htype='taxonomy', level='domain', source='Subsystems', names=[]):
     leaf_level = 'species' if htype == 'taxonomy' else 'function'
-    full_hierarchy = get_hierarchy(htype=htype, level=leaf_level)
+    full_hierarchy = get_hierarchy(htype=htype, level=leaf_level, source=source)
     if not names:
         return slice_column(full_hierarchy, len(full_hierarchy[0])-1)
     hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
@@ -513,12 +513,13 @@ def get_leaf_nodes(htype='taxonomy', level='domain', names=[]):
             results.add(branch[-1])
     return list(results)
 
-def get_hierarchy(htype='taxonomy', level='species', parent=None):
+def get_hierarchy(htype='taxonomy', level='species', source='Subsystems', parent=None):
+    params = [('min_level', level)]
     if htype == 'organism':
         htype = 'taxonomy'
     if htype == 'function':
         htype = 'ontology'
-    params = [('min_level', level)]
+        params.append(('source', source))
     if parent is not None:
         params.append(('parent_name', parent))
     child = obj_from_url(Ipy.API_URL+'m5nr/'+htype+'?'+urllib.urlencode(params, True))
@@ -529,8 +530,8 @@ def get_hierarchy(htype='taxonomy', level='species', parent=None):
 def get_taxonomy(level='species', parent=None):
     return get_hierarchy(htype='taxonomy', level=level, parent=parent)
 
-def get_ontology(level='function', parent=None):
-    return get_hierarchy(htype='ontology', level=level, parent=parent)
+def get_ontology(level='function', source='Subsystems', parent=None):
+    return get_hierarchy(htype='ontology', level=level, source=source, parent=parent)
 
 def parent_level(level, htype='taxonomy'):
     if htype == 'organism':
