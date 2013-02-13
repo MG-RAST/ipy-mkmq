@@ -133,7 +133,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -155,7 +155,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -183,7 +183,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, parent=p) )
+                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -680,6 +680,7 @@ class Analysis(object):
                         'target': 'div_pco_'+random_str(),
                         'show_legend': legend,
                         'connected': False,
+                        'show_dots': True,
                         'data': data }
             if Ipy.DEBUG:
                 print cols, rows, keyArgs
