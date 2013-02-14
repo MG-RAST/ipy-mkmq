@@ -661,7 +661,7 @@ class Analysis(object):
             y_all  = []
             colors = google_palette(len(cols))
             for i, c in enumerate(cols):
-                series.append({'name': c, 'color': colors[i]})
+                series.append({'name': c, 'color': colors[i], 'shape': 'circle', 'filled': 1})
                 points.append([{'x': eigen_vectors[c][x_axis-1], 'y': eigen_vectors[c][y_axis-1]}])
                 x_all.append(eigen_vectors[c][x_axis-1])
                 y_all.append(eigen_vectors[c][y_axis-1])
