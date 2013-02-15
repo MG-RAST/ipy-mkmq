@@ -206,7 +206,36 @@ class AnalysisSet(object):
             print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
         return to_plot['abundance'].heatmap(**keyArgs)
-        
+
+    def pco(self, annot='organism', level='domain', parent=None, width=700, height=600, title="", normalize=1, dist='bray-curtis', x_axis=1, y_axis=2, col_name=True, show_data=False, arg_list=False):
+        children = []
+        if parent and (len(parent) > 0):
+            for p in parent:
+                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
+        if children and (len(children) > 0):
+            children = filter(lambda x: x, children)
+        keyArgs = { 'normalize': normalize,
+                    'width': width,
+                    'height': height,
+                    'title': title,
+                    'dist': dist,
+                    'x_axis': x_axis,
+                    'y_axis': y_axis,
+                    'rows': children,
+                    'cols': self.display_mgs,
+                    'col_name': col_name,
+                    'show_data': show_data,
+                    'arg_list': arg_list,
+                    'source': 'retina' }
+        next_level = child_level(level, htype=annot)
+        #if next_level:
+            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            #keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\", col_name=%s, row_full=%s, show_data=%s)'"%click_opts
+        if Ipy.DEBUG:
+            print annot, level, next_level, keyArgs
+        to_plot = getattr(self, level)
+        return to_plot['abundance'].pco(**keyArgs)
+
     def _bool(self, aBool):
         if aBool:
             return 'True'
@@ -661,7 +690,7 @@ class Analysis(object):
             y_all  = []
             colors = google_palette(len(cols))
             for i, c in enumerate(cols):
-                series.append({'name': c, 'color': colors[i]})
+                series.append({'name': c, 'color': colors[i], 'shape': 'circle', 'filled': 1})
                 points.append([{'x': eigen_vectors[c][x_axis-1], 'y': eigen_vectors[c][y_axis-1]}])
                 x_all.append(eigen_vectors[c][x_axis-1])
                 y_all.append(eigen_vectors[c][y_axis-1])
