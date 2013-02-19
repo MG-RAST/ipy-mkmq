@@ -14,19 +14,20 @@ class Plant(object):
         self.experiments = self.GENOPHENO.get_experiments(genome_id)
         self.traits      = self.GENOPHENO.get_traits(self.experiments[0])
 
-    def get_variations(self, num):
-        return self.GENOPHENO.traits_to_variations(self.traits[0], num)
+    def get_variations(self, count=5):
+        return self.GENOPHENO.traits_to_variations(self.traits[0], count)
 
-    def plot_variations(self, num, title='', width=1100, height=400, x_min=0, x_max=None, y_min=0, y_max=10, arg_list=False):
-        variations = self.get_variations(num)
-        colors  = google_palette(num)
+    def plot_variations(self, count=5, variations=None, title='', width=1100, height=400, x_min=0, x_max=None, y_min=0, y_max=10, arg_list=False):
+        if not variations:
+            variations = self.get_variations(count)
+        colors  = google_palette(count)
         series  = []
         points  = []
         lengths = []
         offsets = []
         if not title:
             title = "Manhattan Plot for %s"%variations["trait"]["trait_name"]
-        for i in range(num):
+        for i in range(count):
             series.append({ "name": str(i+1), "color": colors[i], "shape": "circle"})
             points.append([])
             lengths.append(0)
@@ -41,7 +42,7 @@ class Plant(object):
         for i in variations["variations"]:
             points[i[0]].append({ "x": i[1] + offsets[i[0]], "y": i[2] })
         if not x_max:
-            x_max = offsets[num-1] + lengths[num-1]
+            x_max = offsets[count-1] + lengths[count-1]
         keyArgs = { 'width': width,
                     'height': height,
                     'x_min': x_min,
