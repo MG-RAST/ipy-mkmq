@@ -6,7 +6,7 @@ from ipyTools import *
 
 def get_plant_set(gids=[], def_name=None):
     """Wrapper for Plant object creation, checks if cache (created through unique option set) exists first and returns that.
-    Returns a dict of plant_id : plant_obj
+    returns dict: key = plant_id, value = Plant() object
     
     see: help(Plant)
     """
