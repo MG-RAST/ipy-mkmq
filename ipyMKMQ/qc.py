@@ -5,6 +5,13 @@ from metagenome import Metagenome
 from ipyTools import *
 
 class QC(object):
+    """Class for working with QC statistics of a metagenome
+    
+    self.drisee      : Drisee object
+    self.kmer        : Kmer object
+    self.bp_histo    : NucleoProfile object
+    self.rarefaction : Rarefaction object
+    """
     def __init__(self, mgid=None, metagenome=None, auth=None):
         if metagenome:
             self.metagenome = metagenome
@@ -21,6 +28,12 @@ class QC(object):
         self.rarefaction = Rarefaction(mgObjs=[self.metagenome])
 
 class Drisee(object):
+    """Class for working with DRISEE statistics of a metagenome
+    
+    self.summary : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee count profile']}
+    self.count   : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee percent profile']}
+    self.percent : {"columns" : ['list', 'names of columns'], "data" : ['list', 'drisee summary stats']}
+    """
     def __init__(self, mgObj=None, mgData=None):
         data = None
         if mgObj:
@@ -114,6 +127,11 @@ class Drisee(object):
             return None
 
 class NucleoProfile(object):
+    """Class for working with nucleotide profile statistics of a metagenome
+    
+    self.count   : {"columns" : ['list', 'names of columns'], "data" : ['list', 'nucleotide count profile']}
+    self.percent : {"columns" : ['list', 'names of columns'], "data" : ['list', 'nucleotide percent profile']}
+    """
     def __init__(self, mgObj=None, mgData=None):
         data = None
         if mgObj:
@@ -185,6 +203,10 @@ class NucleoProfile(object):
             return None
 
 class Kmer(object):
+    """Class for working with kmer profile statistics of a metagenome
+    
+    self.profile : {"columns" : ['list', 'names of columns'], "data" : ['list', 'kmer 15 counts']}
+    """
     def __init__(self, mgObj=None, profile=None):
         if mgObj:
             self.profile = self._get_kmer(mgObj)
@@ -272,6 +294,11 @@ class Kmer(object):
         
 
 class Rarefaction(object):
+    """Class for working with rarefaction statistics of one or more metagenomes
+    
+    self.points : {metagenome_id : [ 'list', 'rarefaction coordinate data' ]}
+    self.alpha  : {metagenome_id : [ 'list', 'alpha-diversity values' ]}
+    """
     def __init__(self, mgObjs=None, points=None, alpha=None):
         if mgObjs and (len(mgObjs) > 0):
             self.points, self.alpha = self._get_rarefaction(mgObjs)
