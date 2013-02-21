@@ -43,14 +43,14 @@ class Plant(object):
     self.traits      : result of self.GENOPHENO.get_traits(self.experiments[0])
     
     """
-    def __init__(self, genome_id, def_name=None):
+    def __init__(self, genome_id=None, def_name=None):
         self.genome_id   = genome_id
         self.EXPRESSION  = expression.PlantExpression(Ipy.EXPRESSION_URL)
         self.GENOPHENO   = genopheno.Genotype_PhenotypeAPI(Ipy.GENOPHENO_URL)
         self.NETWORKS    = networks.KBaseNetworks(Ipy.NETWORKS_URL)
         self.ONTOLOGY    = ontology.Ontology(Ipy.ONTOLOGY_URL)
-        self.experiments = self.GENOPHENO.get_experiments(self.genome_id)
-        self.traits      = self.GENOPHENO.get_traits(self.experiments[0])
+        self.experiments = self.GENOPHENO.get_experiments(self.genome_id) if self.genome_id else None
+        self.traits      = self.GENOPHENO.get_traits(self.experiments[0]) if self.experiments else None
         # hack to get variable name
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
