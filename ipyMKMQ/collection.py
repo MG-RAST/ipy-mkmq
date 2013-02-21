@@ -33,7 +33,8 @@ def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None
 
 class Collection(object):
     """Class representation of Collection object:
-        metagenomes : [ 'hash', 'key = metagenome_id, value = metagenome.Metagenome() object']
+        metagenomes : [ 'hash', 'key = metagenome_id, value = Metagenome() object']
+        rarefaction : Rarefaction object for collection metagenomes
         _mgids : [ 'list', 'inputted metagenome ids' ]
     
     see: help(Metagenome)

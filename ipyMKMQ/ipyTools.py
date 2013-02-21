@@ -22,7 +22,7 @@ class Ipy(object):
     CCH_DIR = None
     IMG_DIR = None
     KBASE_CMDS = None
-    KBASE_IPY = "\n".join(['get_analysis_set','Analysis','AnalysisSet','get_collection','Collection','Project','Metagenome','QC','Drisee','NucleoProfile','Kmer','Rarefaction','merge_drisee_profile','Plant'])
+    KBASE_IPY = "\n".join(['get_analysis_set','Analysis','AnalysisSet','get_collection','Collection','Project','Metagenome','QC','Drisee','NucleoProfile','Kmer','Rarefaction','merge_drisee_profile','get_plant_set','Plant'])
     VALUES  = ['abundance', 'evalue', 'identity', 'length']
     TAX_SET = ['domain', 'phylum', 'class', 'order', 'family', 'genus', 'species']
     ONT_SET = ['level1', 'level2', 'level3', 'function']
