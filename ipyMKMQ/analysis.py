@@ -207,7 +207,7 @@ class AnalysisSet(object):
         to_plot = getattr(self, level)
         return to_plot['abundance'].heatmap(**keyArgs)
 
-    def pco(self, annot='organism', level='domain', parent=None, width=700, height=600, title="", normalize=1, dist='bray-curtis', x_axis=1, y_axis=2, col_name=True, show_data=False, arg_list=False):
+    def pco(self, annot='organism', level='domain', parent=None, width=700, height=600, title="", legend=True, normalize=1, dist='bray-curtis', x_axis=1, y_axis=2, col_name=True, show_data=False, arg_list=False):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -218,6 +218,7 @@ class AnalysisSet(object):
                     'width': width,
                     'height': height,
                     'title': title,
+                    'legend': legend,
                     'dist': dist,
                     'x_axis': x_axis,
                     'y_axis': y_axis,
