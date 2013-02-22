@@ -141,8 +141,8 @@ class Metagenome(object):
                         'show_legend': True,
                         'legendArea': [0.80, 0.05, lwidth, lheight],
                         'data': data }
-            if atype == 'taxonomy':
-                keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
+            #if atype == 'taxonomy':
+            #    keyArgs['onclick'] = "'%s.plot_taxon(level=\"%s\", parent=\"'+params['series']+'\")'"%(self.defined_name, child_level(level, htype='taxonomy'))
             if Ipy.DEBUG:
                 print keyArgs
             Ipy.RETINA.graph(**keyArgs)
