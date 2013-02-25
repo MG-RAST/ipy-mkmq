@@ -40,7 +40,7 @@ class Plant(object):
     self.NETWORKS    : networks.KBaseNetworks object
     self.ONTOLOGY    : ontology.Ontology object
     self.experiments : result of self.GENOPHENO.get_experiments(self.genome_id)
-    self.traits      : result of self.GENOPHENO.get_traits(self.experiments[0])
+    self.traits      : result of self.GENOPHENO.get_traits(self.experiments[1][0])
     
     """
     def __init__(self, genome_id=None, def_name=None):

@@ -207,7 +207,10 @@ def matrix_from_file(fname, has_col_names=True, has_row_names=True):
 
 def matrix_to_file(fname=None, matrix=[], cols=None, rows=None):
     output = ''
+    if rows:
+        rows = map(lambda x: ' '.join(x.strip().split()), rows) # sanitize text
     if cols:
+        cols = map(lambda x: ' '.join(x.strip().split()), cols) # sanitize text
         if rows:
             output += "\t"
         output += "\t".join(cols) + "\n"

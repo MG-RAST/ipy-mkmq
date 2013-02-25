@@ -130,6 +130,9 @@ class AnalysisSet(object):
             return Analysis(**keyArgs)
 
     def boxplot(self, annot='organism', level='domain', parent=None, width=300, height=300, title="", normalize=1, col_name=True, show_data=False, arg_list=False):
+        if (self.method == 'Amplicon') and (annot == 'function'):
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
+            return None
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -152,6 +155,9 @@ class AnalysisSet(object):
         return to_plot['abundance'].boxplot(**keyArgs)
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False, arg_list=False):
+        if (self.method == 'Amplicon') and (annot == 'function'):
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
+            return None
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -180,6 +186,9 @@ class AnalysisSet(object):
         return to_plot['abundance'].barchart(**keyArgs)
         
     def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False, arg_list=False):
+        if (self.method == 'Amplicon') and (annot == 'function'):
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
+            return None
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
@@ -208,6 +217,9 @@ class AnalysisSet(object):
         return to_plot['abundance'].heatmap(**keyArgs)
 
     def pco(self, annot='organism', level='domain', parent=None, width=700, height=600, title="", legend=True, normalize=1, dist='bray-curtis', x_axis=1, y_axis=2, col_name=True, show_data=False, arg_list=False):
+        if (self.method == 'Amplicon') and (annot == 'function'):
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
+            return None
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
