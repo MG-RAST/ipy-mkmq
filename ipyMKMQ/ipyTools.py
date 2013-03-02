@@ -30,6 +30,7 @@ class Ipy(object):
     MATRIX  = { 'annotation': 'organism',
                 'level': 'strain',
                 'result_type': 'abundance',
+                'hit_type': 'all',
                 'source': 'M5NR',
                 'e_val': 5,
                 'ident': 60,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import math, urllib, sys, os, re, hashlib, traceback
+import pprint, traceback
+import math, urllib, sys, os, re, hashlib
 import rpy2.robjects as ro
 from metagenome import Metagenome
 from ipyTools import *
@@ -95,7 +96,7 @@ class AnalysisSet(object):
 
     def _get_analysis(self, ids, annotation, level, result_type, source, biom_dir):
         # this needs to be created same way as matrix api builds it
-        matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, result_type])
+        matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, Ipy.MATRIX['hit_type'], result_type])
         matrix_id += "_%d_%d_%d"%(Ipy.MATRIX['e_val'], Ipy.MATRIX['ident'], Ipy.MATRIX['alen'])
         matrix_md5 = hashlib.md5(matrix_id).hexdigest()
         sub_def_name = self.defined_name+'.'+level+"['"+result_type+"']"
@@ -123,6 +124,7 @@ class AnalysisSet(object):
             keyArgs['annotation'] = annotation
             keyArgs['level'] = level
             keyArgs['result_type'] = result_type
+            keyArgs['hit_type'] = Ipy.MATRIX['hit_type']
             keyArgs['source'] = source
             keyArgs['def_name'] = sub_def_name
             if self._auth:
@@ -290,7 +292,7 @@ class Analysis(object):
             self.pco()      : pco plot of metagenomes
             self.heatmap()  : dendogram of metagenomes / annotations
     """
-    def __init__(self, ids=[], annotation=None, level=None, result_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None, def_name=None):
+    def __init__(self, ids=[], annotation=None, level=None, result_type=None, hit_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None, def_name=None):
         self._auth = auth
         # hack to get variable name
         if def_name == None:
@@ -298,7 +300,7 @@ class Analysis(object):
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
         if (biom is None) and (bfile is None):
-            self.biom = self._get_matrix(ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source)
+            self.biom = self._get_matrix(ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source)
         elif biom and isinstance(biom, dict):
             self.biom = biom
         elif bfile and os.path.isfile(bfile):
@@ -313,6 +315,9 @@ class Analysis(object):
         self._init_matrix()
 
     def _init_matrix(self):
+        if (not self.biom) or (self.biom and ('id' not in self.biom) and ('data' not in self.biom)):
+            sys.stderr.write("Error: Invalid BIOM object\n"+pprint.pformat(self.biom))
+            self.biom = None
         self.id = self.biom['id'] if self.biom else ""
         self.hierarchy = self._get_type(self.biom)
         self.result_type = self.biom['matrix_element_value'] if self.biom else ""
@@ -330,7 +335,7 @@ class Analysis(object):
         self.alpha_diversity = None
         self.rarefaction     = None
     
-    def _get_matrix(self, ids, annotation, level, result_type, source, e_val, ident, alen, filters, filter_source):
+    def _get_matrix(self, ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source):
         params = map(lambda x: ('id', x), ids)
         params.append(('hide_metadata', '1'))
         if not annotation:
@@ -339,6 +344,8 @@ class Analysis(object):
             params.append(('group_level', level))
         if result_type:
             params.append(('result_type', result_type))
+        if hit_type:
+            params.append(('hit_type', hit_type))
         if source:
             params.append(('source', source))
         if e_val:
