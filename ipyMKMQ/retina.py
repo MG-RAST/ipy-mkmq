@@ -414,7 +414,7 @@ class Retina(object):
         """
         if not target:
             target = 'div_heatmap_'+ipyTools.random_str()
-        html = '<div id="%s"></div>'%(target)
+        html = '<div id="%s"></div>\n'%(target)
         rows = "['']"
         if data is None:
             data = "Retina.RendererInstances.heatmap[0].exampleData()"
@@ -444,7 +444,7 @@ class Retina(object):
                     sel_names.push(row_names[i]);
                 }
             }
-            ipy.write_cell(ipy.add_cell(),'"""+onclick+""""');"""
+            ipy.write_cell(ipy.add_cell(),'"""+onclick+"');"
         if onclick:
             html += '<button type="button" onclick="'+click_func.replace('"', '\\\"')+'">sub-select rows</button>'
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
