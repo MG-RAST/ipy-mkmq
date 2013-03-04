@@ -155,7 +155,7 @@ class NucleoProfile(object):
             data = []
             colors = google_palette(len(labels))
             for i, l in enumerate(labels):
-                data.append({'name': l, 'color': colors[i], 'data': []})
+                data.append({'name': l, 'fill': colors[i], 'data': []})
             for row in self.percent['data']:
                 for i, d in enumerate(row[1:]):
                     data[i]['data'].append(toNum(d))
@@ -167,8 +167,9 @@ class NucleoProfile(object):
                         'x_tick_interval': int(len(self.percent['data'])/50),
                         'x_labeled_tick_interval': int(len(self.percent['data'])/10),
                         'btype': 'stackedArea',
-                        'target': 'div_plot_'+random_str(),
+                        'target': 'div_graph_'+random_str(),
                         'show_legend': legend,
+                        'legend_position': 'right',
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
