@@ -419,7 +419,7 @@ class Retina(object):
         if data is None:
             data = "Retina.RendererInstances.heatmap[0].exampleData()"
         else:
-            rows = json.dumps(data['rows']).replace('"', '\\\"')
+            rows = json.dumps(data['rows'])
             data = json.dumps(data)
         
         selectedRows = json.dumps(selectedRows)
@@ -446,7 +446,7 @@ class Retina(object):
             }
             ipy.write_cell(ipy.add_cell(),'"""+onclick+""""');"""
         if onclick:
-            html += '<button type="button" onclick="'+click_func+'">sub-select rows</button>'
+            html += '<button type="button" onclick="'+click_func.replace('"', '\\\"')+'">sub-select rows</button>'
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if self.debug:
             print html, src
