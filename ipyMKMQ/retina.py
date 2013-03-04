@@ -415,11 +415,11 @@ class Retina(object):
         if not target:
             target = 'div_heatmap_'+ipyTools.random_str()
         html = '<div id="%s"></div>'%(target)
-        rows = '[""]'
+        rows = "['']"
         if data is None:
             data = "Retina.RendererInstances.heatmap[0].exampleData()"
         else:
-            rows = json.dumps(data['rows'])
+            rows = json.dumps(data['rows']).replace('"', '\\\"')
             data = json.dumps(data)
         
         selectedRows = json.dumps(selectedRows)
