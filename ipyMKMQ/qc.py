@@ -160,7 +160,7 @@ class NucleoProfile(object):
                 data.append({'name': l, 'fill': colors[i], 'data': []})
             for n, row in enumerate(self.percent['data']):
                 if (n % 10) == 0:
-                    x_label.append(n)
+                    x_label.append(str(n))
                     x_tick += 1
                 for i, d in enumerate(row[1:]):
                     data[i]['data'].append(toNum(d))
