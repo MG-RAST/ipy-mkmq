@@ -140,7 +140,7 @@ class Retina(object):
         if legendArea:
             opt += ", legendArea: "+json.dumps(legendArea)
         if onclick:
-            onclick = ", onclick: function(params){ipy.write_cell(ipy.add_cell(),"+onclick+");}"
+            onclick = ", onclick: function(params){ipy.write_cell(ipy.add_cell(),'"+onclick+"');}"
         else:
             onclick = ""
         
