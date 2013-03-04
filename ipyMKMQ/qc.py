@@ -147,34 +147,30 @@ class NucleoProfile(object):
         except:
             return None
 
-    def plot(self, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False, source='retina'):
+    def plot(self, width=800, height=300, title="", legend=True, arg_list=False, source='retina'):
         if not self.percent:
             return None
         labels = self.percent['columns'][1:]
-        x = map(lambda y: y[0], self.percent['data'])
         if source == 'retina':
-            series = []
+            data = []
             colors = google_palette(len(labels))
             for i, l in enumerate(labels):
-                series.append({'name': l, 'color': colors[i]})
-            pA = map(lambda y: {'x': y[0], 'y': y[1]}, self.percent['data'])
-            pT = map(lambda y: {'x': y[0], 'y': y[2]}, self.percent['data'])
-            pC = map(lambda y: {'x': y[0], 'y': y[3]}, self.percent['data'])
-            pG = map(lambda y: {'x': y[0], 'y': y[4]}, self.percent['data'])
-            pN = map(lambda y: {'x': y[0], 'y': y[5]}, self.percent['data'])
-            data = {'series': series, 'points': [pA, pT, pC, pG, pN]}
+                data.append({'name': l, 'color': colors[i], 'data': []})
+            for row in self.percent['data']:
+                for i, d in enumerate(row[1:]):
+                    data[i]['data'].append(toNum(d))
             keyArgs = { 'width': width,
                         'height': height,
                         'title': 'nucleotide profile' if not title else title,
-                        'x_title': x_title,
-                        'y_title': y_title,
-                        'x_min': min(x),
-                        'x_max': max(x),
-                        'y_min': 0,
-                        'y_max': 100,
+                        'x_title': 'bp position',
+                        'y_title': 'percent bp',
+                        'x_tick_interval': int(len(self.percent['data'])/50),
+                        'x_labeled_tick_interval': int(len(self.percent['data'])/10),
+                        'type': 'stackedArea',
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
                         'show_dots': False,
+                        'connected': True,
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
@@ -182,11 +178,12 @@ class NucleoProfile(object):
                 return keyArgs
             else:
                 try:
-                    Ipy.RETINA.plot(**keyArgs)
+                    Ipy.RETINA.graph(**keyArgs)
                 except:
                     sys.stderr.write("Error producing nucleotide profile\n")
                 return None
         else:
+            x  = map(lambda y: y[0], self.percent['data'])
             yA = map(lambda y: y[1], self.percent['data'])
             yT = map(lambda y: y[2], self.percent['data'])
             yC = map(lambda y: y[3], self.percent['data'])
