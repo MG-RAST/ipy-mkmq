@@ -164,6 +164,7 @@ class NucleoProfile(object):
                         'title': 'nucleotide profile' if not title else title,
                         'x_title': 'bp position',
                         'y_title': 'percent bp',
+                        'x_labels': [],
                         'x_tick_interval': int(len(self.percent['data'])/50),
                         'x_labeled_tick_interval': int(len(self.percent['data'])/10),
                         'btype': 'stackedArea',
