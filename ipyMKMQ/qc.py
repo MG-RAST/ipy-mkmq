@@ -152,21 +152,27 @@ class NucleoProfile(object):
             return None
         labels = self.percent['columns'][1:]
         if source == 'retina':
+            x_label = []
+            x_tick  = 0
             data = []
             colors = google_palette(len(labels))
             for i, l in enumerate(labels):
                 data.append({'name': l, 'fill': colors[i], 'data': []})
-            for row in self.percent['data']:
+            for n, row in enumerate(self.percent['data']):
+                if (n % 10) == 0:
+                    x_label.append(n)
+                    x_tick += 1
                 for i, d in enumerate(row[1:]):
                     data[i]['data'].append(toNum(d))
+            
             keyArgs = { 'width': width,
                         'height': height,
                         'title': 'nucleotide profile' if not title else title,
                         'x_title': 'bp position',
                         'y_title': 'percent bp',
-                        'x_labels': [],
+                        'x_labels': x_label,
                         'x_tick_interval': int(len(self.percent['data'])/50),
-                        'x_labeled_tick_interval': int(len(self.percent['data'])/10),
+                        'x_labeled_tick_interval': x_tick,
                         'btype': 'stackedArea',
                         'target': 'div_graph_'+random_str(),
                         'show_legend': legend,
