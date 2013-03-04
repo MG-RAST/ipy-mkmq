@@ -419,7 +419,7 @@ class Retina(object):
         if data is None:
             data = "Retina.RendererInstances.heatmap[0].exampleData()"
         else:
-            rows = json.dumps(data['rows'])
+            rows = json.dumps(data['rows']).replace('"', "'")
             data = json.dumps(data)
         
         selectedRows = json.dumps(selectedRows)
