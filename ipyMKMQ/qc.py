@@ -166,11 +166,9 @@ class NucleoProfile(object):
                         'y_title': 'percent bp',
                         'x_tick_interval': int(len(self.percent['data'])/50),
                         'x_labeled_tick_interval': int(len(self.percent['data'])/10),
-                        'type': 'stackedArea',
+                        'btype': 'stackedArea',
                         'target': 'div_plot_'+random_str(),
                         'show_legend': legend,
-                        'show_dots': False,
-                        'connected': True,
                         'data': data }
             if Ipy.DEBUG:
                 print keyArgs
