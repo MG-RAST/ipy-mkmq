@@ -179,9 +179,9 @@ class AnalysisSet(object):
                     'show_data': show_data,
                     'arg_list': arg_list }
         next_level = child_level(level, htype=annot)
-        #if next_level:
-            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
-            #keyArgs['onclick'] = "'%s.barchart(level=\"%s\", parent=[\"'+params['label']+'\"], annot=\"%s\", normalize=%d, width=%d, height=%d, title=\"%s\", legend=%s, col_name=%s, row_full=%s, show_data=%s)'"%click_opts
+        if next_level:
+            click_opts = (self.defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            keyArgs['onclick'] = '%s.barchart(level="%s", parent=["\'+params[\'label\']+\'"], annot="%s", normalize=%d, width=%d, height=%d, title="%s", legend=%s, col_name=%s, row_full=%s, show_data=%s)'%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)
@@ -210,9 +210,9 @@ class AnalysisSet(object):
                     'arg_list': arg_list,
                     'source': 'retina' }
         next_level = child_level(level, htype=annot)
-        #if next_level:
-            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
-            #keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\", col_name=%s, row_full=%s, show_data=%s)'"%click_opts
+        if next_level:
+            click_opts = (self.defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            keyArgs['onclick'] = '%s.heatmap(level="%s", parent="\'+sel_names+\'", annot="%s", normalize=%d, width=%d, height=%d, dist="%s", clust="%s", col_name=%s, row_full=%s, show_data=%s)'%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
         to_plot = getattr(self, level)

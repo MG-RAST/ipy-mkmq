@@ -140,7 +140,7 @@ class Retina(object):
         if legendArea:
             opt += ", legendArea: "+json.dumps(legendArea)
         if onclick:
-            onclick = ", onclick: function(params){ipy.write_cell(ipy.add_cell(),"+onclick+");}"
+            onclick = ", onclick: function(params){ipy.write_cell(ipy.add_cell(),'"+onclick+"');}"
         else:
             onclick = ""
         
@@ -414,12 +414,12 @@ class Retina(object):
         """
         if not target:
             target = 'div_heatmap_'+ipyTools.random_str()
-        html = "<div id='%s'></div>"%(target)
-        rows = '[""]'
+        html = '<div id="%s"></div>\n'%(target)
+        rows = "['']"
         if data is None:
             data = "Retina.RendererInstances.heatmap[0].exampleData()"
         else:
-            rows = json.dumps(data['rows'])
+            rows = json.dumps(data['rows']).replace('"', "'")
             data = json.dumps(data)
         
         selectedRows = json.dumps(selectedRows)
@@ -444,9 +444,9 @@ class Retina(object):
                     sel_names.push(row_names[i]);
                 }
             }
-            ipy.write_cell(ipy.add_cell(),\""""+onclick+""""\");"""
+            ipy.write_cell(ipy.add_cell(),'"""+onclick+"');"
         if onclick:
-            html += "<button type='button' onclick='"+click_func+"'>sub-select rows</button>"
+            html += '<button type="button" onclick="'+click_func.replace('"', '\\\"')+'">sub-select rows</button>'
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         if self.debug:
             print html, src
