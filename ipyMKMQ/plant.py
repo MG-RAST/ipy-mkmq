@@ -49,13 +49,43 @@ class Plant(object):
         self.GENOPHENO   = genopheno.Genotype_PhenotypeAPI(Ipy.GENOPHENO_URL)
         self.NETWORKS    = networks.KBaseNetworks(Ipy.NETWORKS_URL)
         self.ONTOLOGY    = ontology.Ontology(Ipy.ONTOLOGY_URL)
-        self.experiments = self.GENOPHENO.get_experiments(self.genome_id) if self.genome_id else None
-        self.traits      = self.GENOPHENO.get_traits(self.experiments[1][0]) if self.experiments else None
+        self.experiments = None
+        self.traits      = None
+        if self.genome_id:
+            self.set_traits(self.genome_id)
         # hack to get variable name
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
+
+    def set_traits(self, genome_id):
+        self.experiments = self.GENOPHENO.get_experiments(genome_id)
+        self.traits = self.GENOPHENO.get_traits(self.experiments[1][0])
+
+    def show_traits(self, genome_id=None, title='', width=700, height=600, page_rows=10, arg_list=False):
+        if (not self.traits) and genome_id:
+            self.genome_id = genome_id
+            self.set_traits(genome_id)
+        if not self.traits:
+            return None
+        header = ["id", "description", "nothing", "some number"]
+        keyArgs = { 'title': title,
+                    'width': width,
+                    'height': height,
+                    'target': "trait_table_"+random_str(),
+                    'data': {'data': self.traits, 'header': header},
+                    'rows_per_page': page_rows }
+        if Ipy.DEBUG:
+            print keyArgs
+        if arg_list:
+            return keyArgs
+        else:
+            try:
+                Ipy.RETINA.table(**keyArgs)
+            except:
+                sys.stderr.write("Error producing traits table\n")
+            return None
 
     def get_variations(self, count=5):
         return self.GENOPHENO.traits_to_variations(self.traits[0], count)
