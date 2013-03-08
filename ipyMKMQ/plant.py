@@ -63,15 +63,14 @@ class Plant(object):
         self.experiments = self.GENOPHENO.get_experiments(genome_id)
         self.traits = self.GENOPHENO.get_traits(self.experiments[1][0])
 
-    def show_traits(self, genome_id=None, title='', width=700, height=600, page_rows=10, arg_list=False):
+    def show_traits(self, genome_id=None, width=700, height=600, page_rows=10, arg_list=False):
         if (not self.traits) and genome_id:
             self.genome_id = genome_id
             self.set_traits(genome_id)
         if not self.traits:
             return None
         header = ["id", "description", "nothing", "some number"]
-        keyArgs = { 'title': title,
-                    'width': width,
+        keyArgs = { 'width': width,
                     'height': height,
                     'target': "trait_table_"+random_str(),
                     'data': {'data': self.traits, 'header': header},
@@ -112,18 +111,20 @@ class Plant(object):
                 offsets[i] = 10000
             else:
                 offsets[i] = offsets[i-1] + lengths[i-1] + 1000000
+        y_all = []
         for i in variations["variations"]:
-            points[i[0]].append({ "x": i[1] + offsets[i[0]], "y": i[2] })
+            y_all.append(toNum(i[2]))
+            points[i[0]].append({ "x": toNum(i[1] + offsets[i[0]]), "y": toNum(i[2]) })
         if not x_max:
             x_max = offsets[count-1] + lengths[count-1]
         if not y_max:
-            y_max = max([p['y'] for p in points])
+            y_max = max(y_all)
         keyArgs = { 'width': width,
                     'height': height,
                     'x_min': x_min,
                     'x_max': x_max,
                     'y_min': y_min,
-                    'y_max': y_max+(ymax*0.1),
+                    'y_max': y_max+(y_max*0.33),
                     'connected': False,
                     'show_dots': True,
                     'data': {"series": series, "points": points}
