@@ -90,7 +90,7 @@ class Plant(object):
     def get_variations(self, count=5):
         return self.GENOPHENO.traits_to_variations(self.traits[0], count)
 
-    def plot_variations(self, count=5, variations=None, title='', width=1100, height=400, x_min=0, x_max=None, y_min=0, y_max=10, arg_list=False):
+    def plot_variations(self, count=5, variations=None, title='', width=1100, height=400, x_min=0, x_max=None, y_min=0, y_max=None, arg_list=False):
         if not variations:
             variations = self.get_variations(count)
         colors  = google_palette(count)
@@ -116,12 +116,14 @@ class Plant(object):
             points[i[0]].append({ "x": i[1] + offsets[i[0]], "y": i[2] })
         if not x_max:
             x_max = offsets[count-1] + lengths[count-1]
+        if not y_max:
+            y_max = max([p['y'] for p in points])
         keyArgs = { 'width': width,
                     'height': height,
                     'x_min': x_min,
                     'x_max': x_max,
                     'y_min': y_min,
-                    'y_max': y_max,
+                    'y_max': y_max+(ymax*0.1),
                     'connected': False,
                     'show_dots': True,
                     'data': {"series": series, "points": points}
