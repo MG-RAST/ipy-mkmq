@@ -57,7 +57,7 @@ class Plant(object):
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
-        self.defined_name = def_name
+        self._defined_name = def_name
 
     def set_traits(self, genome_id):
         self.experiments = self.GENOPHENO.get_experiments(genome_id)

@@ -45,36 +45,39 @@ class Metagenome(object):
                        "source" : [ 'hash', 'evalue and % identity counts per source' ],
 	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
     """
-    def __init__(self, mgid, metadata=True, stats=True, auth=None, def_name=None, cache=None, mfile=None):
-        self._auth = auth
-        metagenome = None
-        if mfile and os.path.isfile(mfile):
-            # try load from file if given
+    def __init__(self, mgid, stats=True, auth=None, def_name=None, cache=False):
+        self._auth  = auth
+        self._cfile = Ipy.CCH_DIR+'/'+mgid+'.json'
+        self.stats  = None
+        metagenome  = None
+        if cache and os.path.isfile(self._cfile):
+            # try load from cache if given
             try:
-                metagenome = json.load(open(mfile, 'rU'))
+                metagenome = json.load(open(self._cfile, 'rU'))
                 if Ipy.DEBUG:
-                    sys.stdout.write("metagenome %s loaded from cache (%s)\n"%(mgid, cache))
+                    sys.stdout.write("metagenome %s loaded from cached file (%s)\n"%(mgid, self._cfile))
             except:
                 pass
         if metagenome is None:
             # load from api
-            metagenome = self._get_metagenome(mgid, metadata)
-            if cache and metagenome and os.path.isdir(cache):
-                # cache it if dir given and not loaded from file
+            metagenome = self._get_metagenome(mgid)
+            if metagenome and cache and os.path.isdir(Ipy.CCH_DIR):
+                # save to cache if given
                 try:
-                    json.dump(metagenome, open(cache+'/'+mgid+'.json', 'w'))
+                    json.dump(metagenome, open(self._cfile, 'w'))
                     if Ipy.DEBUG:
-                        sys.stdout.write("metagenome %s saved to cache (%s)\n"%(mgid, cache))
+                        sys.stdout.write("metagenome %s saved to cached file (%s)\n"%(mgid, self._cfile))
                 except:
                     pass
         if metagenome is not None:
             for key, val in metagenome.iteritems():
                 setattr(self, key, val)
         else:
+            sys.stderr.write("ERROR: unable to load metagenome %s\n"%mgid)
             self.id = mgid
             self.name = None
+            return
         # get stats
-        self.stats = None
         if stats:
             self._set_statistics()
         # hack to get variable name
@@ -84,14 +87,17 @@ class Metagenome(object):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self.defined_name = def_name
+        self._defined_name = def_name
         
-    def _get_metagenome(self, mgid, metadata):
-        verb = 'full' if metadata else 'verbose'
-        return obj_from_url(Ipy.API_URL+'metagenome/'+mgid+'?verbosity='+verb, self._auth)
+    def _get_metagenome(self, mgid):
+        if Ipy.DEBUG:
+            sys.stdout.write("Loading metagenome %s from API ...\n"%mgid)
+        return obj_from_url(Ipy.API_URL+'/metagenome/'+mgid+'?verbosity=full', self._auth)
 
     def _set_statistics(self):
-        self.stats = obj_from_url(Ipy.API_URL+'metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
+        if Ipy.DEBUG:
+            sys.stdout.write("Loading metagenome %s statistics from API ...\n"%self.id)
+        self.stats = obj_from_url(Ipy.API_URL+'/metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
     
     def show_metadata(self):
         mdTable = []
@@ -142,7 +148,7 @@ class Metagenome(object):
                         'legendArea': [0.80, 0.05, lwidth, lheight],
                         'data': data }
             if atype == 'taxonomy':
-                qname = self.defined_name.replace("'", "\\\'")
+                qname = self._defined_name.replace("'", "\\\'")
                 keyArgs['onclick'] = '%s.piechart_taxon(level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
             if Ipy.DEBUG:
                 print keyArgs

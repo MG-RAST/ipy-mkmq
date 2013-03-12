@@ -21,10 +21,36 @@ class Project(Collection):
          "status"         : [ 'cv',     [ ['public', 'object is public'],
         						           ['private', 'object is private'] ] ]
     """
-    def __init__(self, pid, metadata=True, stats=True, auth=None, def_name=None, cache=False, reset_cache=False):
+    def __init__(self, pid, stats=True, auth=None, def_name=None, cache=False):
         # set project
-        self.cache = Ipy.NB_DIR+'/'+pid if cache else None
+        self._cfile = Ipy.CCH_DIR+'/'+pid+'.json'
         project = None
+        if cache and os.path.isfile(self._cfile):
+            # try load from cache if given
+            try:
+                project = json.load(open(self._cfile, 'rU'))
+                if Ipy.DEBUG:
+                    sys.stdout.write("project %s loaded from cached file (%s)\n"%(pid, self._cfile))
+            except:
+                pass
+        if project is None:
+            # load from api
+            project = self._get_project(pid, auth)
+            if project and cache and os.path.isdir(Ipy.CCH_DIR):
+                # save to cache if given
+                try:
+                    json.dump(project, open(self._cfile, 'w'))
+                    if Ipy.DEBUG:
+                        sys.stdout.write("project %s saved to cached file (%s)\n"%(mgid, self._cfile))
+                except:
+                    pass
+        if project is not None:
+            for key, val in project.iteritems():
+                setattr(self, key, val)
+        else:
+            self.id = pid
+            self.name = None
+            return
         # hack to get variable name
         if def_name == None:
             try:
@@ -32,42 +58,14 @@ class Project(Collection):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self.defined_name = def_name        
-        # reset cache if asked
-        if reset_cache and os.path.isdir(self.cache):
-            shutil.rmtree(self.cache)
-        # make cache dir
-        if self.cache and (not os.path.isdir(self.cache)):
-            os.mkdir(self.cache)
-        # try load from cached
-        if self.cache and os.path.isdir(self.cache) and os.path.isfile(self.cache+'/'+pid+'.json'):
-            try:
-                project = json.load(open(self.cache+'/'+pid+'.json', 'rU'))
-                sys.stdout.write("project '%s' loaded from cache %s\n"%(self.defined_name, pid))
-            except:
-                pass
-        # load from api
-        if project is None:
-            project = self._get_project(pid, metadata, auth)
-            if project and self.cache and os.path.isdir(self.cache):
-                # cache it if dir given and not loaded from file
-                try:
-                    json.dump(project, open(self.cache+'/'+pid+'.json', 'w'))
-                    sys.stdout.write("project '%s' saved to cache %s\n"%(self.defined_name, pid))
-                except:
-                    pass
-        if project is None:
-            self.id = pid
-            self.name = None
-            return
-        for key, val in project.iteritems():
-            setattr(self, key, val)
+        self._defined_name = def_name
         # call collection init - from cache if given
-        Collection.__init__(self, self.mgids(), metadata=metadata, stats=stats, auth=auth, def_name=self.defined_name, cache=self.cache)
+        Collection.__init__(self, self.mgids(), stats=stats, auth=auth, def_name=self._defined_name, cache=cache)
     
-    def _get_project(self, pid, metadata, auth):
-        verb = 'full' if metadata else 'verbose'
-        return obj_from_url(Ipy.API_URL+'project/'+pid+'?verbosity='+verb, auth)
+    def _get_project(self, pid, auth):
+        if Ipy.DEBUG:
+            sys.stdout.write("Loading project %s from API ...\n"%pid)
+        return obj_from_url(Ipy.API_URL+'/project/'+pid+'?verbosity=full', auth)
 
     def mgids(self):
         mlist = []

@@ -6,7 +6,7 @@ from metagenome import Metagenome
 from ipyTools import *
 from qc import Rarefaction
 
-def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None):
+def get_collection(mgids=[], auth=None, stats=True, def_name=None):
     """Wrapper for Collection object creation, checks if cache (created through unique option set) exists first and returns that.
     
     see: help(Collection)
@@ -14,7 +14,7 @@ def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None
     if not mgids:
         sys.stderr.write("No ids inputted\n")
         return
-    cache_id  = "_".join(sorted(mgids))+"_"+('1' if metadata else '0')+"_"+('1' if stats else '0')
+    cache_id  = "_".join(sorted(mgids))+"_"+('1' if stats else '0')
     cache_md5 = hashlib.md5(cache_id).hexdigest()
     cache_obj = load_object(cache_md5)
     if cache_obj is not None:
@@ -26,7 +26,7 @@ def get_collection(mgids=[], auth=None, metadata=True, stats=True, def_name=None
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         print "Loading Collection for selected metagenomes through API. Please wait, this may take several minutes ..."
-        new_obj = Collection(mgids=mgids, auth=auth, metadata=metadata, stats=stats, def_name=def_name)
+        new_obj = Collection(mgids=mgids, auth=auth, stats=stats, def_name=def_name)
         save_object(new_obj, cache_md5)
         print "Done loading through API"
         return new_obj
@@ -39,9 +39,10 @@ class Collection(object):
     
     see: help(Metagenome)
     """
-    def __init__(self, mgids=[], metadata=True, stats=True, auth=None, def_name=None, cache=None):
+    def __init__(self, mgids=[], stats=True, auth=None, def_name=None, cache=False):
         self._auth  = auth
         self._stats = stats
+        self._mgids = mgids
         # hack to get variable name
         if def_name == None:
             try:
@@ -49,23 +50,19 @@ class Collection(object):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self.defined_name = def_name
+        self._defined_name = def_name
         # get metagenomes
-        self._mgids = mgids
-        self.metagenomes = self._get_metagenomes(mgids, metadata, stats, cdir=cache)
+        self.metagenomes = self._get_metagenomes(cache)
         self.rarefaction = Rarefaction(mgObjs=self.metagenomes.values())
     
-    def _get_metagenomes(self, mgids, metadata, stats, cdir=None):
+    def _get_metagenomes(self, cache):
         mgs = {}
-        for mg in mgids:
-            keyArgs = { 'metadata': metadata,
-                        'stats': stats,
+        for mg in self._mgids:
+            keyArgs = { 'stats': self._stats,
                         'auth': self._auth,
-                        'cache': cdir,
-                        'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
+                        'cache': cache,
+                        'def_name': '%s.metagenomes["%s"]'%(self._defined_name, mg)
                        }
-            if cdir and os.path.isfile(cdir+'/'+mg+'.json'):
-                keyArgs['mfile'] = cdir+'/'+mg+'.json'
             mgs[mg] = Metagenome(mg, **keyArgs)
         return mgs
     
