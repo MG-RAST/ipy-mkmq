@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import IPython.core.display
-import json
+import json, sys
 import ipyTools
 
 class Retina(object):
@@ -19,7 +19,7 @@ class Retina(object):
         self.mg_widget = 'window.mg_widget'
         html = "<div id='mg_widget_div'></div>"
         src = """
-			(function(){
+            (function(){
 			    Retina.init( { library_resource: '"""+self.rjs+"""'});
 				Retina.add_widget({"name": "metagenome_overview", "resource": '"""+self.widget_resource+"""', "filename": "widget.metagenome_overview.js"});
 				Retina.load_widget("metagenome_overview").then( function() {
@@ -27,7 +27,7 @@ class Retina(object):
 				});
 			})();
 		"""
-		IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
     def metagenome(self, target='', view='summary_piechart', annotation='organism', level='domain', kmer='abundance', mg_obj=None):
@@ -35,7 +35,6 @@ class Retina(object):
         function, viz_type = '', ''
         mg_stats = mg_obj.stats
         mg_dict  = {}
-        kmer_idx = []
         for k, v in vars(mg_obj).items():
             if (not k.startswith('_')) and (k != 'stats'):
                 mg_dict[k] = v
