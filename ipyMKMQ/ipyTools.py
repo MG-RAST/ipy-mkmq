@@ -126,7 +126,7 @@ def save_object(obj, name):
     try:
         pickle.dump(obj, open(fpath, 'w'))
     except:
-        sys.stderr.write("Error: unable to save '%s' to %s \n"%(obj.defined_name, fpath))
+        sys.stderr.write("Error: unable to save '%s' to %s \n"%(obj._defined_name, fpath))
     return fpath
 
 def load_object(name):
@@ -530,7 +530,7 @@ def get_hierarchy(htype='taxonomy', level='species', source='Subsystems', parent
         params.append(('source', source))
     if parent is not None:
         params.append(('parent_name', parent))
-    child = obj_from_url(Ipy.API_URL+'m5nr/'+htype+'?'+urllib.urlencode(params, True))
+    child = obj_from_url(Ipy.API_URL+'/m5nr/'+htype+'?'+urllib.urlencode(params, True))
     if not child:
         child = []
     return child
