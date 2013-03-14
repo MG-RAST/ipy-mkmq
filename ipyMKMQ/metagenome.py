@@ -124,21 +124,28 @@ class MetagenomeDisplay(object):
             annotation = 'ontology'
             sub_ann = source
         names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
-        data   = []
         colors = google_palette(len(self.mg.stats[annotation][sub_ann]))
+        data   = []
         for i, d in enumerate(self.mg.stats[annotation][sub_ann]):
             if (names is not None) and (d[0] not in names):
                 continue
             data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
-        lheight = len(self.mg.stats[annotation][sub_ann])*30
-        lwidth  = int(len(max(self.mg.stats[annotation][sub_ann], key=len))*7.2)
+        annMax  = len(max(self.mg.stats[annotation][sub_ann], key=len))
+        pwidth  = 300;
+    	pheight = 300;
+    	lwidth  = max(300, int(annMax * 7.5));
+    	lheight = len(data) * 23;
+    	width   = pwidth+lwidth;
+    	height  = min(lheight, pheight+(pheight/2)) if lheight > pheight else pheight;
         keyArgs = { 'btype': 'pie',
-                    'width': 700 + int((float(lwidth)/2)),
-                    'height': 350,
                     'x_labels': [""],
+                    'title': sub_ann,
                     'target': self.mg.id+"_"+level+'_'+random_str(),
                     'show_legend': True,
-                    'legendArea': [0.80, 0.05, lwidth, lheight],
+                    'legendArea': [pwidth+40, 20, lwidth, lheight],
+    		        'chartArea': [25, 20, pwidth, pheight],
+    		        'width': width,
+    		        'height': height,
                     'data': data }
         if annotation == 'taxonomy':
             qname = self._defined_name.replace("'", "\\\'")
