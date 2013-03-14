@@ -38,12 +38,12 @@ class Retina(object):
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
-    def metagenome(self, target='', view='summary_piechart', annotation='organism', level='domain', kmer='abundance', mg_obj=None):
+    def metagenome(self, target='', view='summary_piechart', annotation='organism', level='domain', kmer='abundance', metagenome=None):
         """Displays Metagenome Overview Widget visualizations in given target based on given widget function and metagenome."""
         function, viz_type = '', ''
-        mg_stats = mg_obj.stats
+        mg_stats = metagenome.stats
         mg_dict  = {}
-        for k, v in vars(mg_obj).items():
+        for k, v in vars(metagenome).items():
             if (not k.startswith('_')) and (k != 'stats'):
                 mg_dict[k] = v
         if annotation == 'organism':
@@ -89,10 +89,11 @@ class Retina(object):
         
         if not target:
             target = 'mg_'+view+'_'+ipyTools.random_str()
-        html = "<div id='div_%s'></div>"%(target)
+        html = "<div id='%s'></div>"%(target)
         src = """
 			(function(){
 			    var """+target+""" = """+self.mg_widget+"""."""+function+""";
+			    """+target+""".target = document.getElementById('"""+target+"""');
 				Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
 				    Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
 				});
