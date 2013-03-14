@@ -88,6 +88,8 @@ class Metagenome(object):
             except:
                 pass
         self._defined_name = def_name
+        # set display
+        self.display = MetagenomeDisplay(self, self._defined_name+'.display')
         
     def _get_metagenome(self, mgid):
         if Ipy.DEBUG:
@@ -98,60 +100,113 @@ class Metagenome(object):
         if Ipy.DEBUG:
             sys.stdout.write("Loading metagenome %s statistics from API ...\n"%self.id)
         self.stats = obj_from_url(Ipy.API_URL+'/metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
+
+class MetagenomeDisplay(object):
+    def __init__(self, mg, def_name=None):
+        self.mg = mg
+        # hack to get variable name
+        if def_name == None:
+            try:
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
+            except:
+                pass
+        self._defined_name = def_name
     
-    def show_metadata(self):
-        mdTable = []
-        if hasattr(self, 'metadata'):
-            for cat, data in self.metadata.iteritems():
-                for field, value in data['data'].iteritems():
-                    mdTable.append([cat, field, value])
-        if len(mdTable) == 0:
-            sys.stderr.write("No metadata to display\n")
-        keyArgs = { 'width': 700,
-                    'height': 600,
-                    'target': self.id+"_metadata_"+random_str(),
-                    'data': {'data': mdTable, 'header': ['category', 'field', 'value']},
-                    'rows_per_page': 20 }
+    def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None):
+        if self.mg.stats is None:
+            self.mg._set_statistics()
+        sub_ann = ''
+        if annotation == 'organism':
+            annotation = 'taxonomy'
+            sub_ann = level
+        elif annotation == 'function':
+            annotation = 'ontology'
+            sub_ann = source
+        names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
+        data   = []
+        colors = google_palette(len(self.mg.stats[annotation][sub_ann]))
+        for i, d in enumerate(self.mg.stats[annotation][sub_ann]):
+            if (names is not None) and (d[0] not in names):
+                continue
+            data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
+        lheight = len(self.mg.stats[annotation][sub_ann])*30
+        lwidth  = int(len(max(self.mg.stats[annotation][sub_ann], key=len))*7.2)
+        keyArgs = { 'btype': 'pie',
+                    'width': 700 + int((float(lwidth)/2)),
+                    'height': 350,
+                    'x_labels': [""],
+                    'target': self.mg.id+"_"+level+'_'+random_str(),
+                    'show_legend': True,
+                    'legendArea': [0.80, 0.05, lwidth, lheight],
+                    'data': data }
+        if annotation == 'taxonomy':
+            qname = self._defined_name.replace("'", "\\\'")
+            keyArgs['onclick'] = '%s.annotation(annotation="organism", level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
         if Ipy.DEBUG:
             print keyArgs
+        else:
+            try:
+                Ipy.RETINA.graph(**keyArgs)
+            except:
+                sys.stderr.write("Error producing %s chart"%annotation)
+    
+    def summary_piechart(self):
         try:
-            Ipy.RETINA.table(**keyArgs)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_piechart')
         except:
-            sys.stderr.write("Error producing metadata table\n")
+            sys.stderr.write("Error producing summary piechart\n")
     
-    def piechart_taxon(self, level='domain', parent=None, title=''):
-        children = get_taxonomy(level, parent) if parent is not None else None
-        self._piechart('taxonomy', level, names=children, title=title)
-    
-    def piechart_function(self, source='Subsystems', title=''):
-        self._piechart('ontology', source, title=title)
-    
-    def _piechart(self, atype, level, names=None, title=''):
-        if self.stats is None:
-            self._set_statistics()
-        data = []
+    def summary_stats(self):
         try:
-            colors = google_palette(len(self.stats[atype][level]))
-            for i, d in enumerate(self.stats[atype][level]):
-                if (names is not None) and (d[0] not in names):
-                    continue
-                data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
-            lheight = len(self.stats[atype][level])*30
-            lwidth  = int(len(max(self.stats[atype][level], key=len))*7.2)
-            keyArgs = { 'btype': 'pie',
-                        'width': 700 + int((float(lwidth)/2)),
-                        'height': 350,
-                        'x_labels': [""],
-                        'title': title,
-                        'target': self.id+"_"+level+'_'+random_str(),
-                        'show_legend': True,
-                        'legendArea': [0.80, 0.05, lwidth, lheight],
-                        'data': data }
-            if atype == 'taxonomy':
-                qname = self._defined_name.replace("'", "\\\'")
-                keyArgs['onclick'] = '%s.piechart_taxon(level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
-            if Ipy.DEBUG:
-                print keyArgs
-            Ipy.RETINA.graph(**keyArgs)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_stats')
         except:
-            sys.stderr.write("Error producing %s chart"%atype)
+            sys.stderr.write("Error producing summary stats\n")
+            
+    def annotation_piechart(self, annotation='organism', level='domain'):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_piechart', annotation=annotation, level=level)
+        except:
+            sys.stderr.write("Error producing annotation piechart\n")
+            
+    def bp_histogram(self):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='bp_histogram')
+        except:
+            sys.stderr.write("Error producing bp histogram\n")
+            
+    def drisee(self):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='drisee')
+        except:
+            sys.stderr.write("Error producing drisee plot\n")
+            
+    def kmer(self, kmer='abundance'):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='kmer', kmer=kmer)
+        except:
+            sys.stderr.write("Error producing kmer plot\n")
+            
+    def rarefaction(self):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='rarefaction')
+        except:
+            sys.stderr.write("Error producing rarefaction plot\n")
+            
+    def rank_abundance(self, level='domain'):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='rank_abundance', level=level)
+        except:
+            sys.stderr.write("Error producing rank abundance plot\n")
+            
+    def mixs(self):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='mixs')
+        except:
+            sys.stderr.write("Error producing mixs metadata table\n")
+            
+    def metadata(self):
+        try:
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='metadata')
+        except:
+            sys.stderr.write("Error producing full metadata table\n")

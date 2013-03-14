@@ -44,7 +44,7 @@ class Retina(object):
         mg_stats = metagenome.stats
         mg_dict  = {}
         for k, v in vars(metagenome).items():
-            if (not k.startswith('_')) and (k != 'stats'):
+            if (not k.startswith('_')) and (k not in ['stats','display']):
                 mg_dict[k] = v
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -57,34 +57,34 @@ class Retina(object):
             function, viz_type = 'analysis_statistics('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'paragraph'
         elif view == 'annotation_piechart':
             function, viz_type = 'annotation_piechart('+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
-        elif view == 'bp_histogram':
+        elif (view == 'bp_histogram') and (metagenome.sequence_type != 'Amplicon'):
             bp_per = mg_stats['qc']['bp_profile']['percents']
             function, viz_type = 'bp_areagraph('+json.dumps(bp_per['columns'])+', '+json.dumps(bp_per['data'])+')', 'graph'
-        elif view == 'drisee':
+        elif (view == 'drisee') and (metagenome.sequence_type != 'Amplicon'):
             drisee_per = mg_stats['qc']['drisee']['percents']
             function, viz_type = 'multi_plot(0, [1,2,3,4,5,6,7], '+json.dumps(drisee_per['columns'])+', '+json.dumps(drisee_per['data'])+', "bp position", "percent error")', 'plot'
-        elif view == 'kmer':
+        elif (view == 'kmer') and (metagenome.sequence_type != 'Amplicon'):
             viz_type = 'plot'
             kmer_data = mg_stats['qc']['kmer']['15_mer']['data']
             if kmer == 'ranked':
-                points = map(lambda z: {'x': z[3], 'y': 1 - (1.0 * z[5])}, kmer_data)
+                points = map(lambda z: [ z[3], 1 - (1.0 * z[5]) ], kmer_data)
                 function = 'single_plot('+json.dumps(points)+', "sequence size", "fraction of observed kmers", "log", "linear")'
             elif kmer == 'spectrum':
-                points = map(lambda z: {'x': z[0], 'y': z[1]}, kmer_data)
+                points = map(lambda z: [ z[0], z[1] ], kmer_data)
                 function = 'single_plot('+json.dumps(points)+', "kmer coverage", "number of kmers", "log", "log")'
             else:
-                points = map(lambda z: {'x': z[3], 'y': z[0]}, kmer_data)
+                points = map(lambda z: [ z[3], z[0] ], kmer_data)
                 function = 'single_plot('+json.dumps(points)+', "sequence size", "kmer coverage", "log", "log")'
         elif view == 'rarefaction':
-            function, viz_type = 'single_plot('+json.dumps(mg_stats['rarefaction'])+', "number of reads", "'+level+' count", "linear", "linear")', 'plot'
+            function, viz_type = 'single_plot('+json.dumps(mg_stats['rarefaction'])+', "number of reads", "species count", "linear", "linear")', 'plot'
         elif view == 'rank_abundance':
-            function, viz_type = 'taxon_linegraph('+json.dumps(mg_stats['taxonomy'])+', '+level+', 50)', 'graph'
+            function, viz_type = 'taxon_linegraph('+json.dumps(mg_stats['taxonomy'])+', "'+level+'", 50)', 'graph'
         elif view == 'mixs':
-            function, viz_type = 'migs_metadata('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'paragraph'
-        elif view == 'metadata':
+            function, viz_type = 'migs_metadata('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+', true)', 'paragraph'
+        elif (view == 'metadata') and ('metadata' in mg_dict):
             function, viz_type = 'metadata_table('+json.dumps(mg_dict['metadata'])+')', 'table'
         else:
-            sys.stderr.write("No visualization available for type %s"%view)
+            sys.stderr.write("No visualization available for type '%s'%s"%(view, ' for Amplicon datasets\n' if metagenome.sequence_type == 'Amplicon' else '\n'))
             return None
         
         if not target:
