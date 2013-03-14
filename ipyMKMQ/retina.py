@@ -21,6 +21,14 @@ class Retina(object):
         src = """
             (function(){
 			    Retina.init( { library_resource: '"""+self.rjs+"""'});
+			    Retina.add_renderer({"name": "graph", "resource": '"""+self.renderer_resource+"""', "filename": "renderer.graph.js"});
+			    Retina.add_renderer({"name": "plot", "resource": '"""+self.renderer_resource+"""', "filename": "renderer.plot.js"});
+			    Retina.add_renderer({"name": "paragraph", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.paragraph.js'});
+			    Retina.add_renderer({"name": "table", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.table.js'});
+			    Retina.add_renderer({"name": "heatmap", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.heatmap.js'});
+			    Retina.add_renderer({"name": "boxplot", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.boxplot.js'});
+			    Retina.add_renderer({"name": "deviationplot", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.deviationplot.js'});
+			    Retina.add_renderer({"name": "listselect", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.listselect.js'});
 				Retina.add_widget({"name": "metagenome_overview", "resource": '"""+self.widget_resource+"""', "filename": "widget.metagenome_overview.js"});
 				Retina.load_widget("metagenome_overview").then( function() {
 				    """+self.mg_widget+""" = Retina.Widget.create('metagenome_overview', {"target": document.getElementById("mg_widget_div")}, true);
@@ -85,7 +93,6 @@ class Retina(object):
         src = """
 			(function(){
 			    var """+target+""" = """+self.mg_widget+"""."""+function+""";
-				Retina.add_renderer({"name": \""""+viz_type+"""\", "resource": '"""+self.renderer_resource+"""', "filename": "renderer."""+viz_type+""".js"});
 				Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
 				    Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
 				});
@@ -221,9 +228,8 @@ class Retina(object):
         
         src = """
 			(function(){
-				Retina.add_renderer({"name": "graph", "resource": '""" + self.renderer_resource + """', "filename": "renderer.graph.js" });
 				Retina.load_renderer("graph").then( function () { Retina.Renderer.create('graph', {""" + opt + onclick + """}).render(); });
-                        })();
+            })();
 		"""
         if self.debug:
             print src
@@ -311,9 +317,8 @@ class Retina(object):
         opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
         src = """
 			(function(){
-				Retina.add_renderer({"name": "plot", "resource": '""" + self.renderer_resource + """', "filename": "renderer.plot.js" });
 				Retina.load_renderer("plot").then( function () { Retina.Renderer.create('plot', {""" + opt + """}).render(); });
-                        })();
+            })();
 		"""
         if self.debug:
             print src
@@ -333,7 +338,6 @@ class Retina(object):
         opt = "width: '%s', target: document.getElementById('%s'), data: %s, title_color: '%s', header_color: '%s', text_color: '%s', raw: %s"%(width, target, data, title_color, header_color, text_color, self._bool(raw))
         src = """
 			(function(){
-				Retina.add_renderer({ name: 'paragraph', resource: '""" + self.renderer_resource + """', filename: 'renderer.paragraph.js' });
 				Retina.load_renderer('paragraph').then( function () { Retina.Renderer.create('paragraph', {""" + opt + """} ).render(); } );
 			})();
 		"""
@@ -425,7 +429,6 @@ class Retina(object):
         opt = "target: document.getElementById('%s'), width: %s, height: %s, rows_per_page: %s, sortcol: %s, sorted: %s, offset: %s, invisible_columns: %s, disable_sort: %s, sortdir: '%s', sorttype: %s, filter_autodetect: %s, filter_autodetect_select_max: %s, sort_autodetect: %s, filter: %s, hide_options: %s, editable: %s, data: %s"%(target, width, height, rows_per_page, sortcol, self._bool(issorted), offset, invisible_columns, disable_sort, sortdir, sorttype, self._bool(filter_autodetect), filter_autodetect_select_max, self._bool(sort_autodetect), filtertypes, self._bool(hide_options), editable, data)
         src = """
             (function(){
-                Retina.add_renderer({ name: 'table', resource: '""" + self.renderer_resource + """', filename: 'renderer.table.js' });
                 Retina.load_renderer('table').then( function () { Retina.Renderer.create('table', {""" + opt + """} ).render(); } );
             })();
         """
@@ -502,7 +505,6 @@ class Retina(object):
         opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, selectedRows: %s, tree_height: %d, tree_width: %d, legend_height: %d, legend_width: %d, row_text_size: %d, col_text_size: %d, min_cell_height: %d"%(width, height, target, data, selectedRows, tree_height, tree_width, legend_height, legend_width, row_text_size, col_text_size, min_cell_height)
         src = """
             (function(){
-                Retina.add_renderer({ name: 'heatmap', resource: '""" + self.renderer_resource + """', filename: 'renderer.heatmap.js' });
                 Retina.load_renderer('heatmap').then( function () {
                     window."""+hname+""" = Retina.Renderer.create('heatmap', {""" + opt + """} );
                     window."""+hname+""".render();
@@ -538,10 +540,9 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-	opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
-	src = """
+	    opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
+	    src = """
               (function(){
-                  Retina.add_renderer({ name: 'deviationplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.deviationplot.js' });
                   Retina.load_renderer('deviationplot').then( function () { Retina.Renderer.create('deviationplot', {""" + opt + """} ).render(); } );
               })();
         """
@@ -563,7 +564,6 @@ class Retina(object):
         opt = "target: document.getElementById('%s'), width: %d, height: %d, data: %s"%(target, width, height, data)
         src = """
               (function(){
-                  Retina.add_renderer({ name: 'boxplot', resource: '""" + self.renderer_resource + """', filename: 'renderer.boxplot.js' });
                   Retina.load_renderer('boxplot').then( function () { Retina.Renderer.create('boxplot', {""" + opt + """} ).render(); } );
               })();
         """
