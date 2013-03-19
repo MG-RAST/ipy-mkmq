@@ -100,7 +100,7 @@ def init_ipy(debug=False, nb_dir=None, api_url=None):
     #   skip names with hyphen '-' in them, its an operator and not valid name syntax :(
     #   these are for kbase command line scripts, no .pl
     names = map(lambda x: os.path.basename(x), glob.glob(Ipy.KBASE_BIN+'/*'))
-    names = filter(lambda x: not x.endswith('.pl'), names)    
+    names = filter(lambda x: (not x.endswith('.pl')) and (not x.endswith('.py')), names)
     Ipy.KBASE_CMDS = "\n".join(names)
     names = filter(lambda x: '-' not in x, names)
     add_tab_completion(names)
