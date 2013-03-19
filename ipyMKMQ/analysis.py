@@ -7,6 +7,7 @@ from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
 from datetime import datetime
+from IPython.lib.display import FileLink
 
 def get_analysis_set(ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, def_name=None):
     """Wrapper for AnalysisSet object creation, checks if cache (created through unique option set) exists first and returns that.
@@ -500,7 +501,7 @@ class Analysis(object):
             output = matrix_to_file(matrix=matrix, cols=cols, rows=rows)
         if fname:
             open(fname, 'w').write(output)
-            return None
+            return FileLink(fname)
         else:
             return output
 
