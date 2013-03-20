@@ -878,7 +878,7 @@ class Analysis(object):
         # get retina parameters
         height  = height if height else len(labels)*len(cols)*7.5
         lheight = min(height, len(cols)*35)
-        lwidth  = len(max(labels, key=len)) * 7.2
+        lwidth  = len(max(labels, key=len)) * 7.5
         cwidth  = 0.85 if legend else 0.99
         keyArgs = { 'btype': 'row',
                     'width': int(width+lwidth),
