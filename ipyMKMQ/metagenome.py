@@ -16,7 +16,7 @@ class Metagenome(object):
         "url"      : [ 'uri',     'resource location of this object instance' ],
         "status"   : [ 'cv', [ ['public', 'object is public'],
         					   ['private', 'object is private'] ] ],
-        "sequence_type" : [ 'string', 'sequencing type' ]
+        "sequence_type" : [ 'string', 'sequencing type' ],
         "stats"      : "id" : [ 'string', 'unique metagenome id' ],
                        "length_histogram" : { "upload" : [ 'list', 'length distribution of uploaded sequences' ],
                                               "post_qc" : [ 'list', 'length distribution of post-qc sequences' ] },
@@ -44,6 +44,7 @@ class Metagenome(object):
 		                              "Subsystems" : [ 'list', 'Subsystem counts' ] },
                        "source" : [ 'hash', 'evalue and % identity counts per source' ],
 	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
+	    "display"    : 'MetagenomeDisplay Object - help(object_name.display)'
     """
     def __init__(self, mgid, stats=True, auth=None, def_name=None, cache=False):
         self._auth  = auth
@@ -87,9 +88,9 @@ class Metagenome(object):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self._defined_name = def_name
+        self.defined_name = def_name
         # set display
-        self.display = MetagenomeDisplay(self, self._defined_name+'.display')
+        self.display = MetagenomeDisplay(self, self.defined_name+'.display')
         
     def _get_metagenome(self, mgid):
         if Ipy.DEBUG:
@@ -102,6 +103,19 @@ class Metagenome(object):
         self.stats = obj_from_url(Ipy.API_URL+'/metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
 
 class MetagenomeDisplay(object):
+    """Class containing functions to display metagenome visualizations:
+        annotation           : interactive piechart of organism or functional abundances with clickable drilldown
+        annotation_piechart  : static piechart of organism or functional abundances
+        bp_histogram         : areagraph of nucleotide distribution
+        drisee               : plot of DRISEE sequencing error
+        kmer                 : plot of kmer profile
+        metadata             : interactive table of full metadata
+        mixs                 : table of GSC MIxS metadata
+        rank_abundance       : plot of taxanomic rank abundance
+        rarefaction          : plot of species rarefaction
+        summary_piechart     : piechart of summary sequence hits
+        summary_stats        : table of summary statistics
+    """
     def __init__(self, mg, def_name=None):
         self.mg = mg
         # hack to get variable name
@@ -111,7 +125,7 @@ class MetagenomeDisplay(object):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self._defined_name = def_name
+        self.defined_name = def_name
     
     def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None):
         if self.mg.stats is None:
@@ -148,7 +162,7 @@ class MetagenomeDisplay(object):
     		        'height': height,
                     'data': data }
         if annotation == 'taxonomy':
-            qname = self._defined_name.replace("'", "\\\'")
+            qname = self.defined_name.replace("'", "\\\'")
             keyArgs['onclick'] = '%s.annotation(annotation="organism", level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
         if Ipy.DEBUG:
             print keyArgs
