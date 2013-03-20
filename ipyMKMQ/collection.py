@@ -50,7 +50,7 @@ class Collection(object):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self._defined_name = def_name
+        self.defined_name = def_name
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
         self.rarefaction = Rarefaction(mgObjs=self.metagenomes.values())
@@ -61,7 +61,7 @@ class Collection(object):
             keyArgs = { 'stats': self._stats,
                         'auth': self._auth,
                         'cache': cache,
-                        'def_name': '%s.metagenomes["%s"]'%(self._defined_name, mg)
+                        'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
                        }
             mgs[mg] = Metagenome(mg, **keyArgs)
         return mgs

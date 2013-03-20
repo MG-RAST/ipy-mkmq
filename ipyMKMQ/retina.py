@@ -44,7 +44,7 @@ class Retina(object):
         mg_stats = metagenome.stats
         mg_dict  = {}
         for k, v in vars(metagenome).items():
-            if (not k.startswith('_')) and (k not in ['stats','display']):
+            if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
                 mg_dict[k] = v
         if annotation == 'organism':
             annotation = 'taxonomy'

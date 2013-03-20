@@ -58,9 +58,9 @@ class Project(Collection):
                 def_name = text[:text.find('=')].strip()
             except:
                 pass
-        self._defined_name = def_name
+        self.defined_name = def_name
         # call collection init - from cache if given
-        Collection.__init__(self, self.mgids(), stats=stats, auth=auth, def_name=self._defined_name, cache=cache)
+        Collection.__init__(self, self.mgids(), stats=stats, auth=auth, def_name=self.defined_name, cache=cache)
     
     def _get_project(self, pid, auth):
         if Ipy.DEBUG:

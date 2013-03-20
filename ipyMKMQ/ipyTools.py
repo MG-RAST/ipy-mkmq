@@ -126,7 +126,7 @@ def save_object(obj, name):
     try:
         pickle.dump(obj, open(fpath, 'w'))
     except:
-        sys.stderr.write("Error: unable to save '%s' to %s \n"%(obj._defined_name, fpath))
+        sys.stderr.write("Error: unable to save '%s' to %s \n"%(obj.defined_name, fpath))
     return fpath
 
 def load_object(name):

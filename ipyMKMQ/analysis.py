@@ -58,19 +58,19 @@ class AnalysisSet(object):
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
-        self._defined_name = def_name
+        self.defined_name = def_name
         # check for dir of biom files
         if cache and os.path.isdir(Ipy.NB_DIR+'/'+cache):
             biom_dir = Ipy.NB_DIR+'/'+cache
-            sys.stdout.write("analysis-set '%s' loading from dir %s\n"%(self._defined_name, biom_dir))
+            sys.stdout.write("analysis-set '%s' loading from dir %s\n"%(self.defined_name, biom_dir))
             self._get_analysis_set(tax_source=tax_source, all_values=all_values, biom_dir=biom_dir)
         else:
-            sys.stdout.write("analysis-set '%s' loading through api\n"%self._defined_name)
+            sys.stdout.write("analysis-set '%s' loading through api\n"%self.defined_name)
             self._get_analysis_set(tax_source=tax_source, all_values=all_values)
     
     def set_display_mgs(self, ids=[]):
         if (not ids) or (len(ids) == 0):
-            sys.stdout.write("setting %s.display_mgs to all metagenomes in set\n"%self._defined_name)
+            sys.stdout.write("setting %s.display_mgs to all metagenomes in set\n"%self.defined_name)
             self.display_mgs = self.all_mgs
         else:
             self.display_mgs = ids
@@ -100,7 +100,7 @@ class AnalysisSet(object):
         matrix_id = "_".join(sorted(ids))+"_"+"_".join([annotation, level, source, Ipy.MATRIX['hit_type'], result_type])
         matrix_id += "_%d_%d_%d"%(Ipy.MATRIX['e_val'], Ipy.MATRIX['ident'], Ipy.MATRIX['alen'])
         matrix_md5 = hashlib.md5(matrix_id).hexdigest()
-        sub_def_name = self._defined_name+'.'+level+"['"+result_type+"']"
+        sub_def_name = self.defined_name+'.'+level+"['"+result_type+"']"
         # load from biom_dir
         if biom_dir:
             md5_file = biom_dir+'/'+matrix_md5+'.biom'
@@ -134,7 +134,7 @@ class AnalysisSet(object):
 
     def boxplot(self, annot='organism', level='domain', parent=None, width=300, height=300, title="", normalize=1, col_name=True, show_data=False, arg_list=False):
         if (self.method == 'Amplicon') and (annot == 'function'):
-            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self._defined_name)
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
             return None
         children = []
         if parent and (len(parent) > 0):
@@ -159,7 +159,7 @@ class AnalysisSet(object):
     
     def barchart(self, annot='organism', level='domain', parent=None, width=800, height=0, title="", legend=True, normalize=1, col_name=True, row_full=False, show_data=False, arg_list=False):
         if (self.method == 'Amplicon') and (annot == 'function'):
-            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self._defined_name)
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
             return None
         children = []
         if parent and (len(parent) > 0):
@@ -181,7 +181,7 @@ class AnalysisSet(object):
                     'arg_list': arg_list }
         next_level = child_level(level, htype=annot)
         if next_level:
-            click_opts = (self._defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            click_opts = (self.defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, title, self._bool(legend), self._bool(col_name), self._bool(row_full), self._bool(show_data))
             keyArgs['onclick'] = '%s.barchart(level="%s", parent=["\'+params[\'label\']+\'"], annot="%s", normalize=%d, width=%d, height=%d, title="%s", legend=%s, col_name=%s, row_full=%s, show_data=%s)'%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
@@ -190,7 +190,7 @@ class AnalysisSet(object):
         
     def heatmap(self, annot='organism', level='domain', parent=None, width=700, height=600, normalize=1, dist='bray-curtis', clust='ward', col_name=True, row_full=False, show_data=False, arg_list=False):
         if (self.method == 'Amplicon') and (annot == 'function'):
-            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self._defined_name)
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
             return None
         children = []
         if parent and (len(parent) > 0):
@@ -212,7 +212,7 @@ class AnalysisSet(object):
                     'source': 'retina' }
         next_level = child_level(level, htype=annot)
         if next_level:
-            click_opts = (self._defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            click_opts = (self.defined_name.replace("'", "\\\'"), next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
             keyArgs['onclick'] = '%s.heatmap(level="%s", parent="\'+sel_names+\'", annot="%s", normalize=%d, width=%d, height=%d, dist="%s", clust="%s", col_name=%s, row_full=%s, show_data=%s)'%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
@@ -221,7 +221,7 @@ class AnalysisSet(object):
 
     def pco(self, annot='organism', level='domain', parent=None, width=700, height=600, title="", legend=True, normalize=1, dist='bray-curtis', x_axis=1, y_axis=2, col_name=True, show_data=False, arg_list=False):
         if (self.method == 'Amplicon') and (annot == 'function'):
-            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self._defined_name)
+            sys.stderr.write("'%s' is an Amplicon dataset and contains no functional annotations\n"%self.defined_name)
             return None
         children = []
         if parent and (len(parent) > 0):
@@ -245,7 +245,7 @@ class AnalysisSet(object):
                     'source': 'retina' }
         next_level = child_level(level, htype=annot)
         #if next_level:
-            #click_opts = (self._defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
+            #click_opts = (self.defined_name, next_level, annot, normalize, width, height, dist, clust, self._bool(col_name), self._bool(row_full), self._bool(show_data))
             #keyArgs['onclick'] = "'%s.heatmap(level=\"%s\", parent=\"'+sel_names+'\", annot=\"%s\", normalize=%d, width=%d, height=%d, dist=\"%s\", clust=\"%s\", col_name=%s, row_full=%s, show_data=%s)'"%click_opts
         if Ipy.DEBUG:
             print annot, level, next_level, keyArgs
@@ -299,7 +299,7 @@ class Analysis(object):
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
-        self._defined_name = def_name
+        self.defined_name = def_name
         if (biom is None) and (bfile is None):
             self.biom = self._get_matrix(ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source)
         elif biom and isinstance(biom, dict):

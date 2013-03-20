@@ -41,4 +41,4 @@ class Genome(object):
         if def_name == None:
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
-        self._defined_name = def_name
+        self.defined_name = def_name
