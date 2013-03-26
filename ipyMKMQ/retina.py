@@ -150,7 +150,7 @@ class Retina(object):
 			    (function(){
 			        var """+target+""" = """+self.col_widget+"""."""+function+""";
 			        """+target+""".target = '"""+target+"""'; """+clean_obj+"""
-			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
+			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
 			        var cmd_idx = ipy.add_cell(undefined, 'code', 'above');
 			        ipy.write_cell(cmd_idx, '"""+target+""" = '+ipy_cmd);
 			        ipy.execute_cell(cmd_idx);
