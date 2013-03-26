@@ -17,7 +17,8 @@ class Retina(object):
         self.renderer_resource = ipyTools.Ipy.RETINA_URL+"/renderers/"
         self.widget_resource = ipyTools.Ipy.RETINA_URL+"/widgets/"
         self.mg_widget = 'window.mg_widget'
-        html = "<div id='mg_widget_div'></div>"
+        self.col_widget = 'window.col_widget'
+        html = "<div id='mg_widget_div'></div><div id='col_widget_div'></div>"
         src = """
             (function(){
 			    Retina.init( { library_resource: '"""+self.rjs+"""'});
@@ -33,12 +34,16 @@ class Retina(object):
 				Retina.load_widget("metagenome_overview").then( function() {
 				    """+self.mg_widget+""" = Retina.Widget.create('metagenome_overview', {"target": document.getElementById("mg_widget_div")}, true);
 				});
+				Retina.add_widget({"name": "collection_overview", "resource": '"""+self.widget_resource+"""', "filename": "widget.collection_overview.js"});
+				Retina.load_widget("collection_overview").then( function() {
+				    """+self.col_widget+""" = Retina.Widget.create('collection_overview', {"target": document.getElementById("col_widget_div")}, true);
+				});
 			})();
 		"""
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
-    def metagenome(self, target='', view='summary_piechart', annotation='organism', level='domain', kmer='abundance', metagenome=None):
+    def metagenome(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', metagenome=None, arg_list=False, target=None):
         """Displays Metagenome Overview Widget visualizations in given target based on given widget function and metagenome."""
         function, viz_type = '', ''
         mg_stats = metagenome.stats
@@ -51,32 +56,19 @@ class Retina(object):
         elif annotation == 'function':
             annotation = 'ontology'
         
-        if view == 'summary_piechart':
+        if view == 'summary_chart':
             function, viz_type = 'summary_piechart('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'graph'
         elif view == 'summary_stats':
             function, viz_type = 'analysis_statistics('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'paragraph'
-        elif view == 'annotation_piechart':
+        elif view == 'annotation_chart':
             function, viz_type = 'annotation_piechart('+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
         elif (view == 'bp_histogram') and (metagenome.sequence_type != 'Amplicon'):
             bp_per = mg_stats['qc']['bp_profile']['percents']
             function, viz_type = 'bp_areagraph('+json.dumps(bp_per['columns'])+', '+json.dumps(bp_per['data'])+')', 'graph'
-        elif (view == 'drisee') and (metagenome.sequence_type != 'Amplicon'):
-            drisee_per = mg_stats['qc']['drisee']['percents']
-            function, viz_type = 'multi_plot(0, [1,2,3,4,5,6,7], '+json.dumps(drisee_per['columns'])+', '+json.dumps(drisee_per['data'])+', "bp position", "percent error")', 'plot'
-        elif (view == 'kmer') and (metagenome.sequence_type != 'Amplicon'):
-            viz_type = 'plot'
-            kmer_data = mg_stats['qc']['kmer']['15_mer']['data']
-            if kmer == 'ranked':
-                points = map(lambda z: [ z[3], 1 - (1.0 * z[5]) ], kmer_data)
-                function = 'single_plot('+json.dumps(points)+', "sequence size", "fraction of observed kmers", "log", "linear")'
-            elif kmer == 'spectrum':
-                points = map(lambda z: [ z[0], z[1] ], kmer_data)
-                function = 'single_plot('+json.dumps(points)+', "kmer coverage", "number of kmers", "log", "log")'
-            else:
-                points = map(lambda z: [ z[3], z[0] ], kmer_data)
-                function = 'single_plot('+json.dumps(points)+', "sequence size", "kmer coverage", "log", "log")'
+        elif ((view == 'drisee') or (view == 'kmer')) and (metagenome.sequence_type != 'Amplicon'):
+            function, viz_type = 'mg_plot('+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
         elif view == 'rarefaction':
-            function, viz_type = 'single_plot('+json.dumps(mg_stats['rarefaction'])+', "number of reads", "species count", "linear", "linear")', 'plot'
+            function, viz_type = 'mg_plot('+json.dumps(mg_stats)+', "'+view+'")', 'plot'
         elif view == 'rank_abundance':
             function, viz_type = 'taxon_linegraph('+json.dumps(mg_stats['taxonomy'])+', "'+level+'", 50)', 'graph'
         elif view == 'mixs':
@@ -87,22 +79,93 @@ class Retina(object):
             sys.stderr.write("No visualization available for type '%s'%s"%(view, ' for Amplicon datasets\n' if metagenome.sequence_type == 'Amplicon' else '\n'))
             return None
         
+        html = None
         if not target:
             target = 'mg_'+view+'_'+ipyTools.random_str()
-        html = "<div id='%s'></div>"%(target)
-        src = """
-			(function(){
-			    var """+target+""" = """+self.mg_widget+"""."""+function+""";
-			    """+target+""".target = document.getElementById('"""+target+"""');
-				Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
-				    Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
-				});
-            })();
-		"""
+        if arg_list:
+            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            src = """
+			    (function(){
+			        var """+target+""" = """+self.mg_widget+"""."""+function+"""; """+clean_obj+"""
+			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
+			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+                })();
+		    """
+        else:
+            html = "<div id='%s'></div>"%(target)
+            src = """
+			    (function(){
+			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
+			        """+target+""".target = document.getElementById('"""+target+"""');
+				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
+				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
+				    });
+                })();
+		    """
         if self.debug:
             print src
         else:
-            IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+            if html:
+                IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+            IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+    
+    def collection(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', metagenomes=[], arg_list=False, target=None):
+        """Displays Metagenome Collection Widget visualizations in given target based on given widget function and metagenome objects."""
+        function, viz_type = '', ''
+        mgs = []
+        mg_stats = []
+        for m in metagenomes:
+            mg_dict = {}
+            for k, v in vars(m).items():
+                if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
+                    mg_dict[k] = v
+            mgs.append(mg_dict)
+            mg_stats.append(m.stats)
+        if annotation == 'organism':
+            annotation = 'taxonomy'
+        elif annotation == 'function':
+            annotation = 'ontology'
+        
+        if view == 'summary_chart':
+            function, viz_type = 'summary_stackcolumn('+json.dumps(mgs)+', '+json.dumps(mg_stats)+')', 'graph'
+        elif view == 'annotation_chart':
+            function, viz_type = 'annotation_barchart('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
+        elif (view == 'summary_stats') or (view == 'mixs') or (view == 'metadata'):
+            function, viz_type = 'build_table('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'")', 'table'
+        elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
+            function, viz_type = 'mgs_plot('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
+        else:
+            sys.stderr.write("No visualization available for type '%s'\n"%view)
+            return None
+        
+        html = None
+        if not target:
+            target = 'col_'+view+'_'+ipyTools.random_str()
+        if arg_list:
+            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            src = """
+			    (function(){
+			        var """+target+""" = """+self.col_widget+"""."""+function+"""; """+clean_obj+"""
+			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
+			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+                })();
+		    """
+        else:
+            html = "<div id='%s'></div>"%(target)
+            src = """
+			    (function(){
+			        var """+target+""" = """+self.col_widget+"""."""+function+""";
+			        """+target+""".target = document.getElementById('"""+target+"""');
+				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
+				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
+				    });
+                })();
+		    """
+        if self.debug:
+            print src
+        else:
+            if html:
+                IPython.core.display.display_html(IPython.core.display.HTML(data=html))
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
     def graph(self, width=800, height=400, btype="column", target="", data=None, title="", x_labels=[], x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
