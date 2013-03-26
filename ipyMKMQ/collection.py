@@ -35,8 +35,9 @@ class Collection(object):
     """Class representation of Collection object:
         metagenomes : [ 'hash', 'key = metagenome_id, value = Metagenome() object']
         rarefaction : Rarefaction object for collection metagenomes
-        _mgids : [ 'list', 'inputted metagenome ids' ]
-    
+        _mgids      : [ 'list', 'inputted metagenome ids' ]
+        display     : 'CollectionDisplay Object - help(this_name.display)'
+        
     see: help(Metagenome)
     """
     def __init__(self, mgids=[], stats=True, auth=None, def_name=None, cache=False):
@@ -53,7 +54,8 @@ class Collection(object):
         self.defined_name = def_name
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
-        self.rarefaction = Rarefaction(mgObjs=self.metagenomes.values())
+        # set display
+        self.display = CollectionDisplay(self, self.defined_name+'.display')
     
     def _get_metagenomes(self, cache):
         mgs = {}
@@ -90,8 +92,36 @@ class Collection(object):
             if stat in self.metagenomes[m].stats['sequence_stats']:
                 stat_list.append( toNum(self.metagenomes[m].stats['sequence_stats'][stat]) )
         return stat_list
+
+    def metadata_fields(self, table=True):
+            tdata = []
+            mdata = dict([(x, set()) for x in Ipy.MD_CATS])
+            for mg in self.metagenomes.itervalues():
+                if not hasattr(mg, 'metadata'):
+                    continue
+                for cat in Ipy.MD_CATS:
+                    if cat not in mg.metadata:
+                        continue
+                    for key in mg.metadata[cat]['data'].iterkeys():
+                        mdata[cat].add(key)
+            if not table:
+                return mdata
+            for cat in mdata.iterkeys():
+                for field in sorted(mdata[cat]):
+                    tdata.append([cat, field])
+            keyArgs = { 'width': 400,
+                        'height': 600,
+                        'target': 'metadata_fields_'+random_str(),
+                        'data': {'data': tdata, 'header': ['category', 'field']},
+                        'rows_per_page': 20 }
+            if Ipy.DEBUG:
+                print keyArgs
+            try:
+                Ipy.RETINA.table(**keyArgs)
+            except:
+                sys.stderr.write("Error producing metadata table\n")
     
-    def sub_mgs(self, category=None, field=None, value=None):
+    def search_metadata(self, category=None, field=None, value=None):
         sub_mgs = set()
         all_fields = []
         for f in self.metadata_fields(table=False).itervalues():
@@ -112,121 +142,129 @@ class Collection(object):
                         sub_mgs.add(mid)
         return list(sub_mgs)
 
-    def metadata_fields(self, table=True):
-        tdata = []
-        mdata = dict([(x, set()) for x in Ipy.MD_CATS])
-        for mg in self.metagenomes.itervalues():
-            if not hasattr(mg, 'metadata'):
-                continue
-            for cat in Ipy.MD_CATS:
-                if cat not in mg.metadata:
-                    continue
-                for key in mg.metadata[cat]['data'].iterkeys():
-                    mdata[cat].add(key)
-        if not table:
-            return mdata
-        for cat in mdata.iterkeys():
-            for field in sorted(mdata[cat]):
-                tdata.append([cat, field])
-        keyArgs = { 'width': 400,
-                    'height': 600,
-                    'target': 'metadata_fields_'+random_str(),
-                    'data': {'data': tdata, 'header': ['category', 'field']},
-                    'rows_per_page': 20 }
-        if Ipy.DEBUG:
-            print keyArgs
-        try:
-            Ipy.RETINA.table(**keyArgs)
-        except:
-            sys.stderr.write("Error producing metadata table\n")
-    
-    def show_metadata(self, mgids=None, arg_list=False):
-        header = []
-        tdata  = []
-        mdata  = dict([(x, {}) for x in Ipy.MD_CATS])
-        submgs = mgids if mgids and (len(mgids) > 0) else self.mgids()
-        for mid in submgs:
-            if (mid in self.metagenomes) and hasattr(self.metagenomes[mid], 'metadata'):
-                header.append(mid)
-        if len(header) == 0:
-            sys.stderr.write("No metadata to display\n")
-        for i, mid in enumerate(header):
-            for cat, data in self.metagenomes[mid].metadata.iteritems():
-                for field, value in data['data'].iteritems():
-                    if field not in mdata[cat]:
-                        mdata[cat][field] = ['' for x in range(len(header))]
-                    mdata[cat][field][i] = value
-        for cat in mdata.iterkeys():
-            for field in mdata[cat].iterkeys():
-                tdata.append( [cat, field] + mdata[cat][field] )
-        keyArgs = { 'width': 700,
-                    'height': 600,
-                    'target': "metadata_table_"+random_str(),
-                    'data': {'data': tdata, 'header': ['category', 'field'] + header},
-                    'rows_per_page': 20 }
-        if Ipy.DEBUG:
-            print keyArgs
-        if arg_list:
-            return keyArgs
-        else:
+class CollectionDisplay(object):
+    """Class containing functions to display metagenome collection visualizations:
+        annotation        : interactive barchart of organism or functional abundances with clickable drilldown
+        annotation_chart  : static barchart of organism or functional abundances
+        drisee            : plot of DRISEE sequencing error
+        kmer              : plot of kmer profile
+        metadata          : interactive table of full metadata
+        mixs              : table of GSC MIxS metadata
+        rarefaction       : plot of species rarefaction
+        summary_chart     : barchart of summary sequence hits
+        summary_stats     : table of summary statistics
+    """
+    def __init__(self, mgs, def_name=None):
+        self.mgs = mgs
+        self.mgids = map(lambda x: x.id, mgs)
+        # hack to get variable name
+        if def_name == None:
             try:
-                Ipy.RETINA.table(**keyArgs)
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
             except:
-                sys.stderr.write("Error producing metadata table\n")
-            return None
+                pass
+        self.defined_name = def_name
 
-    def plot_rarefaction(self, mgids=None, width=800, height=300, title="", x_title="", y_title="", legend=True, arg_list=False):
-        return self.rarefaction.plot(mgids=mgids, width=width, height=height, title=title, x_title=x_title, y_title=y_title, legend=legend, arg_list=arg_list)
-
-    def barchart_taxon(self, level='domain', parent=None, width=800, height=0, x_rotate='0', title="", legend=True):
-        children = get_taxonomy(level, parent) if parent is not None else None
-        self._barchart('taxonomy', level, width, height, x_rotate, title, legend, names=children)
-
-    def barchart_function(self, source='Subsystems', width=800, height=0, x_rotate='0', title="", legend=True):
-        self._barchart('ontology', source, width, height, x_rotate, title, legend)
-
-    def _barchart(self, atype, level, width, height, x_rotate, title, legend, names=None):
-        if not self._stats:
-            self._set_statistics()
+    def annotation(self, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
+        sub_ann = ''
+        if annotation == 'organism':
+            annotation = 'taxonomy'
+            sub_ann = level
+        elif annotation == 'function':
+            annotation = 'ontology'
+            sub_ann = source
+        names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
+        colors = google_palette(len(self.mgs))
         data = []
         annD = {}
-        colors = google_palette(len(self.metagenomes))
-        for i, item in enumerate(self.metagenomes.iteritems()):
+        for i, item in enumerate(self.mgs.iteritems()):
             mid, mg = item
             data.append({'name': mid, 'data': [], 'fill': colors[i]})
-            for d in mg.stats[atype][level]:
+            for d in mg.stats[annotation][level]:
                 if (names is not None) and (d[0] not in names):
                     continue
                 annD[ d[0] ] = 1
         annL = sorted(annD.keys())
         for d in data:
             annMG = {}
-            for a, v in self.metagenomes[d['name']].stats[atype][level]:
+            for a, v in self.mgs[d['name']].stats[annotation][level]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:
                     d['data'].append(int(annMG[a]))
                 else:
                     d['data'].append(0)
-        height  = height if height else len(annL)*len(self.metagenomes)*7.5
-        lheight = min(height, len(self.metagenomes)*35)
+        height  = len(annL)*len(self.mgs)*7.5
+        width   = 600
+        lheight = min(height, len(self.mgs)*35)
         lwidth  = len(max(annL, key=len)) * 7.2
-        cwidth  = 0.85 if legend else 0.99
+        cwidth  = 0.85
         keyArgs = { 'btype': 'row',
                     'width': width+lwidth,
                     'height': height,
                     'x_labels': annL,
-                    'x_labels_rotation': x_rotate,
-                    'title': title,
+                    'title': sub_ann if not title else title,
                     'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
-                    'show_legend': legend,
+                    'show_legend': True,
                     'legendArea': [0.87, 0.05, 0.2, lheight],
                     'chartArea': [lwidth, 0.02, cwidth, 0.95],
                     'data': data }
         if Ipy.DEBUG:
             print keyArgs
-        try:
-            Ipy.RETINA.graph(**keyArgs)
-        except:
-            sys.stderr.write("Error producing chart")
+        if arg_list:
+            return keyArgs
+        else:
+            try:
+                Ipy.RETINA.graph(**keyArgs)
+            except:
+                sys.stderr.write("Error producing %s chart"%annotation)
             return None
+        
+    def summary_chart(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='summary_chart', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing summary chart\n")
+
+    def summary_stats(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='summary_stats', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing summary stats\n")
+            
+    def annotation_chart(self, annotation='organism', level='domain', arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing annotation chart\n")
+            
+    def drisee(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='drisee', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing drisee plot\n")
+            
+    def kmer(self, kmer='abundance', arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing kmer plot\n")
+            
+    def rarefaction(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='rarefaction', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing rarefaction plot\n")
+            
+    def mixs(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='mixs', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing mixs metadata table\n")
+            
+    def metadata(self, arg_list=False, target=None):
+        try:
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='metadata', arg_list=arg_list, target=target)
+        except:
+            sys.stderr.write("Error producing full metadata table\n")

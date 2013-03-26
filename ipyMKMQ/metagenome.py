@@ -44,7 +44,7 @@ class Metagenome(object):
 		                              "Subsystems" : [ 'list', 'Subsystem counts' ] },
                        "source" : [ 'hash', 'evalue and % identity counts per source' ],
 	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
-	    "display"    : 'MetagenomeDisplay Object - help(object_name.display)'
+	    "display"    : 'MetagenomeDisplay Object - help(this_name.display)'
     """
     def __init__(self, mgid, stats=True, auth=None, def_name=None, cache=False):
         self._auth  = auth
@@ -104,17 +104,17 @@ class Metagenome(object):
 
 class MetagenomeDisplay(object):
     """Class containing functions to display metagenome visualizations:
-        annotation           : interactive piechart of organism or functional abundances with clickable drilldown
-        annotation_piechart  : static piechart of organism or functional abundances
-        bp_histogram         : areagraph of nucleotide distribution
-        drisee               : plot of DRISEE sequencing error
-        kmer                 : plot of kmer profile
-        metadata             : interactive table of full metadata
-        mixs                 : table of GSC MIxS metadata
-        rank_abundance       : plot of taxanomic rank abundance
-        rarefaction          : plot of species rarefaction
-        summary_piechart     : piechart of summary sequence hits
-        summary_stats        : table of summary statistics
+        annotation        : interactive piechart of organism or functional abundances with clickable drilldown
+        annotation_chart  : static piechart of organism or functional abundances
+        bp_histogram      : areagraph of nucleotide distribution
+        drisee            : plot of DRISEE sequencing error
+        kmer              : plot of kmer profile
+        metadata          : interactive table of full metadata
+        mixs              : table of GSC MIxS metadata
+        rank_abundance    : plot of taxanomic rank abundance
+        rarefaction       : plot of species rarefaction
+        summary_chart     : piechart of summary sequence hits
+        summary_stats     : table of summary statistics
     """
     def __init__(self, mg, def_name=None):
         self.mg = mg
@@ -127,7 +127,7 @@ class MetagenomeDisplay(object):
                 pass
         self.defined_name = def_name
     
-    def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None):
+    def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None, arg_list=False):
         if self.mg.stats is None:
             self.mg._set_statistics()
         sub_ann = ''
@@ -166,68 +166,71 @@ class MetagenomeDisplay(object):
             keyArgs['onclick'] = '%s.annotation(annotation="organism", level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
         if Ipy.DEBUG:
             print keyArgs
+        if arg_list:
+            return keyArgs
         else:
             try:
                 Ipy.RETINA.graph(**keyArgs)
             except:
                 sys.stderr.write("Error producing %s chart"%annotation)
+            return None
     
-    def summary_piechart(self):
+    def summary_chart(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_piechart')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_chart', arg_list=arg_list, target=target)
         except:
-            sys.stderr.write("Error producing summary piechart\n")
+            sys.stderr.write("Error producing summary chart\n")
     
-    def summary_stats(self):
+    def summary_stats(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_stats')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_stats', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_piechart(self, annotation='organism', level='domain'):
+    def annotation_chart(self, annotation='organism', level='domain', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_piechart', annotation=annotation, level=level)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_chart', annotation=annotation, level=level, arg_list=arg_list, target=target)
         except:
-            sys.stderr.write("Error producing annotation piechart\n")
+            sys.stderr.write("Error producing annotation chart\n")
             
-    def bp_histogram(self):
+    def bp_histogram(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='bp_histogram')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='bp_histogram', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing bp histogram\n")
             
-    def drisee(self):
+    def drisee(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='drisee')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='drisee', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing drisee plot\n")
             
-    def kmer(self, kmer='abundance'):
+    def kmer(self, kmer='abundance', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='kmer', kmer=kmer)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing kmer plot\n")
             
-    def rarefaction(self):
+    def rarefaction(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='rarefaction')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='rarefaction', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rarefaction plot\n")
             
-    def rank_abundance(self, level='domain'):
+    def rank_abundance(self, level='domain', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='rank_abundance', level=level)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='rank_abundance', level=level, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rank abundance plot\n")
             
-    def mixs(self):
+    def mixs(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='mixs')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='mixs', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing mixs metadata table\n")
             
-    def metadata(self):
+    def metadata(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='metadata')
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='metadata', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing full metadata table\n")
