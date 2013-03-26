@@ -86,18 +86,18 @@ class Retina(object):
             src = """
 			    (function(){
 			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
-			        """+target+""".target = document.getElementById('"""+target+"""');
-				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
-				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
+			        """+target+""".target = '"""+target+"""';
+			        ipy.write_cell(ipy.add_cell(), '\""""+target+"""\" = '+JSON.stringify("""+target+"""));"
 				    });
                 })();
 		    """
         else:
-		    src = """
+            src = """
 			    (function(){
 			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
-			        """+target+""".target = '"""+target+"""';
-			        ipy.write_cell(ipy.add_cell(), '"""+target+""" = '+JSON.stringify("""+target+"""));"
+			        """+target+""".target = document.getElementById('"""+target+"""');
+				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
+				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
 				    });
                 })();
 		    """
@@ -143,18 +143,18 @@ class Retina(object):
             src = """
 			    (function(){
 			        var """+target+""" = """+self.col_widget+"""."""+function+""";
-			        """+target+""".target = document.getElementById('"""+target+"""');
-				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
-				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
+			        """+target+""".target = '"""+target+"""';
+			        ipy.write_cell(ipy.add_cell(), '\""""+target+"""\" = '+JSON.stringify("""+target+"""));"
 				    });
                 })();
 		    """
         else:
-		    src = """
+            src = """
 			    (function(){
 			        var """+target+""" = """+self.col_widget+"""."""+function+""";
-			        """+target+""".target = '"""+target+"""';
-			        ipy.write_cell(ipy.add_cell(), '"""+target+""" = '+JSON.stringify("""+target+"""));"
+			        """+target+""".target = document.getElementById('"""+target+"""');
+				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
+				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
 				    });
                 })();
 		    """
