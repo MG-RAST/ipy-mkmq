@@ -79,19 +79,23 @@ class Retina(object):
             sys.stderr.write("No visualization available for type '%s'%s"%(view, ' for Amplicon datasets\n' if metagenome.sequence_type == 'Amplicon' else '\n'))
             return None
         
+        html = None
         if not target:
             target = 'mg_'+view+'_'+ipyTools.random_str()
-        html = "<div id='%s'></div>"%(target)
         if arg_list:
+            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
             src = """
 			    (function(){
 			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
-			        """+target+""".target = '"""+target+"""';
-			        ipy.write_cell(ipy.add_cell(), '\""""+target+"""\" = '+JSON.stringify("""+target+"""));"
-				    });
+			        """+target+""".target = '"""+target+"""'; """+clean_obj+"""
+			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
+			        var cmd_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(cmd_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(cmd_idx);
                 })();
 		    """
         else:
+            html = "<div id='%s'></div>"%(target)
             src = """
 			    (function(){
 			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
@@ -104,7 +108,8 @@ class Retina(object):
         if self.debug:
             print src
         else:
-            IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+            if html:
+                IPython.core.display.display_html(IPython.core.display.HTML(data=html))
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
     def collection(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', metagenomes=[], arg_list=False, target=None):
@@ -136,19 +141,23 @@ class Retina(object):
             sys.stderr.write("No visualization available for type '%s'\n"%view)
             return None
         
+        html = None
         if not target:
             target = 'col_'+view+'_'+ipyTools.random_str()
-        html = "<div id='%s'></div>"%(target)
         if arg_list:
+            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
             src = """
 			    (function(){
 			        var """+target+""" = """+self.col_widget+"""."""+function+""";
-			        """+target+""".target = '"""+target+"""';
-			        ipy.write_cell(ipy.add_cell(), '\""""+target+"""\" = '+JSON.stringify("""+target+"""));"
-				    });
+			        """+target+""".target = '"""+target+"""'; """+clean_obj+"""
+			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
+			        var cmd_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(cmd_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(cmd_idx);
                 })();
 		    """
         else:
+            html = "<div id='%s'></div>"%(target)
             src = """
 			    (function(){
 			        var """+target+""" = """+self.col_widget+"""."""+function+""";
@@ -161,7 +170,8 @@ class Retina(object):
         if self.debug:
             print src
         else:
-            IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+            if html:
+                IPython.core.display.display_html(IPython.core.display.HTML(data=html))
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
     def graph(self, width=800, height=400, btype="column", target="", data=None, title="", x_labels=[], x_title="", y_title="", show_legend=False, legend_position='left', title_color="black", x_title_color="black", y_title_color="black", x_labels_rotation="0", x_tick_interval=0, y_tick_interval=30, x_labeled_tick_interval=1, y_labeled_tick_interval=5, default_line_color="black", default_line_width=1, chartArea=None, legendArea=None, onclick=None):
