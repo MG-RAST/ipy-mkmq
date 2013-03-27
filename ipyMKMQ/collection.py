@@ -194,21 +194,23 @@ class CollectionDisplay(object):
                     d['data'].append(int(annMG[a]))
                 else:
                     d['data'].append(0)
-        height  = len(annL)*len(self.mgs)*7.5
+        
         width   = 600
-        lheight = min(height, len(self.mgs)*35)
-        lwidth  = len(max(annL, key=len)) * 7.2
-        cwidth  = 0.85
-        keyArgs = { 'btype': 'row',
-                    'width': width+lwidth,
-                    'height': height,
-                    'x_labels': annL,
-                    'title': sub_ann if not title else title,
-                    'target': '_'.join(self.mgids)+"_"+level+'_'+random_str(),
-                    'show_legend': True,
-                    'legendArea': [0.87, 0.05, 0.2, lheight],
-                    'chartArea': [lwidth, 0.02, cwidth, 0.95],
-                    'data': data }
+        height  = len(annL) * len(self.mgs) * 7.5
+        lwidth  = len(max(annL, key=len)) * 7.8
+        lheight = len(self.mgs) * 35
+        if height < 100:
+            height = 100
+        keyArgs = { 'title': sub_ann if not title else title,
+        	        'btype': 'row',
+        		    'x_labels': annL,
+        		    'target': '_'.join(self.mgids)+"_"+level+'_'+random_str(),
+        		    'show_legend': True,
+        		    'legendArea': [width+lwidth, 50, 150, lheight],
+        		    'chartArea': [lwidth, 50, 0.81, height],
+        		    'width': width+lwidth+150,
+        		    'height': max(height, lheight),
+        		    'data': data }
         if Ipy.DEBUG:
             print keyArgs
         if arg_list:
