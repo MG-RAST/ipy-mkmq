@@ -129,11 +129,11 @@ class Retina(object):
         if view == 'summary_chart':
             function, viz_type = 'summary_stackcolumn('+json.dumps(mgs)+', '+json.dumps(mg_stats)+')', 'graph'
         elif view == 'annotation_chart':
-            function, viz_type = 'annotation_barchart('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
+            function, viz_type = 'annotation_barchart('+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
         elif (view == 'summary_stats') or (view == 'mixs') or (view == 'metadata'):
             function, viz_type = 'build_table('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'")', 'table'
         elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
-            function, viz_type = 'mgs_plot('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
+            function, viz_type = 'mgs_plot('+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
         else:
             sys.stderr.write("No visualization available for type '%s'\n"%view)
             return None
