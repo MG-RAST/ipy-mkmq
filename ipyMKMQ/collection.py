@@ -55,7 +55,7 @@ class Collection(object):
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
         # set display
-        self.display = CollectionDisplay(self, self.defined_name+'.display')
+        self.display = CollectionDisplay(self.metagenomes.values(), self.defined_name+'.display')
     
     def _get_metagenomes(self, cache):
         mgs = {}
@@ -178,38 +178,39 @@ class CollectionDisplay(object):
         colors = google_palette(len(self.mgs))
         data = []
         annD = {}
-        for i, item in enumerate(self.mgs.iteritems()):
-            mid, mg = item
-            data.append({'name': mid, 'data': [], 'fill': colors[i]})
-            for d in mg.stats[annotation][level]:
+        for i, mg in enumerate(self.mgs):
+            data.append({'name': mg.id, 'data': [], 'fill': colors[i]})
+            for d in mg.stats[annotation][sub_ann]:
                 if (names is not None) and (d[0] not in names):
                     continue
                 annD[ d[0] ] = 1
         annL = sorted(annD.keys())
-        for d in data:
+        for i, d in enumerate(data):
             annMG = {}
-            for a, v in self.mgs[d['name']].stats[annotation][level]:
+            for a, v in self.mgs[i].stats[annotation][sub_ann]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:
                     d['data'].append(int(annMG[a]))
                 else:
                     d['data'].append(0)
-        height  = len(annL)*len(self.mgs)*7.5
+        
         width   = 600
-        lheight = min(height, len(self.mgs)*35)
-        lwidth  = len(max(annL, key=len)) * 7.2
-        cwidth  = 0.85
-        keyArgs = { 'btype': 'row',
-                    'width': width+lwidth,
-                    'height': height,
-                    'x_labels': annL,
-                    'title': sub_ann if not title else title,
-                    'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
-                    'show_legend': True,
-                    'legendArea': [0.87, 0.05, 0.2, lheight],
-                    'chartArea': [lwidth, 0.02, cwidth, 0.95],
-                    'data': data }
+        height  = len(annL) * len(self.mgs) * 7.5
+        lwidth  = len(max(annL, key=len)) * 7.8
+        lheight = len(self.mgs) * 35
+        if height < 100:
+            height = 100
+        keyArgs = { 'title': sub_ann if not title else title,
+        	        'btype': 'row',
+        		    'x_labels': annL,
+        		    'target': '_'.join(self.mgids)+"_"+sub_ann+'_'+random_str(),
+        		    'show_legend': True,
+        		    'legendArea': [width+lwidth, 50, 150, lheight],
+        		    'chartArea': [lwidth, 50, 0.81, height],
+        		    'width': width+lwidth+150,
+        		    'height': max(height, lheight),
+        		    'data': data }
         if Ipy.DEBUG:
             print keyArgs
         if arg_list:
@@ -233,9 +234,9 @@ class CollectionDisplay(object):
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_chart(self, annotation='organism', level='domain', arg_list=False, target=None):
+    def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             

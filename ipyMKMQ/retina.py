@@ -51,17 +51,21 @@ class Retina(object):
         for k, v in vars(metagenome).items():
             if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
                 mg_dict[k] = v
+        
+        sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
+            sub_ann = level
         elif annotation == 'function':
             annotation = 'ontology'
+            sub_ann = source
         
         if view == 'summary_chart':
             function, viz_type = 'summary_piechart('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'graph'
         elif view == 'summary_stats':
             function, viz_type = 'analysis_statistics('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'paragraph'
         elif view == 'annotation_chart':
-            function, viz_type = 'annotation_piechart('+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
+            function, viz_type = 'annotation_piechart('+json.dumps(mg_stats)+', '+annotation+', '+sub_ann+')', 'graph'
         elif (view == 'bp_histogram') and (metagenome.sequence_type != 'Amplicon'):
             bp_per = mg_stats['qc']['bp_profile']['percents']
             function, viz_type = 'bp_areagraph('+json.dumps(bp_per['columns'])+', '+json.dumps(bp_per['data'])+')', 'graph'
@@ -109,7 +113,7 @@ class Retina(object):
                 IPython.core.display.display_html(IPython.core.display.HTML(data=html))
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def collection(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', metagenomes=[], arg_list=False, target=None):
+    def collection(self, view='summary_chart', annotation='organism', level='domain', source='Subsystems', kmer='abundance', metagenomes=[], arg_list=False, target=None):
         """Displays Metagenome Collection Widget visualizations in given target based on given widget function and metagenome objects."""
         function, viz_type = '', ''
         mgs = []
@@ -121,19 +125,23 @@ class Retina(object):
                     mg_dict[k] = v
             mgs.append(mg_dict)
             mg_stats.append(m.stats)
+        
+        sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
+            sub_ann = level
         elif annotation == 'function':
             annotation = 'ontology'
-        
+            sub_ann = source    
+
         if view == 'summary_chart':
             function, viz_type = 'summary_stackcolumn('+json.dumps(mgs)+', '+json.dumps(mg_stats)+')', 'graph'
         elif view == 'annotation_chart':
-            function, viz_type = 'annotation_barchart('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', '+annotation+', '+level+')', 'graph'
+            function, viz_type = 'annotation_barchart('+json.dumps(mg_stats)+', "'+annotation+'", "'+sub_ann+'")', 'graph'
         elif (view == 'summary_stats') or (view == 'mixs') or (view == 'metadata'):
             function, viz_type = 'build_table('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'")', 'table'
         elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
-            function, viz_type = 'mgs_plot('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
+            function, viz_type = 'mgs_plot('+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
         else:
             sys.stderr.write("No visualization available for type '%s'\n"%view)
             return None
