@@ -180,14 +180,14 @@ class CollectionDisplay(object):
         annD = {}
         for i, mg in enumerate(self.mgs):
             data.append({'name': mg.id, 'data': [], 'fill': colors[i]})
-            for d in mg.stats[annotation][level]:
+            for d in mg.stats[annotation][sub_ann]:
                 if (names is not None) and (d[0] not in names):
                     continue
                 annD[ d[0] ] = 1
         annL = sorted(annD.keys())
         for i, d in enumerate(data):
             annMG = {}
-            for a, v in self.mgs[i].stats[annotation][level]:
+            for a, v in self.mgs[i].stats[annotation][sub_ann]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:
@@ -204,7 +204,7 @@ class CollectionDisplay(object):
         keyArgs = { 'title': sub_ann if not title else title,
         	        'btype': 'row',
         		    'x_labels': annL,
-        		    'target': '_'.join(self.mgids)+"_"+level+'_'+random_str(),
+        		    'target': '_'.join(self.mgids)+"_"+sub_ann+'_'+random_str(),
         		    'show_legend': True,
         		    'legendArea': [width+lwidth, 50, 150, lheight],
         		    'chartArea': [lwidth, 50, 0.81, height],
@@ -234,9 +234,9 @@ class CollectionDisplay(object):
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_chart(self, annotation='organism', level='domain', arg_list=False, target=None):
+    def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             

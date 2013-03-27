@@ -204,9 +204,9 @@ class MetagenomeDisplay(object):
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_chart(self, annotation='organism', level='domain', arg_list=False, target=None):
+    def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_chart', annotation=annotation, level=level, arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             
