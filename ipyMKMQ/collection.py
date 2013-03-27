@@ -204,7 +204,7 @@ class CollectionDisplay(object):
                     'height': height,
                     'x_labels': annL,
                     'title': sub_ann if not title else title,
-                    'target': '_'.join(self.mgids())+"_"+level+'_'+random_str(),
+                    'target': '_'.join(self.mgids)+"_"+level+'_'+random_str(),
                     'show_legend': True,
                     'legendArea': [0.87, 0.05, 0.2, lheight],
                     'chartArea': [lwidth, 0.02, cwidth, 0.95],

@@ -47,40 +47,37 @@ class Metagenome(object):
 	    "display"    : 'MetagenomeDisplay Object - help(this_name.display)'
     """
     def __init__(self, mgid, stats=True, auth=None, def_name=None, cache=False):
+        self._mgfile = Ipy.CCH_DIR+'/'+mgid+'.json'
+        self._statfile = Ipy.CCH_DIR+'/'+mgid+'.stats.json'
         self._auth  = auth
-        self._cfile = Ipy.CCH_DIR+'/'+mgid+'.json'
         self.stats  = None
         metagenome  = None
-        if cache and os.path.isfile(self._cfile):
-            # try load from cache if given
-            try:
-                metagenome = json.load(open(self._cfile, 'rU'))
-                if Ipy.DEBUG:
-                    sys.stdout.write("metagenome %s loaded from cached file (%s)\n"%(mgid, self._cfile))
-            except:
-                pass
+        if cache and os.path.isfile(self._mgfile):
+            # load from cache
+            metagenome = self._load_cache('metagenome '+mgid, self._mgfile)
         if metagenome is None:
             # load from api
             metagenome = self._get_metagenome(mgid)
             if metagenome and cache and os.path.isdir(Ipy.CCH_DIR):
-                # save to cache if given
-                try:
-                    json.dump(metagenome, open(self._cfile, 'w'))
-                    if Ipy.DEBUG:
-                        sys.stdout.write("metagenome %s saved to cached file (%s)\n"%(mgid, self._cfile))
-                except:
-                    pass
+                self._save_cache(metagenome, 'metagenome '+mgid, self._mgfile)
         if metagenome is not None:
             for key, val in metagenome.iteritems():
                 setattr(self, key, val)
         else:
-            sys.stderr.write("ERROR: unable to load metagenome %s\n"%mgid)
+            sys.stderr.write("ERROR: unable to load metagenome %s through API\n"%mgid)
             self.id = mgid
             self.name = None
             return
         # get stats
         if stats:
-            self._set_statistics()
+            if cache and os.path.isfile(self._statfile):
+                # load from cache
+                self.stats = self._load_cache('metagenome '+mgid+' stats', self._statfile)
+            if self.stats is None:
+                # load from api
+                self._set_statistics()
+                if self.stats and cache and os.path.isdir(Ipy.CCH_DIR):
+                    self._save_cache(self.stats, 'metagenome '+mgid+' stats', self._statfile)
         # hack to get variable name
         if def_name == None:
             try:
@@ -91,7 +88,27 @@ class Metagenome(object):
         self.defined_name = def_name
         # set display
         self.display = MetagenomeDisplay(self, self.defined_name+'.display')
-        
+    
+    def _load_cache(self, ctype, cfile):
+        # try load from cache if given
+        obj = None
+        try:
+            obj = json.load(open(cfile, 'rU'))
+            if Ipy.DEBUG:
+                sys.stdout.write("%s loaded from cached file (%s)\n"%(ctype, cfile))
+        except:
+            sys.stderr.write("ERROR: unable to load %s from cached file (%s)\n"%(ctype, cfile))
+        return obj
+    
+    def _save_cache(self, cobj, ctype, cfile):
+        # save to cache if given
+        try:
+            json.dump(cobj, open(cfile, 'w'))
+            if Ipy.DEBUG:
+                sys.stdout.write("%s saved to cached file (%s)\n"%(ctype, cfile))
+        except:
+            sys.stderr.write("ERROR: unable to save %s to cached file (%s)\n"%(ctype, cfile))
+    
     def _get_metagenome(self, mgid):
         if Ipy.DEBUG:
             sys.stdout.write("Loading metagenome %s from API ...\n"%mgid)
