@@ -55,7 +55,7 @@ class Collection(object):
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
         # set display
-        self.display = CollectionDisplay(self, self.defined_name+'.display')
+        self.display = CollectionDisplay(self.metagenomes.values(), self.defined_name+'.display')
     
     def _get_metagenomes(self, cache):
         mgs = {}
@@ -178,17 +178,16 @@ class CollectionDisplay(object):
         colors = google_palette(len(self.mgs))
         data = []
         annD = {}
-        for i, item in enumerate(self.mgs.iteritems()):
-            mid, mg = item
-            data.append({'name': mid, 'data': [], 'fill': colors[i]})
+        for i, mg in enumerate(self.mgs):
+            data.append({'name': mg.id, 'data': [], 'fill': colors[i]})
             for d in mg.stats[annotation][level]:
                 if (names is not None) and (d[0] not in names):
                     continue
                 annD[ d[0] ] = 1
         annL = sorted(annD.keys())
-        for d in data:
+        for i, d in enumerate(data):
             annMG = {}
-            for a, v in self.mgs[d['name']].stats[annotation][level]:
+            for a, v in self.mgs[i].stats[annotation][level]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:
