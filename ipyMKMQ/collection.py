@@ -166,7 +166,14 @@ class CollectionDisplay(object):
                 pass
         self.defined_name = def_name
 
-    def annotation(self, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
+    def _sub_mgs(self, mgids):
+        if (not mgids) or (len(mgids) == 0):
+            return self.mgs
+        sub_mgs = filter(lambda x: x.id in mgids, self.mgs)
+        return sub_mgs if len(sub_mgs) > 0 else self.mgs
+
+    def annotation(self, mgids=None, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
+        mgs = self._sub_mgs(mgids)
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -175,10 +182,10 @@ class CollectionDisplay(object):
             annotation = 'ontology'
             sub_ann = source
         names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
-        colors = google_palette(len(self.mgs))
+        colors = google_palette(len(mgs))
         data = []
         annD = {}
-        for i, mg in enumerate(self.mgs):
+        for i, mg in enumerate(mgs):
             data.append({'name': mg.id, 'data': [], 'fill': colors[i]})
             for d in mg.stats[annotation][sub_ann]:
                 if (names is not None) and (d[0] not in names):
@@ -187,7 +194,7 @@ class CollectionDisplay(object):
         annL = sorted(annD.keys())
         for i, d in enumerate(data):
             annMG = {}
-            for a, v in self.mgs[i].stats[annotation][sub_ann]:
+            for a, v in mgs[i].stats[annotation][sub_ann]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:
@@ -196,7 +203,7 @@ class CollectionDisplay(object):
                     d['data'].append(0)
         
         width   = 600
-        height  = len(annL) * len(self.mgs) * 7.5
+        height  = len(annL) * len(mgs) * 7.5
         lwidth  = len(max(annL, key=len)) * 7.8
         lheight = len(self.mgs) * 35
         if height < 100:
@@ -204,13 +211,16 @@ class CollectionDisplay(object):
         keyArgs = { 'title': sub_ann if not title else title,
         	        'btype': 'row',
         		    'x_labels': annL,
-        		    'target': '_'.join(self.mgids)+"_"+sub_ann+'_'+random_str(),
+        		    'target': '_'.join( map(lambda x: x.id, mgs) )+"_"+sub_ann+'_'+random_str(),
         		    'show_legend': True,
         		    'legendArea': [width+lwidth, 50, 150, lheight],
         		    'chartArea': [lwidth, 50, 0.81, height],
         		    'width': width+lwidth+150,
         		    'height': max(height, lheight),
         		    'data': data }
+        if annotation == 'taxonomy':
+            qname = self.defined_name.replace("'", "\\\'")
+            keyArgs['onclick'] = '%s.annotation(annotation="organism", level="%s", parent="\'+params[\'series\']+\'")'%(qname, child_level(level, htype='taxonomy'))
         if Ipy.DEBUG:
             print keyArgs
         if arg_list:
@@ -222,50 +232,58 @@ class CollectionDisplay(object):
                 sys.stderr.write("Error producing %s chart"%annotation)
             return None
         
-    def summary_chart(self, arg_list=False, target=None):
+    def summary_chart(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='summary_chart', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='summary_chart', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary chart\n")
 
-    def summary_stats(self, arg_list=False, target=None):
+    def summary_stats(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='summary_stats', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='summary_stats', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
+    def annotation_chart(self, mgids=None, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             
-    def drisee(self, arg_list=False, target=None):
+    def drisee(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='drisee', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='drisee', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing drisee plot\n")
             
-    def kmer(self, kmer='abundance', arg_list=False, target=None):
+    def kmer(self, mgids=None, kmer='abundance', arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing kmer plot\n")
             
-    def rarefaction(self, arg_list=False, target=None):
+    def rarefaction(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='rarefaction', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='rarefaction', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rarefaction plot\n")
             
-    def mixs(self, arg_list=False, target=None):
+    def mixs(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='mixs', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='mixs', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing mixs metadata table\n")
             
-    def metadata(self, arg_list=False, target=None):
+    def metadata(self, mgids=None, arg_list=False, target=None):
         try:
-            Ipy.RETINA.collection(metagenomes=self.mgs, view='metadata', arg_list=arg_list, target=target)
+            mgs = self._sub_mgs(mgids)
+            Ipy.RETINA.collection(metagenomes=mgs, view='metadata', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing full metadata table\n")
