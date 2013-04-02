@@ -78,7 +78,7 @@ class Collection(object):
     def mgids(self):
         return self._mgids
     
-    def get_stat(self, mgid=None, stat=None, mgid_set=[]):
+    def get_stat(self, mgid=None, stat=None):
         if not (mgid and stat and (mgid in self._mgids)):
             return []
         if not self._stats:
@@ -86,8 +86,9 @@ class Collection(object):
         if stat not in self.metagenomes[mgid].stats['sequence_stats']:
             return []
         stat_list = [ toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) ]
-        if not mgid_set:
-            mgid_set = self._mgids
+        mgid_set = self._mgids
+        if self.display and self.display._display_ids:
+            mgid_set = self.display._display_ids
         for m in mgid_set:
             if m == mgid:
                 continue
@@ -158,7 +159,7 @@ class CollectionDisplay(object):
     """
     def __init__(self, mgs, def_name=None):
         self.mgs = mgs
-        self._view_ids = []
+        self._display_ids = []
         # hack to get variable name
         if def_name == None:
             try:
@@ -185,20 +186,20 @@ class CollectionDisplay(object):
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def set_view_mgs(self, mgids=[]):
-        view_ids = []
-        if mgids:
-            view_ids = filter(lambda x: x.id in mgids, self.mgs)
-        self._view_ids = view_ids
+    def set_display_mgs(self, ids=[]):
+        display_ids = []
+        if ids:
+            display_ids = filter(lambda x: x.id in ids, self.mgs)
+        self._display_ids = display_ids
         src = """
         (function() {
-            """+self._col_widget+'.sub_mgs = '+(json.dumps(view_ids) if view_ids else '[]')+""";
+            """+self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if view_ids else '[]')+""";
         });
         """
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
     def annotation(self, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
-        mgs = filter(lambda x: x.id in self._view_ids, self.mgs) if self._view_ids else self.mgs
+        mgs = filter(lambda x: x.id in self._display_ids, self.mgs) if self._display_ids else self.mgs
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
