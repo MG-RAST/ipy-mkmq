@@ -173,13 +173,11 @@ class CollectionDisplay(object):
         self._widget_div = 'col_div_'+random_str();
         html = "<div id='%s'>"%self._widget_div
         src = """
-        (function() {
-            Retina.load_widget("collection_overview").then( function() {
-                """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
-                """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
-                """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
-            });
-		})();
+        Retina.load_widget("collection_overview").then( function() {
+            """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
+            """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
+            """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
+        });
         """
         if Ipy.DEBUG:
             print src
@@ -191,11 +189,7 @@ class CollectionDisplay(object):
         if ids:
             display_ids = map(lambda y: y.id, filter(lambda x: x.id in ids, self.mgs))
         self._display_ids = display_ids
-        src = """
-        (function() {
-            """+self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if display_ids else '[]')+""";
-        })();
-        """
+        src = self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if display_ids else '[]')+';'
         if Ipy.DEBUG:
             print src
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
