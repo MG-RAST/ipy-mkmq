@@ -71,7 +71,12 @@ class Retina(object):
         if not target:
             target = 'mg_'+view+'_'+ipyTools.random_str()
         if arg_list:
-            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            clean_obj = ""
+            if viz_type == 'graph':
+                clean_obj = target+".btype = "+target+".type; delete "+target+".type;"
+            elif viz_type == 'table':
+                clean_obj = target+".issorted = "+target+".sorted; delete "+target+".sorted; "
+                clean_obj += target+".filtertypes = "+target+".filter; delete "+target+".filter;"
             src = """
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
@@ -129,7 +134,12 @@ class Retina(object):
         if not target:
             target = 'col_'+view+'_'+ipyTools.random_str()
         if arg_list:
-            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            clean_obj = ""
+            if viz_type == 'graph':
+                clean_obj = target+".btype = "+target+".type; delete "+target+".type;"
+            elif viz_type == 'table':
+                clean_obj = target+".issorted = "+target+".sorted; delete "+target+".sorted; "
+                clean_obj += target+".filtertypes = "+target+".filter; delete "+target+".filter;"
             src = """
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
