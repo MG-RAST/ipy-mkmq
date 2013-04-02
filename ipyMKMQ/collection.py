@@ -193,7 +193,7 @@ class CollectionDisplay(object):
         self._display_ids = display_ids
         src = """
         (function() {
-            """+self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if view_ids else '[]')+""";
+            """+self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if display_ids else '[]')+""";
         });
         """
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
