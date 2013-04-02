@@ -71,12 +71,19 @@ class Retina(object):
         if not target:
             target = 'mg_'+view+'_'+ipyTools.random_str()
         if arg_list:
-            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            clean_obj = ""
+            if viz_type == 'graph':
+                clean_obj = target+".btype = "+target+".type; delete "+target+".type;"
+            elif viz_type == 'table':
+                clean_obj = target+".issorted = "+target+".sorted; delete "+target+".sorted; "
+                clean_obj += target+".filtertypes = "+target+".filter; delete "+target+".filter;"
             src = """
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
-			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+			        var new_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(new_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(new_idx);
                 })();
 		    """
         else:
@@ -127,12 +134,19 @@ class Retina(object):
         if not target:
             target = 'col_'+view+'_'+ipyTools.random_str()
         if arg_list:
-            clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
+            clean_obj = ""
+            if viz_type == 'graph':
+                clean_obj = target+".btype = "+target+".type; delete "+target+".type;"
+            elif viz_type == 'table':
+                clean_obj = target+".issorted = "+target+".sorted; delete "+target+".sorted; "
+                clean_obj += target+".filtertypes = "+target+".filter; delete "+target+".filter;"
             src = """
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
-			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+			        var new_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(new_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(new_idx);
                 })();
 		    """
         else:
@@ -285,7 +299,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def plot(self, width=800, height=400, target="", data=None, title="", show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title=""):
+    def plot(self, width=800, height=400, target="", data=None, title="", chartArea=None, legendArea=None, show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title="", x_titleOffset=35, y_titleOffset=45, titleOffset=0, y_scale='linear', x_scale='linear'):
     	"""  Plot Renderer
 
       Displays a two dimensional plot.
@@ -363,7 +377,12 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s', x_titleOffset: %f, y_titleOffset: %f, titleOffset: %f, x_scale: '%s', y_scale: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title, x_titleOffset, y_titleOffset, titleOffset, x_scale, y_scale)
+        
+        if chartArea:
+            opt += ", chartArea: "+json.dumps(chartArea)
+        if legendArea:
+            opt += ", legendArea: "+json.dumps(legendArea)        
         src = """
 			(function(){
 				Retina.load_renderer("plot").then( function () { Retina.Renderer.create('plot', {""" + opt + """}).render(); });

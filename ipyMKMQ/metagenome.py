@@ -57,9 +57,11 @@ class Metagenome(object):
         if cache and os.path.isfile(self._mgfile):
             # load from cache
             metagenome = self._load_cache('metagenome '+mgid, self._mgfile)
+            print "Loading metagenome %s from cached file"%mgid
         if metagenome is None:
             # load from api
             metagenome = self._get_metagenome(mgid)
+            print "Loading metagenome %s through API"%mgid
             if metagenome and cache and os.path.isdir(Ipy.CCH_DIR):
                 self._save_cache(metagenome, 'metagenome '+mgid, self._mgfile)
         if metagenome is not None:
