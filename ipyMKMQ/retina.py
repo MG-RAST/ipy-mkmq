@@ -129,22 +129,18 @@ class Retina(object):
         if arg_list:
             clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
             src = """
-			    (function(){
-			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
-			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
-			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
-                })();
+			    var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
+			    var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
+			    ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
 		    """
         else:
             html = "<div id='%s'></div>"%(target)
             src = """
-			    (function(){
-			        var """+target+""" = """+widget+"""."""+function+""";
-			        """+target+""".target = document.getElementById('"""+target+"""');
-				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
-				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
-				    });
-                })();
+			    var """+target+""" = """+widget+"""."""+function+""";
+			    """+target+""".target = document.getElementById('"""+target+"""');
+				Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
+				    Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
+				});
 		    """
         if self.debug:
             print src
