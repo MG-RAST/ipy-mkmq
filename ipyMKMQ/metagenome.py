@@ -235,18 +235,27 @@ class MetagenomeDisplay(object):
             sys.stderr.write("Error producing annotation chart\n")
             
     def bp_histogram(self, arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display bp histogram graph for Amplicon datasets.\n")
+            return
         try:
             Ipy.RETINA.metagenome(widget=self._mg_widget, view='bp_histogram', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing bp histogram\n")
             
     def drisee(self, arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display drisee plot for Amplicon datasets.\n")
+            return
         try:
             Ipy.RETINA.metagenome(widget=self._mg_widget, view='drisee', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing drisee plot\n")
             
     def kmer(self, kmer='abundance', arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display kmer profile for Amplicon datasets.\n")
+            return
         try:
             Ipy.RETINA.metagenome(widget=self._mg_widget, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
         except:
@@ -265,12 +274,18 @@ class MetagenomeDisplay(object):
             sys.stderr.write("Error producing rank abundance plot\n")
             
     def mixs(self, arg_list=False, target=None):
+        if not hasattr(self.mg, 'migs'):
+            sys.stderr.write("No MIxS metadata available to display.\n")
+            return
         try:
             Ipy.RETINA.metagenome(widget=self._mg_widget, view='mixs', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing mixs metadata table\n")
             
     def metadata(self, arg_list=False, target=None):
+        if not hasattr(self.mg, 'metadata'):
+            sys.stderr.write("No metadata available to display.\n")
+            return
         try:
             Ipy.RETINA.metagenome(widget=self._mg_widget, view='metadata', arg_list=arg_list, target=target)
         except:

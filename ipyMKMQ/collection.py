@@ -2,6 +2,7 @@
 
 import sys, os, hashlib, traceback
 from collections import defaultdict
+import IPython.core.display
 from metagenome import Metagenome
 from ipyTools import *
 from qc import Rarefaction

@@ -33,11 +33,11 @@ class Retina(object):
 		"""
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
-    def metagenome(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', widget=None, arg_list=False, target=None):
+    def metagenome(self, view='summary_chart', annotation='organism', level='domain', source='Subsystems', kmer='abundance', widget=None, arg_list=False, target=None):
         """Displays Metagenome Overview Widget visualizations in given target based on given widget function and name."""
         if not widget:
             sys.stderr.write("Error: No metagenome widget name provided\n")
-            return None
+            return
         function, viz_type = '', ''        
         sub_ann = ''
         if annotation == 'organism':
@@ -53,21 +53,19 @@ class Retina(object):
             function, viz_type = 'analysis_statistics('+widget+'.index)', 'paragraph'
         elif view == 'annotation_chart':
             function, viz_type = 'annotation_piechart('+widget+'.index, '+annotation+', '+sub_ann+')', 'graph'
-        elif (view == 'bp_histogram') and (metagenome.sequence_type != 'Amplicon'):
+        elif view == 'bp_histogram':
             function, viz_type = 'bp_areagraph('+widget+'.index)', 'graph'
-        elif ((view == 'drisee') or (view == 'kmer')) and (metagenome.sequence_type != 'Amplicon'):
+        elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
             function, viz_type = 'mg_plot('+widget+'.index, "'+view+'", "'+kmer+'")', 'plot'
-        elif view == 'rarefaction':
-            function, viz_type = 'mg_plot('+widget+'.index, "'+view+'")', 'plot'
         elif view == 'rank_abundance':
             function, viz_type = 'taxon_linegraph('+widget+'.index, "'+level+'", 50)', 'graph'
         elif view == 'mixs':
             function, viz_type = 'migs_metadata('+widget+'.index, true)', 'paragraph'
-        elif (view == 'metadata') and ('metadata' in mg_dict):
+        elif view == 'metadata':
             function, viz_type = 'metadata_table('+widget+'.index)', 'table'
         else:
-            sys.stderr.write("No visualization available for type '%s'%s"%(view, ' for Amplicon datasets\n' if metagenome.sequence_type == 'Amplicon' else '\n'))
-            return None
+            sys.stderr.write("No visualization available for type '%s'\n"%view)
+            return
         
         html = None
         if not target:
@@ -103,7 +101,7 @@ class Retina(object):
         """Displays Metagenome Collection Widget visualizations in given target based on given widget function and metagenome objects."""
         if not widget:
             sys.stderr.write("Error: No collection widget name provided\n")
-            return None
+            return
         function, viz_type = '', ''
         sub_ann = ''
         if annotation == 'organism':
@@ -123,7 +121,7 @@ class Retina(object):
             function, viz_type = 'mgs_plot('+widget+'.index, "'+view+'", "'+kmer+'")', 'plot'
         else:
             sys.stderr.write("No visualization available for type '%s'\n"%view)
-            return None
+            return
         
         html = None
         if not target:
