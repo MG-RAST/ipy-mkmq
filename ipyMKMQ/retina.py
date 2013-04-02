@@ -76,7 +76,9 @@ class Retina(object):
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
-			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+			        var new_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(new_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(new_idx);
                 })();
 		    """
         else:
@@ -132,7 +134,9 @@ class Retina(object):
 			    (function(){
 			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
-			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
+			        var new_idx = ipy.add_cell(undefined, 'code', 'above');
+			        ipy.write_cell(new_idx, '"""+target+""" = '+ipy_cmd);
+			        ipy.execute_cell(new_idx);
                 })();
 		    """
         else:
