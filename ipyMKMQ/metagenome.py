@@ -165,6 +165,8 @@ class MetagenomeDisplay(object):
                 """+self._mg_widget+""".curr_mg_stats = """+json.dumps(self.mg.stats)+""";
 			});
         """
+        if Ipy.DEBUG:
+            print src
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
