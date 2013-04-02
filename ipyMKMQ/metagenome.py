@@ -163,7 +163,7 @@ class MetagenomeDisplay(object):
                 """+self._mg_widget+""" = Retina.Widget.create('metagenome_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
                 """+self._mg_widget+""".curr_mg = """+json.dumps(self.mg._mg_dict())+""";
                 """+self._mg_widget+""".curr_mg_stats = """+json.dumps(self.mg.stats)+""";
-			});
+			})();
         """
         if Ipy.DEBUG:
             print src

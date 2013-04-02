@@ -177,7 +177,7 @@ class CollectionDisplay(object):
                 """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
                 """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
                 """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
-			});
+			})();
         """
         if Ipy.DEBUG:
             print src
