@@ -169,10 +169,11 @@ class CollectionDisplay(object):
                 pass
         self.defined_name = def_name
         # load and create instance of metagenome widget
-        self._col_widget = 'window.col_widget_'+random_str();
+        self._col_widget = 'col_widget_'+random_str();
         self._widget_div = 'col_div_'+random_str();
         html = "<div id='%s'>"%self._widget_div
         src = """
+        var """+self._col_widget+""";
         Retina.load_widget("collection_overview").then( function() {
             """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
         });"""
