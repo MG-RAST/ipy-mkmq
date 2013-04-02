@@ -189,7 +189,7 @@ class CollectionDisplay(object):
     def set_display_mgs(self, ids=[]):
         display_ids = []
         if ids:
-            display_ids = filter(lambda x: x.id in ids, self.mgs)
+            display_ids = map(lambda y: y.id, filter(lambda x: x.id in ids, self.mgs))
         self._display_ids = display_ids
         src = """
         (function() {
