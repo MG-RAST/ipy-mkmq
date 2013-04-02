@@ -16,9 +16,6 @@ class Retina(object):
                         self.rjs+'ipy.js' ]
         self.renderer_resource = ipyTools.Ipy.RETINA_URL+"/renderers/"
         self.widget_resource = ipyTools.Ipy.RETINA_URL+"/widgets/"
-        self.mg_widget = 'window.mg_widget'
-        self.col_widget = 'window.col_widget'
-        html = "<div id='mg_widget_div'></div><div id='col_widget_div'></div>"
         src = """
             (function(){
 			    Retina.init( { library_resource: '"""+self.rjs+"""'});
@@ -31,27 +28,17 @@ class Retina(object):
 			    Retina.add_renderer({"name": "deviationplot", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.deviationplot.js'});
 			    Retina.add_renderer({"name": "listselect", "resource": '"""+self.renderer_resource+"""', "filename": 'renderer.listselect.js'});
 				Retina.add_widget({"name": "metagenome_overview", "resource": '"""+self.widget_resource+"""', "filename": "widget.metagenome_overview.js"});
-				Retina.load_widget("metagenome_overview").then( function() {
-				    """+self.mg_widget+""" = Retina.Widget.create('metagenome_overview', {"target": document.getElementById("mg_widget_div")}, true);
-				});
 				Retina.add_widget({"name": "collection_overview", "resource": '"""+self.widget_resource+"""', "filename": "widget.collection_overview.js"});
-				Retina.load_widget("collection_overview").then( function() {
-				    """+self.col_widget+""" = Retina.Widget.create('collection_overview', {"target": document.getElementById("col_widget_div")}, true);
-				});
 			})();
 		"""
-        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src, lib=self.rlibs))
     
-    def metagenome(self, view='summary_chart', annotation='organism', level='domain', kmer='abundance', metagenome=None, arg_list=False, target=None):
-        """Displays Metagenome Overview Widget visualizations in given target based on given widget function and metagenome."""
-        function, viz_type = '', ''
-        mg_stats = metagenome.stats
-        mg_dict  = {}
-        for k, v in vars(metagenome).items():
-            if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
-                mg_dict[k] = v
-        
+    def metagenome(self, view='summary_chart', annotation='organism', level='domain', source='Subsystems', kmer='abundance', widget=None, arg_list=False, target=None):
+        """Displays Metagenome Overview Widget visualizations in given target based on given widget function and name."""
+        if not widget:
+            sys.stderr.write("Error: No metagenome widget name provided\n")
+            return
+        function, viz_type = '', ''        
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -61,27 +48,24 @@ class Retina(object):
             sub_ann = source
         
         if view == 'summary_chart':
-            function, viz_type = 'summary_piechart('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'graph'
+            function, viz_type = 'summary_piechart('+widget+'.index)', 'graph'
         elif view == 'summary_stats':
-            function, viz_type = 'analysis_statistics('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+')', 'paragraph'
+            function, viz_type = 'analysis_statistics('+widget+'.index)', 'paragraph'
         elif view == 'annotation_chart':
-            function, viz_type = 'annotation_piechart('+json.dumps(mg_stats)+', '+annotation+', '+sub_ann+')', 'graph'
-        elif (view == 'bp_histogram') and (metagenome.sequence_type != 'Amplicon'):
-            bp_per = mg_stats['qc']['bp_profile']['percents']
-            function, viz_type = 'bp_areagraph('+json.dumps(bp_per['columns'])+', '+json.dumps(bp_per['data'])+')', 'graph'
-        elif ((view == 'drisee') or (view == 'kmer')) and (metagenome.sequence_type != 'Amplicon'):
-            function, viz_type = 'mg_plot('+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
-        elif view == 'rarefaction':
-            function, viz_type = 'mg_plot('+json.dumps(mg_stats)+', "'+view+'")', 'plot'
+            function, viz_type = 'annotation_piechart('+widget+'.index, '+annotation+', '+sub_ann+')', 'graph'
+        elif view == 'bp_histogram':
+            function, viz_type = 'bp_areagraph('+widget+'.index)', 'graph'
+        elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
+            function, viz_type = 'mg_plot('+widget+'.index, "'+view+'", "'+kmer+'")', 'plot'
         elif view == 'rank_abundance':
-            function, viz_type = 'taxon_linegraph('+json.dumps(mg_stats['taxonomy'])+', "'+level+'", 50)', 'graph'
+            function, viz_type = 'taxon_linegraph('+widget+'.index, "'+level+'", 50)', 'graph'
         elif view == 'mixs':
-            function, viz_type = 'migs_metadata('+json.dumps(mg_dict)+', '+json.dumps(mg_stats)+', true)', 'paragraph'
-        elif (view == 'metadata') and ('metadata' in mg_dict):
-            function, viz_type = 'metadata_table('+json.dumps(mg_dict['metadata'])+')', 'table'
+            function, viz_type = 'migs_metadata('+widget+'.index, true)', 'paragraph'
+        elif view == 'metadata':
+            function, viz_type = 'metadata_table('+widget+'.index)', 'table'
         else:
-            sys.stderr.write("No visualization available for type '%s'%s"%(view, ' for Amplicon datasets\n' if metagenome.sequence_type == 'Amplicon' else '\n'))
-            return None
+            sys.stderr.write("No visualization available for type '%s'\n"%view)
+            return
         
         html = None
         if not target:
@@ -90,7 +74,7 @@ class Retina(object):
             clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
             src = """
 			    (function(){
-			        var """+target+""" = """+self.mg_widget+"""."""+function+"""; """+clean_obj+"""
+			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace("true", "True").replace("false", "False");
 			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
                 })();
@@ -99,7 +83,7 @@ class Retina(object):
             html = "<div id='%s'></div>"%(target)
             src = """
 			    (function(){
-			        var """+target+""" = """+self.mg_widget+"""."""+function+""";
+			        var """+target+""" = """+widget+"""."""+function+""";
 			        """+target+""".target = document.getElementById('"""+target+"""');
 				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
 				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();
@@ -113,19 +97,12 @@ class Retina(object):
                 IPython.core.display.display_html(IPython.core.display.HTML(data=html))
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
-    def collection(self, view='summary_chart', annotation='organism', level='domain', source='Subsystems', kmer='abundance', metagenomes=[], arg_list=False, target=None):
+    def collection(self, view='summary_chart', annotation='organism', level='domain', source='Subsystems', kmer='abundance', widget=None, arg_list=False, target=None):
         """Displays Metagenome Collection Widget visualizations in given target based on given widget function and metagenome objects."""
+        if not widget:
+            sys.stderr.write("Error: No collection widget name provided\n")
+            return
         function, viz_type = '', ''
-        mgs = []
-        mg_stats = []
-        for m in metagenomes:
-            mg_dict = {}
-            for k, v in vars(m).items():
-                if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
-                    mg_dict[k] = v
-            mgs.append(mg_dict)
-            mg_stats.append(m.stats)
-        
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -135,16 +112,16 @@ class Retina(object):
             sub_ann = source    
 
         if view == 'summary_chart':
-            function, viz_type = 'summary_stackcolumn('+json.dumps(mgs)+', '+json.dumps(mg_stats)+')', 'graph'
+            function, viz_type = 'summary_stackcolumn('+widget+'.index)', 'graph'
         elif view == 'annotation_chart':
-            function, viz_type = 'annotation_barchart('+json.dumps(mg_stats)+', "'+annotation+'", "'+sub_ann+'")', 'graph'
+            function, viz_type = 'annotation_barchart('+widget+'.index, "'+annotation+'", "'+sub_ann+'")', 'graph'
         elif (view == 'summary_stats') or (view == 'mixs') or (view == 'metadata'):
-            function, viz_type = 'build_table('+json.dumps(mgs)+', '+json.dumps(mg_stats)+', "'+view+'")', 'table'
+            function, viz_type = 'build_table('+widget+'.index, "'+view+'")', 'table'
         elif (view == 'drisee') or (view == 'kmer') or (view == 'rarefaction'):
-            function, viz_type = 'mgs_plot('+json.dumps(mg_stats)+', "'+view+'", "'+kmer+'")', 'plot'
+            function, viz_type = 'mgs_plot('+widget+'.index, "'+view+'", "'+kmer+'")', 'plot'
         else:
             sys.stderr.write("No visualization available for type '%s'\n"%view)
-            return None
+            return
         
         html = None
         if not target:
@@ -153,7 +130,7 @@ class Retina(object):
             clean_obj = target+".btype = "+target+".type; delete "+target+".type;" if viz_type == 'graph' else ""
             src = """
 			    (function(){
-			        var """+target+""" = """+self.col_widget+"""."""+function+"""; """+clean_obj+"""
+			        var """+target+""" = """+widget+"""."""+function+"""; """+clean_obj+"""
 			        var ipy_cmd = JSON.stringify("""+target+""").replace(/true/g, "True").replace(/false/g, "False");
 			        ipy.write_cell(ipy.add_cell(undefined, 'code', 'above'), '"""+target+""" = '+ipy_cmd);
                 })();
@@ -162,7 +139,7 @@ class Retina(object):
             html = "<div id='%s'></div>"%(target)
             src = """
 			    (function(){
-			        var """+target+""" = """+self.col_widget+"""."""+function+""";
+			        var """+target+""" = """+widget+"""."""+function+""";
 			        """+target+""".target = document.getElementById('"""+target+"""');
 				    Retina.load_renderer(\""""+viz_type+"""\").then( function () { 
 				        Retina.Renderer.create('"""+viz_type+"""', """+target+""").render();

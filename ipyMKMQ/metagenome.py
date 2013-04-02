@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, json, traceback
+import IPython.core.display
 from ipyTools import *
 
 class Metagenome(object):
@@ -46,12 +47,13 @@ class Metagenome(object):
 	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
 	    "display"    : 'MetagenomeDisplay Object - help(this_name.display)'
     """
-    def __init__(self, mgid, stats=True, auth=None, def_name=None, cache=False):
+    def __init__(self, mgid, stats=True, display=True, auth=None, def_name=None, cache=False):
         self._mgfile = Ipy.CCH_DIR+'/'+mgid+'.json'
         self._statfile = Ipy.CCH_DIR+'/'+mgid+'.stats.json'
-        self._auth  = auth
-        self.stats  = None
-        metagenome  = None
+        self._auth   = auth
+        self.stats   = None
+        self.display = None
+        metagenome   = None
         if cache and os.path.isfile(self._mgfile):
             # load from cache
             metagenome = self._load_cache('metagenome '+mgid, self._mgfile)
@@ -87,7 +89,8 @@ class Metagenome(object):
                 pass
         self.defined_name = def_name
         # set display
-        self.display = MetagenomeDisplay(self, self.defined_name+'.display')
+        if display and metagenome:
+            self.display = MetagenomeDisplay(self, self.defined_name+'.display')
     
     def _load_cache(self, ctype, cfile):
         # try load from cache if given
@@ -108,6 +111,13 @@ class Metagenome(object):
                 sys.stdout.write("%s saved to cached file (%s)\n"%(ctype, cfile))
         except:
             sys.stderr.write("ERROR: unable to save %s to cached file (%s)\n"%(ctype, cfile))
+    
+    def _mg_dict(self):
+        mg_dict = {}
+        for k, v in vars(self).items():
+            if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
+                mg_dict[k] = v
+        return mg_dict
     
     def _get_metagenome(self, mgid):
         if Ipy.DEBUG:
@@ -143,6 +153,23 @@ class MetagenomeDisplay(object):
             except:
                 pass
         self.defined_name = def_name
+        # load and create instance of metagenome widget
+        self._mg_widget = 'window.mg_widget_'+random_str();
+        self._widget_div = 'mg_div_'+random_str();
+        html = "<div id='%s'>"%self._widget_div
+        src = """
+        (function() {
+            Retina.load_widget("metagenome_overview").then( function() {
+                """+self._mg_widget+""" = Retina.Widget.create('metagenome_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
+                """+self._mg_widget+""".curr_mg = """+json.dumps(self.mg._mg_dict())+""";
+                """+self._mg_widget+""".curr_mg_stats = """+json.dumps(self.mg.stats)+""";
+            });
+		})();
+        """
+        if Ipy.DEBUG:
+            print src
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
     def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None, arg_list=False):
         if self.mg.stats is None:
@@ -194,60 +221,75 @@ class MetagenomeDisplay(object):
     
     def summary_chart(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_chart', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='summary_chart', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary chart\n")
     
     def summary_stats(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='summary_stats', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='summary_stats', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary stats\n")
             
     def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             
     def bp_histogram(self, arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display bp histogram graph for Amplicon datasets.\n")
+            return
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='bp_histogram', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='bp_histogram', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing bp histogram\n")
             
     def drisee(self, arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display drisee plot for Amplicon datasets.\n")
+            return
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='drisee', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='drisee', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing drisee plot\n")
             
     def kmer(self, kmer='abundance', arg_list=False, target=None):
+        if self.mg.sequence_type == 'Amplicon':
+            sys.stderr.write("Unable to display kmer profile for Amplicon datasets.\n")
+            return
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing kmer plot\n")
             
     def rarefaction(self, arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='rarefaction', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='rarefaction', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rarefaction plot\n")
             
     def rank_abundance(self, level='domain', arg_list=False, target=None):
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='rank_abundance', level=level, arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='rank_abundance', level=level, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rank abundance plot\n")
             
     def mixs(self, arg_list=False, target=None):
+        if not hasattr(self.mg, 'migs'):
+            sys.stderr.write("No MIxS metadata available to display.\n")
+            return
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='mixs', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='mixs', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing mixs metadata table\n")
             
     def metadata(self, arg_list=False, target=None):
+        if not hasattr(self.mg, 'metadata'):
+            sys.stderr.write("No metadata available to display.\n")
+            return
         try:
-            Ipy.RETINA.metagenome(metagenome=self.mg, view='metadata', arg_list=arg_list, target=target)
+            Ipy.RETINA.metagenome(widget=self._mg_widget, view='metadata', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing full metadata table\n")
