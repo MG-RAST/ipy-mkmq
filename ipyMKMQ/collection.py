@@ -63,6 +63,7 @@ class Collection(object):
             keyArgs = { 'stats': self._stats,
                         'auth': self._auth,
                         'cache': cache,
+                        'display': False,
                         'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
                        }
             mgs[mg] = Metagenome(mg, **keyArgs)
@@ -156,7 +157,7 @@ class CollectionDisplay(object):
     """
     def __init__(self, mgs, def_name=None):
         self.mgs = mgs
-        self.mgids = map(lambda x: x.id, mgs)
+        self._view_ids = []
         # hack to get variable name
         if def_name == None:
             try:
@@ -165,15 +166,35 @@ class CollectionDisplay(object):
             except:
                 pass
         self.defined_name = def_name
+        # load and create instance of metagenome widget
+        self._col_widget = 'window.col_widget_'+random_str();
+        self._widget_div = 'col_div_'+random_str();
+        html = "<div id='%s'>"%self._widget_div
+        src = """
+        (function() {
+            Retina.load_widget("collection_overview").then( function() {
+                """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
+                """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
+                """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
+			});
+        """
+        IPython.core.display.display_html(IPython.core.display.HTML(data=html))
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def _sub_mgs(self, mgids):
-        if (not mgids) or (len(mgids) == 0):
-            return self.mgs
-        sub_mgs = filter(lambda x: x.id in mgids, self.mgs)
-        return sub_mgs if len(sub_mgs) > 0 else self.mgs
+    def set_view_mgs(self, mgids=[]):
+        view_ids = []
+        if mgids:
+            view_ids = filter(lambda x: x.id in mgids, self.mgs)
+        self._view_ids = view_ids
+        src = """
+        (function() {
+            """+self._col_widget+'.sub_mgs = '+(json.dumps(view_ids) if view_ids else '[]')+""";
+        });
+        """
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def annotation(self, mgids=None, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
-        mgs = self._sub_mgs(mgids)
+    def annotation(self, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
+        mgs = filter(lambda x: x.id in self._view_ids, self.mgs) if self._view_ids else self.mgs
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -232,58 +253,50 @@ class CollectionDisplay(object):
                 sys.stderr.write("Error producing %s chart"%annotation)
             return None
         
-    def summary_chart(self, mgids=None, arg_list=False, target=None):
+    def summary_chart(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='summary_chart', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='summary_chart', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary chart\n")
 
-    def summary_stats(self, mgids=None, arg_list=False, target=None):
+    def summary_stats(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='summary_stats', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='summary_stats', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing summary stats\n")
             
-    def annotation_chart(self, mgids=None, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
+    def annotation_chart(self, annotation='organism', level='domain', source='Subsystems', arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='annotation_chart', annotation=annotation, level=level, source=source, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing annotation chart\n")
             
-    def drisee(self, mgids=None, arg_list=False, target=None):
+    def drisee(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='drisee', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='drisee', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing drisee plot\n")
             
-    def kmer(self, mgids=None, kmer='abundance', arg_list=False, target=None):
+    def kmer(self, kmer='abundance', arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='kmer', kmer=kmer, arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing kmer plot\n")
             
-    def rarefaction(self, mgids=None, arg_list=False, target=None):
+    def rarefaction(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='rarefaction', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='rarefaction', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing rarefaction plot\n")
             
-    def mixs(self, mgids=None, arg_list=False, target=None):
+    def mixs(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='mixs', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='mixs', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing mixs metadata table\n")
             
-    def metadata(self, mgids=None, arg_list=False, target=None):
+    def metadata(self, arg_list=False, target=None):
         try:
-            mgs = self._sub_mgs(mgids)
-            Ipy.RETINA.collection(metagenomes=mgs, view='metadata', arg_list=arg_list, target=target)
+            Ipy.RETINA.collection(widget=self._col_widget, view='metadata', arg_list=arg_list, target=target)
         except:
             sys.stderr.write("Error producing full metadata table\n")
