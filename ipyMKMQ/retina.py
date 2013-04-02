@@ -285,7 +285,7 @@ class Retina(object):
         else:
             IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
-    def plot(self, width=800, height=400, target="", data=None, title="", chartArea=None, legendArea=None, show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title="", x_titleOffset=35, y_titleOffset=45, titleOffset=0):
+    def plot(self, width=800, height=400, target="", data=None, title="", chartArea=None, legendArea=None, show_legend=True, legend_position='right', connected=True, show_dots=True, x_min=0, x_max=100, y_min=0, y_max=100, x_title="", y_title="", x_titleOffset=35, y_titleOffset=45, titleOffset=0, y_scale='linear', x_scale='linear'):
     	"""  Plot Renderer
 
       Displays a two dimensional plot.
@@ -363,7 +363,7 @@ class Retina(object):
         else:
             data = json.dumps(data)
         
-        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s', x_titleOffset: %f, y_titleOffset: %f, titleOffset: %f"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title, x_titleOffset, y_titleOffset, titleOffset)
+        opt = "width: %d, height: %d, target: document.getElementById('%s'), data: %s, title: '%s', show_legend: %s, legend_position: '%s', connected: %s, show_dots: %s, x_min: %f, x_max: %f, y_min: %f, y_max: %f, x_title: '%s', y_title: '%s', x_titleOffset: %f, y_titleOffset: %f, titleOffset: %f, x_scale: '%s', y_scale: '%s'"%(width, height, target, data, title, self._bool(show_legend), legend_position, self._bool(connected), self._bool(show_dots), x_min, x_max, y_min, y_max, x_title, y_title, x_titleOffset, y_titleOffset, titleOffset, x_scale, y_scale)
         
         if chartArea:
             opt += ", chartArea: "+json.dumps(chartArea)
