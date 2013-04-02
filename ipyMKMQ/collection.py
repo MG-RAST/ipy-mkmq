@@ -194,8 +194,10 @@ class CollectionDisplay(object):
         src = """
         (function() {
             """+self._col_widget+'.sub_mgs = '+(json.dumps(display_ids) if display_ids else '[]')+""";
-        });
+        })();
         """
+        if Ipy.DEBUG:
+            print src
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
     def annotation(self, annotation='organism', level='domain', source='Subsystems', title='', parent=None, arg_list=False):
