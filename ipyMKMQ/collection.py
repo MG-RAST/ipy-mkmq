@@ -175,12 +175,13 @@ class CollectionDisplay(object):
         src = """
         Retina.load_widget("collection_overview").then( function() {
             """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
-            """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
-            """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
-        });
-        """
+        });"""
+#            """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
+#            """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
+#        });
+#        """
         if Ipy.DEBUG:
-            print src
+            print html, src
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
 
