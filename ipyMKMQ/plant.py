@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import hashlib, traceback
+import hashlib, traceback, math
 import expression, genopheno, networks, ontology
 from ipyTools import *
 
@@ -41,7 +41,7 @@ class Plant(object):
     self.ONTOLOGY    : ontology.Ontology object
     self.experiments : result of self.GENOPHENO.get_experiments(self.genome_id)
     self.traits      : result of self.GENOPHENO.get_traits(self.experiments[1][0])
-    
+    self.display     : PlantDisplay Object - help(this_name.display)
     """
     def __init__(self, genome_id=None, def_name=None):
         self.genome_id   = genome_id
@@ -58,22 +58,42 @@ class Plant(object):
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
+        self.display = PlantDisplay(self, self.defined_name+'.display')
 
     def set_traits(self, genome_id):
         self.experiments = self.GENOPHENO.get_experiments(genome_id)
         self.traits = self.GENOPHENO.get_traits(self.experiments[1][0])
 
-    def show_traits(self, genome_id=None, width=700, height=600, page_rows=10, arg_list=False):
-        if (not self.traits) and genome_id:
-            self.genome_id = genome_id
-            self.set_traits(genome_id)
-        if not self.traits:
+    def get_variations(self, count=5):
+        return self.GENOPHENO.traits_to_variations(self.traits[0], count)
+            
+class PlantDisplay(object):
+    """Class containing functions to display plant visualizations:
+        traits      : table of trait data
+        variations  : manhattan plot of variation data
+    """
+    def __init__(self, plant, def_name=None):
+        self.plant = plant
+        # hack to get variable name
+        if def_name == None:
+            try:
+                (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
+                def_name = text[:text.find('=')].strip()
+            except:
+                pass
+        self.defined_name = def_name
+    
+    def traits(self, genome_id=None, width=700, height=600, page_rows=10, arg_list=False):
+        if (not self.plant.traits) and genome_id:
+            self.plant.genome_id = genome_id
+            self.plant.set_traits(genome_id)
+        if not self.plant.traits:
             return None
         header = ["id", "description", "nothing", "some number"]
         keyArgs = { 'width': width,
                     'height': height,
                     'target': "trait_table_"+random_str(),
-                    'data': {'data': self.traits, 'header': header},
+                    'data': {'data': self.plant.traits, 'header': header},
                     'rows_per_page': page_rows }
         if Ipy.DEBUG:
             print keyArgs
@@ -86,12 +106,9 @@ class Plant(object):
                 sys.stderr.write("Error producing traits table\n")
             return None
 
-    def get_variations(self, count=5):
-        return self.GENOPHENO.traits_to_variations(self.traits[0], count)
-
-    def plot_variations(self, count=5, variations=None, title='', width=1100, height=400, x_min=0, x_max=None, y_min=0, y_max=None, arg_list=False):
+    def variations(self, count=5, variations=None, title='', width=1100, height=400, x_min=0, x_max=None, arg_list=False):
         if not variations:
-            variations = self.get_variations(count)
+            variations = self.plant.get_variations(count)
         colors  = google_palette(count)
         series  = []
         points  = []
@@ -113,18 +130,17 @@ class Plant(object):
                 offsets[i] = offsets[i-1] + lengths[i-1] + 1000000
         y_all = []
         for i in variations["variations"]:
-            y_all.append(toNum(i[2]))
-            points[i[0]].append({ "x": toNum(i[1] + offsets[i[0]]), "y": toNum(i[2]) })
+            y_log = (math.log(toNum(i[2])) / math.log(10)) * -1.0
+            y_all.append(y_log)
+            points[i[0]].append({ "x": toNum(i[1] + offsets[i[0]]), "y": y_log })
         if not x_max:
             x_max = offsets[count-1] + lengths[count-1]
-        if not y_max:
-            y_max = max(y_all)
         keyArgs = { 'width': width,
                     'height': height,
                     'x_min': x_min,
                     'x_max': x_max,
-                    'y_min': y_min,
-                    'y_max': y_max+(y_max*0.33),
+                    'y_min': min(y_all),
+                    'y_max': max(y_all),
                     'connected': False,
                     'show_dots': True,
                     'data': {"series": series, "points": points}
