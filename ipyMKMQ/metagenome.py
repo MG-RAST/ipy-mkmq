@@ -158,7 +158,7 @@ class MetagenomeDisplay(object):
         # load and create instance of metagenome widget
         self._mg_widget = 'window.mg_widget_'+random_str();
         self._widget_div = 'mg_div_'+random_str();
-        html = "<div id='%s'>"%self._widget_div
+        html = "<div id='%s'></div>"%self._widget_div
         src = """
         (function() {
             Retina.load_widget("metagenome_overview").then( function() {

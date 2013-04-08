@@ -171,7 +171,7 @@ class CollectionDisplay(object):
         # load and create instance of metagenome widget
         self._col_widget = 'window.col_widget_'+random_str();
         self._widget_div = 'col_div_'+random_str();
-        html = "<div id='%s'>"%self._widget_div
+        html = "<div id='%s'></div>"%self._widget_div
         src = """
         (function() {
             Retina.load_widget("collection_overview").then( function() {
