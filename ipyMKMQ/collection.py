@@ -53,10 +53,11 @@ class Collection(object):
             except:
                 pass
         self.defined_name = def_name
+        # set display
+        self.display = CollectionDisplay(def_name=self.defined_name+'.display')
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
-        # set display
-        self.display = CollectionDisplay(self.metagenomes.values(), self.defined_name+'.display')
+        self.display._populate_collection()
     
     def _get_metagenomes(self, cache):
         mgs = {}
@@ -68,6 +69,9 @@ class Collection(object):
                         'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
                        }
             mgs[mg] = Metagenome(mg, **keyArgs)
+            # add mg to display
+            if self.display:
+                self.display._add_mg(mgs[mg])
         return mgs
     
     def _set_statistics(self):
@@ -157,8 +161,8 @@ class CollectionDisplay(object):
         summary_chart     : barchart of summary sequence hits
         summary_stats     : table of summary statistics
     """
-    def __init__(self, mgs, def_name=None):
-        self.mgs = mgs
+    def __init__(self, def_name=None):
+        self.mgs = []
         self._display_ids = []
         # hack to get variable name
         if def_name == None:
@@ -171,13 +175,15 @@ class CollectionDisplay(object):
         # load and create instance of metagenome widget
         self._col_widget = 'window.col_widget_'+random_str();
         self._widget_div = 'col_div_'+random_str();
+        self._tmp_mgs = 'window.'+random_str();
+        self._stats = 'window.'+random_str();
         html = "<div id='%s'></div>"%self._widget_div
         src = """
         (function() {
+            """+self._tmp_mgs+""" = [];
+            """+self._stats+""" = [];
             Retina.load_widget("collection_overview").then( function() {
                 """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
-                """+self._col_widget+""".curr_mgs = """+json.dumps( map(lambda x: x._mg_dict(), self.mgs) )+""";
-                """+self._col_widget+""".curr_mg_stats = """+json.dumps( map(lambda x: x.stats, self.mgs) )+""";
             });
 		})();
         """
@@ -185,6 +191,27 @@ class CollectionDisplay(object):
             print src
         IPython.core.display.display_html(IPython.core.display.HTML(data=html))
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
+        
+    def _add_mg(self, mg):
+        self.mgs.append(mg)
+        func = """
+        (function() {
+            """+self._tmp_mgs+""".push("""+json.dumps( mg._mg_dict() )+""");
+            """+self._stats+""".push("""+json.dumps( mg.stats )+""");
+        })();
+        """
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
+
+    def _populate_collection(self):
+        func = """
+        (function() {
+            setTimeout(function() {
+                """+self._col_widget+""".curr_mgs = """+self._tmp_mgs+""";
+                """+self._col_widget+""".curr_mg_stats = """+self._stats+""";
+            },1000);
+        })();
+        """
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
 
     def set_display_mgs(self, ids=[]):
         display_ids = []
