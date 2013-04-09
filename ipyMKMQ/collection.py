@@ -205,8 +205,10 @@ class CollectionDisplay(object):
     def _populate_collection(self):
         func = """
         (function() {
-            """+self._col_widget+""".curr_mgs = """+self._tmp_mgs+""";
-            """+self._col_widget+""".curr_mg_stats = """+self._stats+""";
+            setTimeout(function() {
+                """+self._col_widget+""".curr_mgs = """+self._tmp_mgs+""";
+                """+self._col_widget+""".curr_mg_stats = """+self._stats+""";
+            },1000);
         })();
         """
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
