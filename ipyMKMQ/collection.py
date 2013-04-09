@@ -188,6 +188,7 @@ class CollectionDisplay(object):
         for mg in self.mgs:
             mg_load = """
             (function() {
+                while(typeof """+self._col_widget+""" == undefined){}
                 """+self._col_widget+""".curr_mgs.push("""+json.dumps( mg._mg_dict() )+""");
                 """+self._col_widget+""".curr_mg_stats.push("""+json.dumps( mg.stats )+""");
             })();
