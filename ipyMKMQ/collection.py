@@ -57,6 +57,7 @@ class Collection(object):
         self.display = CollectionDisplay(def_name=self.defined_name+'.display')
         # get metagenomes
         self.metagenomes = self._get_metagenomes(cache)
+        self.display._populate_collection()
     
     def _get_metagenomes(self, cache):
         mgs = {}
@@ -174,13 +175,15 @@ class CollectionDisplay(object):
         # load and create instance of metagenome widget
         self._col_widget = 'window.col_widget_'+random_str();
         self._widget_div = 'col_div_'+random_str();
+        self._tmp_mgs = 'window.'+random_str();
+        self._stats = 'window.'+random_str();
         html = "<div id='%s'></div>"%self._widget_div
         src = """
         (function() {
+            """+self._tmp_mgs+""" = [];
+            """+self._stats+""" = [];
             Retina.load_widget("collection_overview").then( function() {
                 """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
-                """+self._col_widget+""".curr_mgs = [];
-                """+self._col_widget+""".curr_mg_stats = [];
             });
 		})();
         """
@@ -191,13 +194,22 @@ class CollectionDisplay(object):
         
     def _add_mg(self, mg):
         self.mgs.append(mg)
-        mg_load = """
+        func = """
         (function() {
-            """+self._col_widget+""".curr_mgs.push("""+json.dumps( mg._mg_dict() )+""");
-            """+self._col_widget+""".curr_mg_stats.push("""+json.dumps( mg.stats )+""");
+            """+self._tmp_mgs+""".push("""+json.dumps( mg._mg_dict() )+""");
+            """+self._stats+""".push("""+json.dumps( mg.stats )+""");
         })();
         """
-        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=mg_load))
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
+
+    def _populate_collection(self):
+        func = """
+        (function() {
+            """+self._col_widget+""".curr_mgs = """+self._tmp_mgs+""";
+            """+self._col_widget+""".curr_mg_stats = """+self._stats+""";
+        })();
+        """
+        IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
 
     def set_display_mgs(self, ids=[]):
         display_ids = []
