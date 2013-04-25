@@ -11,8 +11,9 @@ class Retina(object):
         self.debug  = debug
         self.rjs    = ipyTools.Ipy.RETINA_URL+'/js/'
         self.rlibs  = [ self.rjs+'bootstrap.min.js',
-                        self.rjs+'retina.js',
+                        self.rjs+'config.js',
                         self.rjs+'stm.js',
+                        self.rjs+'retina.js',
                         self.rjs+'ipy.js' ]
         self.renderer_resource = ipyTools.Ipy.RETINA_URL+"/renderers/"
         self.widget_resource = ipyTools.Ipy.RETINA_URL+"/widgets/"
