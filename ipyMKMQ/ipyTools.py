@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from time import localtime, strftime
+from time import localtime, strftime, sleep
 from collections import defaultdict
 import os, sys, urllib, urllib2, json, pickle, copy, glob
 import string, random
@@ -175,10 +175,23 @@ def obj_from_url(url, auth=None):
     if obj is None:
         sys.stderr.write("ERROR (%s): return structure not valid json format\n"%url)
         return None
+    if len(obj.keys()) == 0:
+        sys.stderr.write("ERROR (%s): no data available\n"%url)
+        return None
     if 'ERROR' in obj:
         sys.stderr.write("ERROR (%s): %s\n"%(url, obj['ERROR']))
         return None
     return obj
+
+def async_rest_api(url, auth=None, delay=30):
+    submit = obj_from_url(url, auth)
+    if not (('status' in submit) and (submit['status'] == 'Submitted') and ('url' in submit)):
+        sys.stderr.write("ERROR: return data invalid format\n:%s"%json.dumps(submit))
+    result = obj_from_url(submit['url'])
+    while result['status'] != 'done':
+        sleep(delay)
+        result = obj_from_url(submit['url'])
+    return result['data']
 
 def slice_column(matrix, index):
     data = []
@@ -303,43 +316,6 @@ def rMatrix_to_pyMatrix(matrix, rmax, cmax):
 def random_str(size=8):
     chars = string.ascii_letters + string.digits
     return ''.join(random.choice(chars) for x in range(size))
-
-"""
-def sub_biom(b, text):
-    str_re = re.compile(text, re.IGNORECASE)
-    sBiom = { "generated_by": b['generated_by'],
-               "matrix_type": 'dense',
-               "date": strftime("%Y-%m-%dT%H:%M:%S", localtime()),
-               "data": [],
-               "rows": [],
-               "matrix_element_value": b['matrix_element_value'],
-               "matrix_element_type": b['matrix_element_type'],
-               "format_url": "http://biom-format.org",
-               "format": "Biological Observation Matrix 1.0",
-               "columns": b['columns'],
-               "id": b['id']+'_sub_'+text,
-               "type": b['type'],
-               "shape": [] }
-    hier = ''
-    if b['type'].startswith('Taxon'):
-        hier = 'taxonomy'
-    elif b['type'].startswith('Function'):
-        hier = 'ontology'
-    seen = set()
-    matrix = b['data'] if b['matrix_type'] == 'dense' else sparse_to_dense(b['data'], b['shape'][0], b['shape'][1])
-    for r, row in enumerate(b['rows']):
-        name = None
-        if row['metadata'] and hier and (hier in row['metadata']) and str_re.search(row['metadata'][hier][-1]):
-            name = row['metadata'][hier][-1]
-        elif str_re.search(row['id']):
-            name = row['id']
-        if (name is not None) and (name not in seen):
-            sBiom['data'].append(matrix[r])
-            sBiom['rows'].append(row)
-            seen.add(name)
-    sBiom['shape'] = [len(sBiom['rows']), b['shape'][1]]
-    return biom_remove_empty(sBiom)
-"""
 
 def merge_columns(b, merge_set):
     """input: 1. biom object, 2. merge_set -> { merge_name_1 : [list of col ids], merge_name_2 : [list of col ids], ... }
@@ -530,7 +506,7 @@ def get_hierarchy(htype='taxonomy', level='species', source='Subsystems', parent
         params.append(('source', source))
     if parent is not None:
         params.append(('parent_name', parent))
-    child = obj_from_url(Ipy.API_URL+'/m5nr/'+htype+'?'+urllib.urlencode(params, True))
+    child = obj_from_url(Ipy.API_URL+'/m5nr/'+htype+'?'+urllib.urlencode(params, True))['data']
     if not child:
         child = []
     return child
