@@ -279,7 +279,7 @@ class MetagenomeDisplay(object):
             sys.stderr.write("Error producing rank abundance plot\n")
             
     def mixs(self, arg_list=False, target=None):
-        if not hasattr(self.mg, 'migs'):
+        if not hasattr(self.mg, 'mixs'):
             sys.stderr.write("No MIxS metadata available to display.\n")
             return
         try:
