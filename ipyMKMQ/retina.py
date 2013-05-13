@@ -61,7 +61,7 @@ class Retina(object):
         elif view == 'rank_abundance':
             function, viz_type = 'taxon_linegraph('+widget+'.index, "'+level+'", 50)', 'graph'
         elif view == 'mixs':
-            function, viz_type = 'migs_metadata('+widget+'.index, true)', 'paragraph'
+            function, viz_type = 'mixs_metadata('+widget+'.index, true)', 'paragraph'
         elif view == 'metadata':
             function, viz_type = 'metadata_table('+widget+'.index)', 'table'
         else:
