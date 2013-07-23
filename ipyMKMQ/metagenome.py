@@ -11,15 +11,15 @@ class Metagenome(object):
         "library"  : [ 'reference library', 'reference to the related library object' ],
         "sample"   : [ 'reference sample',  'reference to the related sample object' ],
         "project"  : [ 'reference project', 'reference to the project object' ],
-        "metadata" : [ 'hash',    'key value pairs describing metadata' ],
+        "metadata" : [ 'hash',    'key value pairs describing all metadata' ],
+        "mixs"     : [ 'hash',    'key value pairs describing MIxS metadata' ]
         "created"  : [ 'date',    'time the object was first created' ],
         "version"  : [ 'integer', 'version of the object' ],
         "url"      : [ 'uri',     'resource location of this object instance' ],
         "status"   : [ 'cv', [ ['public', 'object is public'],
         					   ['private', 'object is private'] ] ],
         "sequence_type" : [ 'string', 'sequencing type' ],
-        "stats"      : "id" : [ 'string', 'unique metagenome id' ],
-                       "length_histogram" : { "upload" : [ 'list', 'length distribution of uploaded sequences' ],
+        "statistics" : "length_histogram" : { "upload" : [ 'list', 'length distribution of uploaded sequences' ],
                                               "post_qc" : [ 'list', 'length distribution of post-qc sequences' ] },
                        "gc_histogram" : { "upload" : [ 'list', 'gc % distribution of uploaded sequences' ],
                                           "post_qc" : [ 'list', 'gc % distribution of post-qc sequences' ] },
@@ -47,11 +47,9 @@ class Metagenome(object):
 	                   "rarefaction" : [ 'list', 'rarefaction coordinate data' ]
 	    "display"    : 'MetagenomeDisplay Object - help(this_name.display)'
     """
-    def __init__(self, mgid, stats=True, display=True, auth=None, def_name=None, cache=False):
+    def __init__(self, mgid, display=True, auth=None, def_name=None, cache=False):
         self._mgfile = Ipy.CCH_DIR+'/'+mgid+'.json'
-        self._statfile = Ipy.CCH_DIR+'/'+mgid+'.stats.json'
         self._auth   = auth
-        self.stats   = None
         self.display = None
         metagenome   = None
         if cache and os.path.isfile(self._mgfile):
@@ -72,16 +70,6 @@ class Metagenome(object):
             self.id = mgid
             self.name = None
             return
-        # get stats
-        if stats:
-            if cache and os.path.isfile(self._statfile):
-                # load from cache
-                self.stats = self._load_cache('metagenome '+mgid+' stats', self._statfile)
-            if self.stats is None:
-                # load from api
-                self._set_statistics()
-                if self.stats and cache and os.path.isdir(Ipy.CCH_DIR):
-                    self._save_cache(self.stats, 'metagenome '+mgid+' stats', self._statfile)
         # hack to get variable name
         if def_name == None:
             try:
@@ -117,7 +105,7 @@ class Metagenome(object):
     def _mg_dict(self):
         mg_dict = {}
         for k, v in vars(self).items():
-            if (not k.startswith('_')) and (k not in ['stats','display','defined_name']):
+            if (not k.startswith('_')) and (k not in ['display','defined_name']):
                 mg_dict[k] = v
         return mg_dict
     
@@ -125,11 +113,6 @@ class Metagenome(object):
         if Ipy.DEBUG:
             sys.stdout.write("Loading metagenome %s from API ...\n"%mgid)
         return obj_from_url(Ipy.API_URL+'/metagenome/'+mgid+'?verbosity=full', self._auth)
-
-    def _set_statistics(self):
-        if Ipy.DEBUG:
-            sys.stdout.write("Loading metagenome %s statistics from API ...\n"%self.id)
-        self.stats = obj_from_url(Ipy.API_URL+'/metagenome_statistics/'+self.id+'?verbosity=full', self._auth)
 
 class MetagenomeDisplay(object):
     """Class containing functions to display metagenome visualizations:
@@ -164,7 +147,6 @@ class MetagenomeDisplay(object):
             Retina.load_widget("metagenome_overview").then( function() {
                 """+self._mg_widget+""" = Retina.Widget.create('metagenome_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
                 """+self._mg_widget+""".curr_mg = """+json.dumps(self.mg._mg_dict())+""";
-                """+self._mg_widget+""".curr_mg_stats = """+json.dumps(self.mg.stats)+""";
             });
 		})();
         """
@@ -174,8 +156,6 @@ class MetagenomeDisplay(object):
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=src))
     
     def annotation(self, annotation='organism', level='domain', source='Subsystems', parent=None, arg_list=False):
-        if self.mg.stats is None:
-            self.mg._set_statistics()
         sub_ann = ''
         if annotation == 'organism':
             annotation = 'taxonomy'
@@ -184,13 +164,13 @@ class MetagenomeDisplay(object):
             annotation = 'ontology'
             sub_ann = source
         names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
-        colors = google_palette(len(self.mg.stats[annotation][sub_ann]))
+        colors = google_palette(len(self.mg.statistics[annotation][sub_ann]))
         data   = []
-        for i, d in enumerate(self.mg.stats[annotation][sub_ann]):
+        for i, d in enumerate(self.mg.statistics[annotation][sub_ann]):
             if (names is not None) and (d[0] not in names):
                 continue
             data.append({'name': d[0], 'data': [int(d[1])], 'fill': colors[i]})
-        annMax  = len(max(self.mg.stats[annotation][sub_ann], key=len))
+        annMax  = len(max(self.mg.statistics[annotation][sub_ann], key=len))
         pwidth  = 300;
     	pheight = 300;
     	lwidth  = max(300, int(annMax * 7.5));
