@@ -7,7 +7,7 @@ from metagenome import Metagenome
 from ipyTools import *
 from collections import defaultdict
 from datetime import datetime
-from IPython.lib.display import FileLink
+import IPython.lib.display
 
 def get_analysis_set(ids=[], auth=None, method='WGS', function_source='Subsystems', all_values=False, def_name=None):
     """Wrapper for AnalysisSet object creation, checks if cache (created through unique option set) exists first and returns that.
@@ -293,7 +293,7 @@ class Analysis(object):
             self.pco()      : pco plot of metagenomes
             self.heatmap()  : dendogram of metagenomes / annotations
     """
-    def __init__(self, ids=[], annotation=None, level=None, result_type=None, hit_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, biom=None, bfile=None, auth=None, def_name=None):
+    def __init__(self, ids=[], annotation=None, level=None, result_type=None, hit_type=None, source=None, e_val=None, ident=None, alen=None, filters=[], filter_source=None, filter_level=None, biom=None, bfile=None, auth=None, def_name=None):
         self._auth = auth
         # hack to get variable name
         if def_name == None:
@@ -301,7 +301,7 @@ class Analysis(object):
             def_name = text[:text.find('=')].strip()
         self.defined_name = def_name
         if (biom is None) and (bfile is None):
-            self.biom = self._get_matrix(ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source)
+            self.biom = self._get_matrix(ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source, filter_level)
         elif biom and isinstance(biom, dict):
             self.biom = biom
         elif bfile and os.path.isfile(bfile):
@@ -336,7 +336,7 @@ class Analysis(object):
         self.alpha_diversity = None
         self.rarefaction     = None
     
-    def _get_matrix(self, ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source):
+    def _get_matrix(self, ids, annotation, level, result_type, hit_type, source, e_val, ident, alen, filters, filter_source, filter_level):
         params = map(lambda x: ('id', x), ids)
         params.append(('hide_metadata', '1'))
         if not annotation:
@@ -359,6 +359,8 @@ class Analysis(object):
             params.extend( map(lambda x: ('filter', x), filters) )
             if filter_source:
                 params.append(('filter_source', filter_source))
+            if filter_level:
+                params.append(('filter_level', filter_level))
         return obj_from_url( Ipy.API_URL+'/matrix/'+annotation+'?'+urllib.urlencode(params, True), self._auth )
 
     def _get_type(self, biom):
@@ -501,7 +503,7 @@ class Analysis(object):
             output = matrix_to_file(matrix=matrix, cols=cols, rows=rows)
         if fname:
             open(fname, 'w').write(output)
-            return FileLink(fname)
+            return IPython.lib.display.FileLink(fname)
         else:
             return output
 
@@ -583,11 +585,11 @@ class Analysis(object):
             rareFact = defaultdict(list)
             for i, aID in enumerate(self.ids()):
                 mg = self.get_id_object(aID)
-                if ('rarefaction' in mg.stats) and (len(mg.stats['rarefaction']) > 0):
-                    rareFact[aID] = mg.stats['rarefaction']
+                if ('rarefaction' in mg.statistics) and (len(mg.statistics['rarefaction']) > 0):
+                    rareFact[aID] = mg.statistics['rarefaction']
                     continue
                 try:
-                    nseq = int(mg.stats['sequence_count_raw'])
+                    nseq = int(mg.statistics['sequence_count_raw'])
                     size = int(nseq/1000) if nseq > 1000 else 1
                 except (ValueError, KeyError, TypeError, AttributeError):
                     rareFact[aID] = []
@@ -907,7 +909,7 @@ class Analysis(object):
 
     def _scale_matrix(self):
         try:
-            self.SDmatrix = relative_abundance_matrix(self.Dmatrix)
+            self.SDmatrix = relative_abundance_matrix(self.Dmatrix, self.ids)
             self.SRmatrix = pyMatrix_to_rMatrix(self.SDmatrix, self.numAnnot, self.numIDs)
         except:
             sys.stderr.write("Error scaling matrix to adundance sum (%s)\n"%self.id)
@@ -921,12 +923,9 @@ class Analysis(object):
             self.NRmatrix = ro.r.normalize(self.Rmatrix)
             self.NDmatrix = rMatrix_to_pyMatrix(self.NRmatrix, self.numAnnot, self.numIDs)
         except:
+            # do it ourselves
             try:
-                # run our own R code
-                raw_file = Ipy.TMP_DIR+'/raw.'+random_str()+'.tab'
-                matrix_to_file(fname=raw_file, matrix=self.Dmatrix, cols=self.ids(), rows=self.annotations())
-                norm_file = self._normalize_tabbed(raw_file)
-                self.NDmatrix = matrix_from_file(norm_file, has_col_names=True, has_row_names=True)
+                self.NDmatrix = scale_matrix( normalize_matrix(log_transform_matrix(self.Dmatrix), self.ids) )
                 self.NRmatrix = pyMatrix_to_rMatrix(self.NDmatrix, self.numAnnot, self.numIDs, normalize=1)
             except:
                 sys.stderr.write("Error normalizing matrix (%s)\n"%self.id)

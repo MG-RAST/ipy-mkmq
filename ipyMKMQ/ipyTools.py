@@ -3,7 +3,7 @@
 from time import localtime, strftime, sleep
 from collections import defaultdict
 import os, sys, urllib, urllib2, json, pickle, copy, glob
-import string, random
+import string, random, math, array
 import rpy2.robjects as ro
 import retina, flotplot
 import config
@@ -267,15 +267,62 @@ def eigen_data_from_file(fname):
             eigen_vectors[parts[0]] = map(lambda x: float(x), parts[1:])
     return eigen_values, eigen_vectors
 
-def relative_abundance_matrix(matrix):
+def relative_abundance_matrix(matrix, cols):
     col_sums = []
-    for i in range(len(matrix[0])):
-        col_sums.append( sum(slice_column(matrix, i)) )
+    for i, c in enumerate(cols):
+        s = sum(slice_column(matrix, i))
+        if s == 0:
+            sys.stderr.write('data set %s (position %d) is empty, removing from scaled matrix'%(c, i))
+            continue
+        col_sums.append(s)
     new_matrix = []
     for row in matrix:
         new_row = []
         for i, c in enumerate(row):
-            new_row.append( float(c) / col_sums[i] )
+            if col_sums[i] > 0:
+                new_row.append( float(c) / col_sums[i] )
+        new_matrix.append(new_row)
+    return new_matrix
+
+def log_transform_matrix(matrix):
+    new_matrix = []
+    for row in matrix:
+        new_row = map(lambda x: math.log(x) / math.log(2), row)
+        new_matrix.append(new_row)
+    return new_matrix
+
+def normalize_matrix(matrix, cols):
+    col_stats = []
+    for i, c in enumerate(cols):
+        a = array.array('f', slice_column(matrix, i))
+        s = sum(a)
+        if s == 0:
+            sys.stderr.write('data set %s (position %d) is empty, removing from normalized matrix'%(c, i))
+            continue
+        m = sum(a) / len(a)
+        d = math.sqrt(sum((x - m) ** 2 for x in a) / len(a))
+        col_stats.append([s, m, d])
+    new_matrix = []
+    for row in matrix:
+        new_row = []
+        for i, c in enumerate(row):
+            if col_stats[i][0] == 0:
+                continue
+            if col_stats[i][2] == 0:
+                new_row.append(1)
+            else:
+                new_row.append( (c - col_stats[i][1]) / col_stats[i][2] )
+        new_matrix.append(new_row)
+    return new_matrix
+    
+def scale_matrix(matrix):
+    rowmin = map(lambda x: min(x), matrix)
+    rowmax = map(lambda x: max(x), matrix)
+    mmin = math.fabs(min(rowmin))
+    mmax = max(rowmax)
+    new_matrix = []
+    for row in matrix:
+        new_row = map(lambda x: (x + mmin) / mmax, row)
         new_matrix.append(new_row)
     return new_matrix
 

@@ -15,8 +15,6 @@ class QC(object):
     def __init__(self, mgid=None, metagenome=None, auth=None):
         if metagenome:
             self.metagenome = metagenome
-            if self.metagenome.stats is None:
-                self.metagenome._set_statistics()
         elif mgid:
             self.metagenome = Metagenome(mgid, True, True, auth)
         else:
@@ -46,7 +44,7 @@ class Drisee(object):
         
     def _get_drisee(self, mgObj):
         try:
-            return mgObj.stats['qc']['drisee']
+            return mgObj.statistics['qc']['drisee']
         except:
             return None
 
@@ -143,7 +141,7 @@ class NucleoProfile(object):
 
     def _get_bp_profile(self, mgObj):
         try:
-            return mgObj.stats['qc']['bp_profile']
+            return mgObj.statistics['qc']['bp_profile']
         except:
             return None
 
@@ -220,10 +218,10 @@ class Kmer(object):
 
     def _get_kmer(self, mgObj):
         try:
-            return mgObj.stats['qc']['kmer']['15_mer']
+            return mgObj.statistics['qc']['kmer']['15_mer']
         except:
             try:
-                return mgObj.stats['qc']['kmer']['6_mer']
+                return mgObj.statistics['qc']['kmer']['6_mer']
             except:
                 return None
 
@@ -317,8 +315,8 @@ class Rarefaction(object):
             points = {}
             alpha  = {}
             for m in mgObjs:
-                points[m.id] = m.stats['rarefaction']
-                alpha[m.id]  = m.stats['sequence_stats']['alpha_diversity_shannon'] if 'alpha_diversity_shannon' in m.stats['sequence_stats'] else None
+                points[m.id] = m.statistics['rarefaction']
+                alpha[m.id]  = m.statistics['sequence_stats']['alpha_diversity_shannon'] if 'alpha_diversity_shannon' in m.statistics['sequence_stats'] else None
             return points, alpha
         except:
             return None, None

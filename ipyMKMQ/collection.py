@@ -7,7 +7,7 @@ from metagenome import Metagenome
 from ipyTools import *
 from qc import Rarefaction
 
-def get_collection(mgids=[], auth=None, stats=True, def_name=None):
+def get_collection(mgids=[], auth=None, def_name=None):
     """Wrapper for Collection object creation, checks if cache (created through unique option set) exists first and returns that.
     
     see: help(Collection)
@@ -15,7 +15,7 @@ def get_collection(mgids=[], auth=None, stats=True, def_name=None):
     if not mgids:
         sys.stderr.write("No ids inputted\n")
         return
-    cache_id  = "_".join(sorted(mgids))+"_"+('1' if stats else '0')
+    cache_id  = "_".join(sorted(mgids))
     cache_md5 = hashlib.md5(cache_id).hexdigest()
     cache_obj = load_object(cache_md5)
     if cache_obj is not None:
@@ -27,7 +27,7 @@ def get_collection(mgids=[], auth=None, stats=True, def_name=None):
             (filename,line_number,function_name,text)=traceback.extract_stack()[-2]
             def_name = text[:text.find('=')].strip()
         print "Loading Collection for selected metagenomes through API. Please wait, this may take several minutes ..."
-        new_obj = Collection(mgids=mgids, auth=auth, stats=stats, def_name=def_name)
+        new_obj = Collection(mgids=mgids, auth=auth, def_name=def_name)
         save_object(new_obj, cache_md5)
         print "Done loading through API"
         return new_obj
@@ -41,9 +41,8 @@ class Collection(object):
         
     see: help(Metagenome)
     """
-    def __init__(self, mgids=[], stats=True, auth=None, def_name=None, cache=False):
+    def __init__(self, mgids=[], auth=None, def_name=None, cache=False):
         self._auth  = auth
-        self._stats = stats
         self._mgids = mgids
         # hack to get variable name
         if def_name == None:
@@ -62,8 +61,7 @@ class Collection(object):
     def _get_metagenomes(self, cache):
         mgs = {}
         for mg in self._mgids:
-            keyArgs = { 'stats': self._stats,
-                        'auth': self._auth,
+            keyArgs = { 'auth': self._auth,
                         'cache': cache,
                         'display': False,
                         'def_name': '%s.metagenomes["%s"]'%(self.defined_name, mg)
@@ -74,30 +72,23 @@ class Collection(object):
                 self.display._add_mg(mgs[mg])
         return mgs
     
-    def _set_statistics(self):
-        self._stats = True
-        for mg in self.metagenomes.itervalues():
-            mg._set_statistics()
-    
     def mgids(self):
         return self._mgids
     
     def get_stat(self, mgid=None, stat=None):
         if not (mgid and stat and (mgid in self._mgids)):
             return []
-        if not self._stats:
-            self._set_statistics()
-        if stat not in self.metagenomes[mgid].stats['sequence_stats']:
+        if stat not in self.metagenomes[mgid].statistics['sequence_stats']:
             return []
-        stat_list = [ toNum(self.metagenomes[mgid].stats['sequence_stats'][stat]) ]
+        stat_list = [ toNum(self.metagenomes[mgid].statistics['sequence_stats'][stat]) ]
         mgid_set = self._mgids
         if self.display and self.display._display_ids:
             mgid_set = self.display._display_ids
         for m in mgid_set:
             if m == mgid:
                 continue
-            if stat in self.metagenomes[m].stats['sequence_stats']:
-                stat_list.append( toNum(self.metagenomes[m].stats['sequence_stats'][stat]) )
+            if stat in self.metagenomes[m].statistics['sequence_stats']:
+                stat_list.append( toNum(self.metagenomes[m].statistics['sequence_stats'][stat]) )
         return stat_list
 
     def metadata_fields(self, table=True):
@@ -176,12 +167,10 @@ class CollectionDisplay(object):
         self._col_widget = 'window.col_widget_'+random_str();
         self._widget_div = 'col_div_'+random_str();
         self._tmp_mgs = 'window.'+random_str();
-        self._stats = 'window.'+random_str();
         html = "<div id='%s'></div>"%self._widget_div
         src = """
         (function() {
             """+self._tmp_mgs+""" = [];
-            """+self._stats+""" = [];
             Retina.load_widget("collection_overview").then( function() {
                 """+self._col_widget+""" = Retina.Widget.create('collection_overview', {'target': document.getElementById('"""+self._widget_div+"""')}, true);
             });
@@ -197,7 +186,6 @@ class CollectionDisplay(object):
         func = """
         (function() {
             """+self._tmp_mgs+""".push("""+json.dumps( mg._mg_dict() )+""");
-            """+self._stats+""".push("""+json.dumps( mg.stats )+""");
         })();
         """
         IPython.core.display.display_javascript(IPython.core.display.Javascript(data=func))
@@ -207,7 +195,6 @@ class CollectionDisplay(object):
         (function() {
             setTimeout(function() {
                 """+self._col_widget+""".curr_mgs = """+self._tmp_mgs+""";
-                """+self._col_widget+""".curr_mg_stats = """+self._stats+""";
             },1000);
         })();
         """
@@ -242,14 +229,14 @@ class CollectionDisplay(object):
         annD = {}
         for i, mg in enumerate(mgs):
             data.append({'name': mg.id, 'data': [], 'fill': colors[i]})
-            for d in mg.stats[annotation][sub_ann]:
+            for d in mg.statistics[annotation][sub_ann]:
                 if (names is not None) and (d[0] not in names):
                     continue
                 annD[ d[0] ] = 1
         annL = sorted(annD.keys())
         for i, d in enumerate(data):
             annMG = {}
-            for a, v in mgs[i].stats[annotation][sub_ann]:
+            for a, v in mgs[i].statistics[annotation][sub_ann]:
                 annMG[a] = v
             for a in annL:
                 if a in annMG:

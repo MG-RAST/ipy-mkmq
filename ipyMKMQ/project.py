@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, shutil, traceback
+import os, traceback
 from collection import Collection
 from ipyTools import *
 
@@ -21,7 +21,7 @@ class Project(Collection):
          "status"         : [ 'cv',     [ ['public', 'object is public'],
         						           ['private', 'object is private'] ] ]
     """
-    def __init__(self, pid, stats=True, auth=None, def_name=None, cache=False):
+    def __init__(self, pid, auth=None, def_name=None, cache=False):
         # set project
         self._cfile = Ipy.CCH_DIR+'/'+pid+'.json'
         project = None
@@ -41,7 +41,7 @@ class Project(Collection):
                 try:
                     json.dump(project, open(self._cfile, 'w'))
                     if Ipy.DEBUG:
-                        sys.stdout.write("project %s saved to cached file (%s)\n"%(mgid, self._cfile))
+                        sys.stdout.write("project %s saved to cached file (%s)\n"%(pid, self._cfile))
                 except:
                     pass
         if project is not None:
@@ -60,7 +60,7 @@ class Project(Collection):
                 pass
         self.defined_name = def_name
         # call collection init - from cache if given
-        Collection.__init__(self, self.mgids(), stats=stats, auth=auth, def_name=self.defined_name, cache=cache)
+        Collection.__init__(self, self.mgids(), auth=auth, def_name=self.defined_name, cache=cache)
     
     def _get_project(self, pid, auth):
         if Ipy.DEBUG:
