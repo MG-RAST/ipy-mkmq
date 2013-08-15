@@ -1,7 +1,7 @@
 import os
 
 RETINA_URL     = 'http://raw.github.com/MG-RAST/Retina/master'
-API_URL        = 'http://dev.metagenomics.anl.gov/api.cgi'
+API_URL        = 'http://api.metagenomics.anl.gov/1'
 CDMI_URL       = "http://kbase.us/services/cdmi_api"
 NETWORKS_URL   = "http://140.221.92.76:7064/KBaseNetworksRPC/networks"
 GENOPHENO_URL  = "http://140.221.84.160:7067"
