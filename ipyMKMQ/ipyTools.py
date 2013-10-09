@@ -166,7 +166,7 @@ def obj_from_url(url, auth=None):
         req = urllib2.Request(url, headers=header)
         res = urllib2.urlopen(req)
     except urllib2.HTTPError, error:
-        sys.stderr.write("ERROR (%s): %s\n"%(url, error.read()))
+        sys.stderr.write("ERROR (%s):%s, %s\n"%(url, error.code, error.read()))
         return None
     if not res:
         sys.stderr.write("ERROR (%s): no results returned\n"%url)
