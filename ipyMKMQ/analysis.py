@@ -139,7 +139,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
+                children.extend( get_children(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -164,7 +164,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
+                children.extend( get_children(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -195,7 +195,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
+                children.extend( get_children(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
@@ -226,7 +226,7 @@ class AnalysisSet(object):
         children = []
         if parent and (len(parent) > 0):
             for p in parent:
-                children.extend( get_hierarchy(htype=annot, level=level, source=self.function_source, parent=p) )
+                children.extend( get_children(htype=annot, level=level, source=self.function_source, parent=p) )
         if children and (len(children) > 0):
             children = filter(lambda x: x, children)
         keyArgs = { 'normalize': normalize,
