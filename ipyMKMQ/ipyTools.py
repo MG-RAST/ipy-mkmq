@@ -542,7 +542,7 @@ def get_leaf_nodes(htype='taxonomy', level='domain', source='Subsystems', names=
 def get_children(htype='taxonomy', level='species', source='Subsystems', parent=None):
     if not parent:
         return []
-    data = get_hierarchy(htype=htype, level=level, source=source, parent=parent):
+    data = get_hierarchy(htype=htype, level=level, source=source, parent=parent)
     children = set()
     for d in data:
         children.add(d[level])
