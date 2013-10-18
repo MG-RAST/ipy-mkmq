@@ -163,7 +163,7 @@ class MetagenomeDisplay(object):
         elif annotation == 'function':
             annotation = 'ontology'
             sub_ann = source
-        names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
+        names  = get_tax_children(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
         colors = google_palette(len(self.mg.statistics[annotation][sub_ann]))
         data   = []
         for i, d in enumerate(self.mg.statistics[annotation][sub_ann]):

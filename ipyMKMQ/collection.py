@@ -223,7 +223,7 @@ class CollectionDisplay(object):
         elif annotation == 'function':
             annotation = 'ontology'
             sub_ann = source
-        names  = get_taxonomy(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
+        names  = get_tax_children(level, parent) if (annotation == 'taxonomy') and (parent is not None) else None
         colors = google_palette(len(mgs))
         data = []
         annD = {}

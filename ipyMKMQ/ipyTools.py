@@ -531,38 +531,47 @@ def matrix_remove_empty(m):
 def get_leaf_nodes(htype='taxonomy', level='domain', source='Subsystems', names=[]):
     leaf_level = 'species' if htype == 'taxonomy' else 'function'
     full_hierarchy = get_hierarchy(htype=htype, level=leaf_level, source=source)
-    if not names:
-        return slice_column(full_hierarchy, len(full_hierarchy[0])-1)
-    hierarchy = Ipy.TAX_SET if htype == 'taxonomy' else Ipy.ONT_SET
-    try:
-        index = hierarchy.index(level)
-    except (ValueError, AttributeError):
-        return []
+    if leaf_level == 'function':
+        leaf_level = 'accession'
     results = set()
     for branch in full_hierarchy:
-        if branch[index] in names:
-            results.add(branch[-1])
+        if (not names) or (names and (branch[level] in names)):
+            results.add(branch[leaf_level])
     return list(results)
 
+def get_children(htype='taxonomy', level='species', source='Subsystems', parent=None):
+    if not parent:
+        return []
+    data = get_hierarchy(htype=htype, level=level, source=source, parent=parent):
+    children = set()
+    for d in data:
+        children.add(d[level])
+    return list(children)
+
 def get_hierarchy(htype='taxonomy', level='species', source='Subsystems', parent=None):
-    params = [('min_level', level)]
+    params = [('version', 1), ('min_level', level)]
     if htype == 'organism':
         htype = 'taxonomy'
     if htype == 'function':
         htype = 'ontology'
         params.append(('source', source))
     if parent is not None:
-        params.append(('parent_name', parent))
-    child = obj_from_url(Ipy.API_URL+'/m5nr/'+htype+'?'+urllib.urlencode(params, True))['data']
-    if not child:
-        child = []
-    return child
+        plevel = parent_level(level, htype=htype)
+        if not plevel:
+            return []
+        params.append(('exact', 1))
+        params.append(('filter', parent))
+        params.append(('filter_level', plevel))
+    data = obj_from_url(Ipy.API_URL+'/m5nr/'+htype+'?'+urllib.urlencode(params, True))['data']
+    if not data:
+        return []
+    return data
 
-def get_taxonomy(level='species', parent=None):
-    return get_hierarchy(htype='taxonomy', level=level, parent=parent)
+def get_tax_children(level='species', parent=None):
+    return get_children(htype='taxonomy', level=level, parent=parent)
 
-def get_ontology(level='function', source='Subsystems', parent=None):
-    return get_hierarchy(htype='ontology', level=level, source=source, parent=parent)
+def get_ont_children(level='function', source='Subsystems', parent=None):
+    return get_children(htype='ontology', level=level, source=source, parent=parent)
 
 def parent_level(level, htype='taxonomy'):
     if htype == 'organism':
